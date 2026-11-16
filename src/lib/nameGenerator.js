@@ -7,7 +7,7 @@
 // exclude_real_politicians.json を読み込んだオブジェクト。
 
 // シード固定の乱数（mulberry32）。同じシードなら毎回同じ名前の並びになる
-function mulberry32(seed) {
+export function mulberry32(seed) {
   let a = seed >>> 0;
   return function () {
     a = (a + 0x6d2b79f5) >>> 0;
@@ -67,11 +67,14 @@ export async function createNameGenerator({
     return false;
   }
 
-  async function generate({ gender = rand() < 0.5 ? "男" : "女", birthYear = 1970, maxTries = 50 } = {}) {
+  // surname（姓の漢字）を指定すると、その姓で名だけを選ぶ（世襲議員の子など）
+  async function generate({ gender = rand() < 0.5 ? "男" : "女", birthYear = 1970, surname, maxTries = 50 } = {}) {
     const dk = decadeKey(birthYear, decades);
     const pool = gList.filter((g) => g.gender === gender);
+    const fixed = surname === undefined ? undefined : sList.find((x) => x.kanji === surname);
+    if (surname !== undefined && !fixed) throw new Error(`姓データにない姓です：${surname}`);
     for (let i = 0; i < maxTries; i++) {
-      const s = pickWeighted(sList, (x) => x.weight, rand);
+      const s = fixed ?? pickWeighted(sList, (x) => x.weight, rand);
       const g = pickWeighted(pool, (x) => x.weight_by_decade[dk], rand);
       const kanji = s.kanji + g.kanji;
       const kana = s.kana + g.kana;

@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>デフォルメ日本地図 確認ページ</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f8fafc;
+      --card: #ffffff;
+      --border: #cbd5e1;
+      --text: #0f172a;
+      --muted: #475569;
+      --sea: #e0f2fe;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 24px;
+      font-family: system-ui, -apple-system, "Hiragino Kaku Gothic ProN", "Yu Gothic UI", "Meiryo", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+    }
+
+    .container {
+      max-width: 1120px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: 1.5rem;
+    }
+
+    .lead {
+      margin: 0 0 20px;
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1.8fr) minmax(280px, 1fr);
+      gap: 20px;
+      align-items: start;
+    }
+
+    @media (max-width: 860px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .map-card,
+    .panel {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+    }
+
+    .map-frame {
+      background: var(--sea);
+      border: 1px solid #bae6fd;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .sidebar {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .panel h2 {
+      margin: 0 0 10px;
+      font-size: 1.05rem;
+      border-bottom: 1px solid #e2e8f0;
+      padding-bottom: 6px;
+    }
+
+    .status-box {
+      padding: 10px 12px;
+      border-radius: 8px;
+      background: #f1f5f9;
+      margin-bottom: 10px;
+      font-size: 0.95rem;
+    }
+
+    .status-label {
+      display: block;
+      font-size: 0.78rem;
+      color: var(--muted);
+      margin-bottom: 2px;
+    }
+
+    .status-value {
+      font-weight: 700;
+      font-size: 1.05rem;
+    }
+
+    .legend {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      font-size: 0.9rem;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .swatch {
+      width: 16px;
+      height: 16px;
+      border-radius: 4px;
+      border: 1px solid rgba(15, 23, 42, 0.25);
+      flex-shrink: 0;
+    }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    button {
+      appearance: none;
+      border: 1px solid #94a3b8;
+      background: #ffffff;
+      color: var(--text);
+      border-radius: 6px;
+      padding: 6px 12px;
+      font-size: 0.88rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #f1f5f9;
+    }
+
+    .validate-ok {
+      padding: 10px 12px;
+      border-radius: 8px;
+      background: #dcfce7;
+      border: 1px solid #86efac;
+      color: #166534;
+      font-weight: 700;
+      font-size: 0.92rem;
+    }
+
+    .validate-info {
+      padding: 10px 12px;
+      border-radius: 8px;
+      background: #fef9c3;
+      border: 1px solid #fde047;
+      color: #713f12;
+      font-size: 0.88rem;
+    }
+
+    .validate-list {
+      margin: 8px 0 0;
+      padding-left: 18px;
+      font-size: 0.84rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>デフォルメ日本地図 確認ページ</h1>
+    <p class="lead">
+      ブロック地図風の強いデフォルメを加えた47都道府県の表示、ホバー・クリック操作、<code>updateFills()</code> による塗り替え、および <code>validateMap()</code> の結果を確認できます。
+    </p>
+
+    <div class="layout">
+      <div class="map-card">
+        <div id="map-container" class="map-frame"></div>
+      </div>
+
+      <div class="sidebar">
+        <section class="panel">
+          <h2>選択・ホバー状態</h2>
+          <div class="status-box">
+            <span class="status-label">マウスを乗せている都道府県</span>
+            <span id="hover-info" class="status-value">なし</span>
+          </div>
+          <div class="status-box" style="margin-bottom: 0;">
+            <span class="status-label">クリックした都道府県</span>
+            <span id="click-info" class="status-value">まだクリックされていません</span>
+          </div>
+        </section>
+
+        <section class="panel">
+          <h2>地方凡例・塗り替えテスト</h2>
+          <div id="legend" class="legend"></div>
+          <div class="controls">
+            <button id="btn-region" type="button">地方ごとに色分け</button>
+            <button id="btn-election" type="button">選挙風の仮配色（updateFills）</button>
+          </div>
+        </section>
+
+        <section class="panel">
+          <h2>validateMap() 検証結果</h2>
+          <div id="validation-result"></div>
+        </section>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import {
+      PREFECTURES,
+      renderJapanMap,
+      updateFills,
+      validateMap,
+    } from "./japanMap.js";
+
+    // 8地方の配色定義
+    const REGION_COLORS = {
+      "北海道": "#93c5fd",
+      "東北": "#a5f3fc",
+      "関東": "#86efac",
+      "中部": "#fde68a",
+      "近畿": "#fdba74",
+      "中国": "#fca5a5",
+      "四国": "#f9a8d4",
+      "九州・沖縄": "#c4b5fd",
+    };
+
+    const prefMap = new Map(PREFECTURES.map((p) => [p.code, p]));
+    const regionFill = (code) => {
+      const pref = prefMap.get(code);
+      return pref ? REGION_COLORS[pref.region] : "#e2e8f0";
+    };
+
+    const hoverInfo = document.getElementById("hover-info");
+    const clickInfo = document.getElementById("click-info");
+    const mapContainer = document.getElementById("map-container");
+
+    // 地図を描画
+    const svg = renderJapanMap(mapContainer, {
+      cellSize: 16,
+      fill: regionFill,
+      showLabels: true,
+      onHover(code) {
+        if (code === null) {
+          hoverInfo.textContent = "なし";
+          return;
+        }
+        const pref = prefMap.get(code);
+        hoverInfo.textContent = pref
+          ? `${pref.name}（コード: ${pref.code} / ${pref.region}）`
+          : `コード: ${code}`;
+      },
+      onClick(code) {
+        const pref = prefMap.get(code);
+        clickInfo.textContent = pref
+          ? `${pref.name}（コード: ${pref.code} / ${pref.region}）`
+          : `コード: ${code}`;
+      },
+    });
+
+    // 地方凡例を生成
+    const legendEl = document.getElementById("legend");
+    for (const [region, color] of Object.entries(REGION_COLORS)) {
+      const item = document.createElement("div");
+      item.className = "legend-item";
+      const swatch = document.createElement("span");
+      swatch.className = "swatch";
+      swatch.style.backgroundColor = color;
+      const label = document.createElement("span");
+      label.textContent = region;
+      item.append(swatch, label);
+      legendEl.appendChild(item);
+    }
+
+    // 配色切り替えボタン
+    document.getElementById("btn-region").addEventListener("click", () => {
+      updateFills(svg, regionFill);
+    });
+
+    document.getElementById("btn-election").addEventListener("click", () => {
+      const partyPalette = ["#ef4444", "#3b82f6", "#10b981", "#f59e0b"];
+      updateFills(svg, () => {
+        return partyPalette[Math.floor(Math.random() * partyPalette.length)];
+      });
+    });
+
+    // ページ読み込み時に validateMap() を実行して結果を表示
+    const validationEl = document.getElementById("validation-result");
+    const issues = validateMap();
+    if (issues.length === 0) {
+      const okBox = document.createElement("div");
+      okBox.className = "validate-ok";
+      okBox.textContent = "問題なし（0件のエラー・全47都道府県を検証）";
+      validationEl.appendChild(okBox);
+    } else {
+      const infoBox = document.createElement("div");
+      infoBox.className = "validate-info";
+      infoBox.textContent = `${issues.length}件の差分・問題が検出されました：`;
+      const ul = document.createElement("ul");
+      ul.className = "validate-list";
+      for (const issue of issues) {
+        const li = document.createElement("li");
+        li.textContent = issue;
+        ul.appendChild(li);
+      }
+      infoBox.appendChild(ul);
+      validationEl.appendChild(infoBox);
+    }
+  </script>
+</body>
+</html>

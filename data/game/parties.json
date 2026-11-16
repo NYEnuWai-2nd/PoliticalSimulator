@@ -1,0 +1,295 @@
+{
+  "note": "架空政党の定義。開始時点の議席は data/stats/shugiin_2024_seats.json（2024年衆院選の当選者数）から src/game/districts.ts で配る。経歴類型の重みは data/stats/member_stats.json の「経歴類型_政党別_2024衆院」（キーは character_tables.json の類型id）。重みのない政党は衆議院全体の重みを使う。思想の中心は試作用に置いた大まかな位置。",
+  "ideology_axes": [
+    {
+      "id": "economy",
+      "name": "経済",
+      "minus": "市場重視",
+      "plus": "再分配重視"
+    },
+    {
+      "id": "fiscal",
+      "name": "財政",
+      "minus": "積極財政",
+      "plus": "財政規律"
+    },
+    {
+      "id": "security",
+      "name": "安保",
+      "minus": "抑止重視",
+      "plus": "対話重視"
+    },
+    {
+      "id": "social",
+      "name": "社会",
+      "minus": "伝統重視",
+      "plus": "多様性重視"
+    },
+    {
+      "id": "governance",
+      "name": "統治",
+      "minus": "改革・分権",
+      "plus": "安定"
+    }
+  ],
+  "parties": [
+    {
+      "id": "minsei",
+      "name": "自由民政党",
+      "short": "民政党",
+      "color": "#2e7d32",
+      "lineage_profile": "保守与党系",
+      "ideology_center": {
+        "economy": -1,
+        "fiscal": 0,
+        "security": -2,
+        "social": -1.5,
+        "governance": 2
+      },
+      "ideology_spread": 1.2,
+      "archetype_weights": {
+        "bureaucrat": 0.183,
+        "local": 0.183,
+        "business": 0.173,
+        "general": 0.115,
+        "professional": 0.094,
+        "secretary": 0.084,
+        "academic": 0.063,
+        "celebrity": 0.052,
+        "mayor": 0.021,
+        "grassroots": 0.016,
+        "security": 0.016
+      }
+    },
+    {
+      "id": "minken",
+      "name": "立憲民権党",
+      "short": "民権党",
+      "color": "#1f5fa8",
+      "lineage_profile": "その他",
+      "ideology_center": {
+        "economy": 1.5,
+        "fiscal": 0,
+        "security": 1.5,
+        "social": 2,
+        "governance": 0
+      },
+      "ideology_spread": 1,
+      "archetype_weights": {
+        "local": 0.224,
+        "business": 0.177,
+        "celebrity": 0.15,
+        "professional": 0.116,
+        "general": 0.095,
+        "bureaucrat": 0.088,
+        "secretary": 0.082,
+        "academic": 0.034,
+        "grassroots": 0.02,
+        "mayor": 0.014
+      }
+    },
+    {
+      "id": "sasshin",
+      "name": "日本刷新の会",
+      "short": "刷新",
+      "color": "#7cb342",
+      "lineage_profile": "その他",
+      "ideology_center": {
+        "economy": -2,
+        "fiscal": 1,
+        "security": -1,
+        "social": 0,
+        "governance": -3
+      },
+      "ideology_spread": 0.9,
+      "archetype_weights": {
+        "local": 0.289,
+        "business": 0.237,
+        "professional": 0.184,
+        "academic": 0.079,
+        "secretary": 0.053,
+        "celebrity": 0.053,
+        "mayor": 0.026,
+        "grassroots": 0.026,
+        "bureaucrat": 0.026,
+        "general": 0.026
+      }
+    },
+    {
+      "id": "kyowa",
+      "name": "国民協和党",
+      "short": "協和党",
+      "color": "#e0a100",
+      "lineage_profile": "その他",
+      "ideology_center": {
+        "economy": 0,
+        "fiscal": -2,
+        "security": -0.5,
+        "social": 0.5,
+        "governance": -0.5
+      },
+      "ideology_spread": 0.9,
+      "archetype_weights": {
+        "celebrity": 0.179,
+        "business": 0.179,
+        "secretary": 0.143,
+        "professional": 0.107,
+        "union": 0.071,
+        "general": 0.071,
+        "local": 0.071,
+        "bureaucrat": 0.071,
+        "grassroots": 0.036,
+        "security": 0.036,
+        "academic": 0.036
+      }
+    },
+    {
+      "id": "kosei",
+      "name": "公正党",
+      "short": "公正",
+      "color": "#d6336c",
+      "lineage_profile": "その他",
+      "ideology_center": {
+        "economy": 1.5,
+        "fiscal": -0.5,
+        "security": 1,
+        "social": 0,
+        "governance": 1.5
+      },
+      "ideology_spread": 0.5,
+      "archetype_weights": {
+        "local": 0.25,
+        "general": 0.208,
+        "business": 0.167,
+        "professional": 0.125,
+        "celebrity": 0.083,
+        "bureaucrat": 0.083,
+        "academic": 0.042,
+        "secretary": 0.042
+      }
+    },
+    {
+      "id": "reimei",
+      "name": "れいめい新選組",
+      "short": "れいめい",
+      "color": "#9c4dcc",
+      "lineage_profile": "その他",
+      "ideology_center": {
+        "economy": 3,
+        "fiscal": -3,
+        "security": 2,
+        "social": 2,
+        "governance": -1
+      },
+      "ideology_spread": 0.6
+    },
+    {
+      "id": "shusan",
+      "name": "日本集産党",
+      "short": "集産党",
+      "color": "#c62828",
+      "lineage_profile": "その他",
+      "ideology_center": {
+        "economy": 3,
+        "fiscal": 0,
+        "security": 3,
+        "social": 2.5,
+        "governance": 0
+      },
+      "ideology_spread": 0.4
+    },
+    {
+      "id": "hoshu",
+      "name": "日本保守会議",
+      "short": "保守会議",
+      "color": "#6d4c41",
+      "lineage_profile": "その他",
+      "ideology_center": {
+        "economy": -1,
+        "fiscal": -1,
+        "security": -3,
+        "social": -3,
+        "governance": 0
+      },
+      "ideology_spread": 0.5
+    },
+    {
+      "id": "sankaku",
+      "name": "参画党",
+      "short": "参画",
+      "color": "#ef6c00",
+      "lineage_profile": "その他",
+      "ideology_center": {
+        "economy": 0,
+        "fiscal": -2,
+        "security": -1.5,
+        "social": -2.5,
+        "governance": -1
+      },
+      "ideology_spread": 0.6
+    },
+    {
+      "id": "shahei",
+      "name": "社会平和党",
+      "short": "社平",
+      "color": "#00897b",
+      "lineage_profile": "その他",
+      "ideology_center": {
+        "economy": 2.5,
+        "fiscal": -1,
+        "security": 3,
+        "social": 2.5,
+        "governance": 0
+      },
+      "ideology_spread": 0.4
+    },
+    {
+      "id": "independent",
+      "name": "無所属",
+      "short": "無所属",
+      "color": "#9e9e9e",
+      "lineage_profile": "その他",
+      "is_independent": true,
+      "ideology_center": {
+        "economy": 0,
+        "fiscal": 0,
+        "security": 0,
+        "social": 0,
+        "governance": 0
+      },
+      "ideology_spread": 1.6
+    },
+    {
+      "id": "chudo",
+      "name": "中道改革同盟",
+      "short": "同盟",
+      "color": "#3949ab",
+      "appears_later": true,
+      "lineage_profile": "その他",
+      "ideology_center": {
+        "economy": 1,
+        "fiscal": 0,
+        "security": 1,
+        "social": 1,
+        "governance": 0.5
+      },
+      "ideology_spread": 1
+    },
+    {
+      "id": "ashita",
+      "name": "チームあした",
+      "short": "あした",
+      "color": "#1e9bc7",
+      "appears_later": true,
+      "lineage_profile": "その他",
+      "ideology_center": {
+        "economy": -1,
+        "fiscal": 0.5,
+        "security": 0,
+        "social": 1.5,
+        "governance": -2
+      },
+      "ideology_spread": 0.6
+    }
+  ]
+}

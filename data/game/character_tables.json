@@ -1,0 +1,511 @@
+{
+  "note": "議員の生成に使う表。設計は docs/design.md の1〜3節。経歴類型の重みは data/stats/member_stats.json の衆議院の構成比（集計の「地盤継承型」を「議員秘書出身」、「分類不能」を「汎用」に読み替え）。能力の基準ランク、加点、年齢の範囲は試作用の仮の値。",
+  "abilities": [
+    "弁舌",
+    "政策",
+    "調整",
+    "知名度",
+    "組織",
+    "資金"
+  ],
+  "ranks": [
+    {
+      "rank": "G",
+      "min": 1,
+      "center": 10
+    },
+    {
+      "rank": "F",
+      "min": 20,
+      "center": 30
+    },
+    {
+      "rank": "E",
+      "min": 40,
+      "center": 45
+    },
+    {
+      "rank": "D",
+      "min": 50,
+      "center": 55
+    },
+    {
+      "rank": "C",
+      "min": 60,
+      "center": 65
+    },
+    {
+      "rank": "B",
+      "min": 70,
+      "center": 75
+    },
+    {
+      "rank": "A",
+      "min": 80,
+      "center": 85
+    },
+    {
+      "rank": "S",
+      "min": 90,
+      "center": 95
+    }
+  ],
+  "individual_variation": 8,
+  "specialties": [
+    "財政・税制",
+    "経済・産業",
+    "農林水産",
+    "厚生・労働",
+    "教育",
+    "国土・交通",
+    "外交",
+    "安全保障",
+    "法務・治安",
+    "地方・行政"
+  ],
+  "second_specialty_rate": 0.45,
+  "archetypes": [
+    {
+      "id": "local",
+      "name": "地方議員からの叩き上げ",
+      "weight_shugiin": 0.171,
+      "base_ranks": {
+        "弁舌": "D",
+        "政策": "E",
+        "調整": "C",
+        "知名度": "E",
+        "組織": "B",
+        "資金": "D"
+      },
+      "first_elected_age": [
+        41,
+        58
+      ],
+      "specialty_weights": {
+        "地方・行政": 3,
+        "国土・交通": 2,
+        "農林水産": 2,
+        "教育": 1,
+        "厚生・労働": 1
+      }
+    },
+    {
+      "id": "bureaucrat",
+      "name": "官僚出身の政策通",
+      "weight_shugiin": 0.157,
+      "base_ranks": {
+        "弁舌": "E",
+        "政策": "B",
+        "調整": "C",
+        "知名度": "E",
+        "組織": "E",
+        "資金": "D"
+      },
+      "first_elected_age": [
+        39,
+        53
+      ],
+      "specialty_weights": {
+        "財政・税制": 3,
+        "経済・産業": 2,
+        "国土・交通": 1,
+        "厚生・労働": 1,
+        "外交": 1,
+        "法務・治安": 1,
+        "農林水産": 1
+      }
+    },
+    {
+      "id": "business",
+      "name": "経済人",
+      "weight_shugiin": 0.16,
+      "base_ranks": {
+        "弁舌": "D",
+        "政策": "D",
+        "調整": "D",
+        "知名度": "E",
+        "組織": "E",
+        "資金": "B"
+      },
+      "first_elected_age": [
+        38,
+        58
+      ],
+      "specialty_weights": {
+        "経済・産業": 4,
+        "財政・税制": 2,
+        "国土・交通": 1
+      }
+    },
+    {
+      "id": "celebrity",
+      "name": "知名度型",
+      "weight_shugiin": 0.078,
+      "base_ranks": {
+        "弁舌": "B",
+        "政策": "F",
+        "調整": "E",
+        "知名度": "B",
+        "組織": "E",
+        "資金": "D"
+      },
+      "first_elected_age": [
+        35,
+        63
+      ],
+      "specialty_weights": {
+        "教育": 2,
+        "厚生・労働": 2,
+        "経済・産業": 1,
+        "外交": 1
+      }
+    },
+    {
+      "id": "professional",
+      "name": "専門職",
+      "weight_shugiin": 0.102,
+      "base_ranks": {
+        "弁舌": "C",
+        "政策": "C",
+        "調整": "E",
+        "知名度": "E",
+        "組織": "D",
+        "資金": "D"
+      },
+      "first_elected_age": [
+        38,
+        58
+      ],
+      "specialty_weights": {
+        "法務・治安": 3,
+        "厚生・労働": 3,
+        "経済・産業": 1
+      }
+    },
+    {
+      "id": "secretary",
+      "name": "議員秘書出身",
+      "weight_shugiin": 0.089,
+      "base_ranks": {
+        "弁舌": "E",
+        "政策": "E",
+        "調整": "C",
+        "知名度": "E",
+        "組織": "B",
+        "資金": "D"
+      },
+      "first_elected_age": [
+        35,
+        51
+      ],
+      "specialty_weights": {
+        "地方・行政": 2,
+        "国土・交通": 2,
+        "農林水産": 2,
+        "財政・税制": 1
+      }
+    },
+    {
+      "id": "academic",
+      "name": "学者・国際派",
+      "weight_shugiin": 0.065,
+      "base_ranks": {
+        "弁舌": "C",
+        "政策": "A",
+        "調整": "F",
+        "知名度": "D",
+        "組織": "E",
+        "資金": "E"
+      },
+      "first_elected_age": [
+        38,
+        58
+      ],
+      "specialty_weights": {
+        "外交": 3,
+        "教育": 2,
+        "経済・産業": 2,
+        "財政・税制": 1
+      }
+    },
+    {
+      "id": "union",
+      "name": "組織内候補",
+      "weight_shugiin": 0.01,
+      "base_ranks": {
+        "弁舌": "E",
+        "政策": "D",
+        "調整": "D",
+        "知名度": "F",
+        "組織": "A",
+        "資金": "D"
+      },
+      "first_elected_age": [
+        43,
+        58
+      ],
+      "specialty_weights": {
+        "厚生・労働": 3,
+        "経済・産業": 2,
+        "教育": 1
+      }
+    },
+    {
+      "id": "mayor",
+      "name": "首長経験の行政型",
+      "weight_shugiin": 0.02,
+      "base_ranks": {
+        "弁舌": "D",
+        "政策": "D",
+        "調整": "B",
+        "知名度": "D",
+        "組織": "D",
+        "資金": "E"
+      },
+      "first_elected_age": [
+        48,
+        65
+      ],
+      "specialty_weights": {
+        "地方・行政": 4,
+        "国土・交通": 2
+      }
+    },
+    {
+      "id": "grassroots",
+      "name": "現場の代弁者",
+      "weight_shugiin": 0.014,
+      "base_ranks": {
+        "弁舌": "C",
+        "政策": "C",
+        "調整": "E",
+        "知名度": "E",
+        "組織": "B",
+        "資金": "F"
+      },
+      "first_elected_age": [
+        41,
+        61
+      ],
+      "specialty_weights": {
+        "農林水産": 3,
+        "厚生・労働": 3,
+        "教育": 2
+      }
+    },
+    {
+      "id": "security",
+      "name": "安全保障の実務家",
+      "weight_shugiin": 0.014,
+      "base_ranks": {
+        "弁舌": "E",
+        "政策": "B",
+        "調整": "D",
+        "知名度": "E",
+        "組織": "C",
+        "資金": "E"
+      },
+      "first_elected_age": [
+        48,
+        63
+      ],
+      "specialty_weights": {
+        "安全保障": 4,
+        "法務・治安": 2,
+        "外交": 1
+      }
+    },
+    {
+      "id": "general",
+      "name": "汎用",
+      "weight_shugiin": 0.119,
+      "base_ranks": {
+        "弁舌": "D",
+        "政策": "D",
+        "調整": "D",
+        "知名度": "E",
+        "組織": "D",
+        "資金": "D"
+      },
+      "first_elected_age": [
+        36,
+        58
+      ],
+      "variation_multiplier": 1.6,
+      "specialty_weights": {
+        "財政・税制": 1,
+        "経済・産業": 1,
+        "農林水産": 1,
+        "厚生・労働": 1,
+        "教育": 1,
+        "国土・交通": 1,
+        "外交": 1,
+        "安全保障": 1,
+        "法務・治安": 1,
+        "地方・行政": 1
+      }
+    }
+  ],
+  "term_tiers": [
+    {
+      "id": "rookie",
+      "name": "新人",
+      "terms": [
+        1,
+        1
+      ],
+      "weight_shugiin": 0.219,
+      "jiban_base": 1.3,
+      "bonus": {
+        "弁舌": 0,
+        "政策": 0,
+        "調整": 0,
+        "知名度": 0,
+        "組織": 0,
+        "資金": 0
+      }
+    },
+    {
+      "id": "mid",
+      "name": "中堅",
+      "terms": [
+        2,
+        4
+      ],
+      "weight_shugiin": 0.316,
+      "jiban_base": 2.2,
+      "bonus": {
+        "弁舌": 2,
+        "政策": 3,
+        "調整": 4,
+        "知名度": 3,
+        "組織": 3,
+        "資金": 3
+      }
+    },
+    {
+      "id": "veteran",
+      "name": "ベテラン",
+      "terms": [
+        5,
+        9
+      ],
+      "weight_shugiin": 0.363,
+      "jiban_base": 3,
+      "bonus": {
+        "弁舌": 3,
+        "政策": 4,
+        "調整": 8,
+        "知名度": 6,
+        "組織": 6,
+        "資金": 7
+      }
+    },
+    {
+      "id": "elder",
+      "name": "重鎮",
+      "terms": [
+        10,
+        13
+      ],
+      "weight_shugiin": 0.101,
+      "jiban_base": 3.6,
+      "bonus": {
+        "弁舌": 4,
+        "政策": 5,
+        "調整": 15,
+        "知名度": 10,
+        "組織": 10,
+        "資金": 14
+      }
+    }
+  ],
+  "years_per_term": 2.6,
+  "lineages": [
+    {
+      "id": "none",
+      "name": "なし",
+      "bonus": {},
+      "jiban_bonus": 0
+    },
+    {
+      "id": "local_notable",
+      "name": "地方の名士",
+      "bonus": {
+        "組織": 5
+      },
+      "jiban_bonus": 0.4
+    },
+    {
+      "id": "hereditary",
+      "name": "世襲",
+      "bonus": {
+        "組織": 10,
+        "資金": 8,
+        "知名度": 4
+      },
+      "jiban_min": 3,
+      "first_elected_age": [
+        32,
+        44
+      ]
+    },
+    {
+      "id": "dynasty",
+      "name": "名門",
+      "bonus": {
+        "組織": 10,
+        "資金": 13,
+        "知名度": 10
+      },
+      "jiban_min": 3,
+      "first_elected_age": [
+        32,
+        44
+      ]
+    }
+  ],
+  "lineage_profiles": {
+    "保守与党系": {
+      "none": 0.62,
+      "local_notable": 0.1,
+      "hereditary": 0.2,
+      "dynasty": 0.08
+    },
+    "その他": {
+      "none": 0.82,
+      "local_notable": 0.1,
+      "hereditary": 0.06,
+      "dynasty": 0.02
+    }
+  },
+  "personality_pairs": [
+    [
+      "野心家",
+      "無欲"
+    ],
+    [
+      "大胆",
+      "慎重"
+    ],
+    [
+      "誠実",
+      "狡猾"
+    ],
+    [
+      "温厚",
+      "短気"
+    ],
+    [
+      "社交的",
+      "孤高"
+    ],
+    [
+      "寛容",
+      "執念深い"
+    ]
+  ],
+  "personality_traits_per_member": 3,
+  "jiban_variation": 1.3,
+  "min_age": 25
+}

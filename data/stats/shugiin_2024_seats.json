@@ -1,0 +1,224 @@
+{
+ "note": "2024年衆院選の当選者数の集計（個人は含まない）。政党は架空政党のid。smd_by_prefecture は都道府県コード（JIS）ごとの小選挙区の当選者数。",
+ "smd_total": {
+  "minsei": 132,
+  "minken": 104,
+  "sasshin": 23,
+  "independent": 12,
+  "kyowa": 11,
+  "kosei": 4,
+  "shusan": 1,
+  "shahei": 1,
+  "hoshu": 1
+ },
+ "pr_total": {
+  "minsei": 59,
+  "minken": 44,
+  "kosei": 20,
+  "kyowa": 17,
+  "sasshin": 15,
+  "reimei": 9,
+  "shusan": 7,
+  "sankaku": 3,
+  "hoshu": 2
+ },
+ "smd_by_prefecture": {
+  "1": {
+   "minken": 9,
+   "minsei": 3
+  },
+  "2": {
+   "minsei": 2,
+   "minken": 1
+  },
+  "3": {
+   "minken": 2,
+   "minsei": 1
+  },
+  "4": {
+   "minken": 4,
+   "minsei": 1
+  },
+  "5": {
+   "minsei": 1,
+   "minken": 1,
+   "kyowa": 1
+  },
+  "6": {
+   "minsei": 3
+  },
+  "7": {
+   "minken": 3,
+   "minsei": 1
+  },
+  "8": {
+   "minsei": 3,
+   "independent": 2,
+   "minken": 1,
+   "kyowa": 1
+  },
+  "9": {
+   "minsei": 3,
+   "minken": 2
+  },
+  "10": {
+   "minsei": 5
+  },
+  "11": {
+   "minsei": 8,
+   "minken": 6,
+   "kyowa": 2
+  },
+  "12": {
+   "minken": 7,
+   "minsei": 7
+  },
+  "13": {
+   "minken": 15,
+   "minsei": 11,
+   "independent": 3,
+   "kosei": 1
+  },
+  "14": {
+   "minken": 11,
+   "minsei": 9
+  },
+  "15": {
+   "minken": 5
+  },
+  "16": {
+   "minsei": 3
+  },
+  "17": {
+   "minsei": 2,
+   "minken": 1
+  },
+  "18": {
+   "minsei": 1,
+   "minken": 1
+  },
+  "19": {
+   "minken": 1,
+   "minsei": 1
+  },
+  "20": {
+   "minken": 3,
+   "minsei": 2
+  },
+  "21": {
+   "minsei": 4,
+   "minken": 1
+  },
+  "22": {
+   "minsei": 4,
+   "minken": 3,
+   "kyowa": 1
+  },
+  "23": {
+   "minken": 8,
+   "kyowa": 4,
+   "minsei": 3,
+   "hoshu": 1
+  },
+  "24": {
+   "minken": 2,
+   "minsei": 2
+  },
+  "25": {
+   "minsei": 2,
+   "sasshin": 1
+  },
+  "26": {
+   "minken": 2,
+   "minsei": 2,
+   "independent": 1,
+   "sasshin": 1
+  },
+  "27": {
+   "sasshin": 19
+  },
+  "28": {
+   "minsei": 7,
+   "kosei": 2,
+   "minken": 2,
+   "independent": 1
+  },
+  "29": {
+   "minsei": 2,
+   "minken": 1
+  },
+  "30": {
+   "independent": 1,
+   "minsei": 1
+  },
+  "31": {
+   "minsei": 2
+  },
+  "32": {
+   "minken": 1,
+   "minsei": 1
+  },
+  "33": {
+   "minsei": 3,
+   "minken": 1
+  },
+  "34": {
+   "minsei": 3,
+   "kosei": 1,
+   "minken": 1,
+   "sasshin": 1
+  },
+  "35": {
+   "minsei": 3
+  },
+  "36": {
+   "minsei": 2
+  },
+  "37": {
+   "minsei": 1,
+   "minken": 1,
+   "kyowa": 1
+  },
+  "38": {
+   "minsei": 2,
+   "minken": 1
+  },
+  "39": {
+   "minsei": 2
+  },
+  "40": {
+   "minsei": 7,
+   "minken": 2,
+   "independent": 1,
+   "sasshin": 1
+  },
+  "41": {
+   "minken": 2
+  },
+  "42": {
+   "minsei": 2,
+   "kyowa": 1
+  },
+  "43": {
+   "minsei": 4
+  },
+  "44": {
+   "independent": 2,
+   "minsei": 1
+  },
+  "45": {
+   "minsei": 2,
+   "minken": 1
+  },
+  "46": {
+   "minken": 2,
+   "independent": 1,
+   "minsei": 1
+  },
+  "47": {
+   "minsei": 2,
+   "shusan": 1,
+   "shahei": 1
+  }
+ }
+}
