@@ -7,7 +7,8 @@ import { mulberry32 } from "../lib/nameGenerator.js";
 import { PARTIES, partyById } from "./parties.js";
 import type { Member } from "./roster.js";
 import type { Appointment } from "./cabinet.js";
-import { COALITION_PARTNERS, RULING_PARTY } from "./cabinet.js";
+import { INITIAL_RULING } from "./cabinet.js";
+import type { Ruling } from "./cabinet.js";
 import { castVote, distance, expectedYes, noConfidenceVote, partyDistance } from "./vote.js";
 import type { BillLike, Position, VoteContext, VoteResult } from "./vote.js";
 import { buildScene, resolveLines } from "./scenes.js";
@@ -69,6 +70,10 @@ export interface GameState {
   pressThisMonth: number;
   /** 乱数を使った回数（保存しても同じ続きになるように状態に持つ） */
   rngCounter: number;
+  /** 与党と連立相手 */
+  ruling: Ruling;
+  /** 長期政権の疲れ。支持率が戻っていく基準の値をこれだけ下げる */
+  fatigue?: number;
   /** 衆議院の任期が満了する年月 */
   termEnd: { year: number; month: number };
   /** ゲームが終わったときの理由 */
@@ -112,19 +117,25 @@ export interface GameStartOptions {
   termEnd?: { year: number; month: number };
   /** 内閣発足の記録を残さない（総選挙後に政権を組み直すときなど） */
   quiet?: boolean;
+  /** 与党と連立相手（既定は cabinet.json の開始時点の与党） */
+  ruling?: Ruling;
+  /** 内閣支持率の初期値 */
+  approval?: number;
 }
 
 /** ctx を渡すと、内閣発足の場面を積んだ状態で始まる */
 export function createGame(seed: number, ctx?: GameContext, opts: GameStartOptions = {}): GameState {
   const startYear = opts.year ?? R.start.year;
   const startMonth = opts.month ?? R.start.month;
+  const ruling = opts.ruling ?? INITIAL_RULING;
   const bills: Record<string, BillState> = {};
   for (const b of BILLS) bills[b.id] = { status: "未着手", progress: 0 };
   const cooperation: Record<string, number> = {};
   for (const p of PARTIES) {
     // 連立相手も協議の相手にする（連立の中の調整）
-    if (p.id === RULING_PARTY || p.is_independent || p.appears_later) continue;
-    cooperation[p.id] = (R.cooperation.initial as Record<string, number>)[p.id] ?? 0;
+    if (p.id === ruling.party || p.is_independent || p.appears_later) continue;
+    // 開始時点の与党なら rules.json の初期値。政権が替わったあとは連立相手を60、ほかを10から始める
+    cooperation[p.id] = !opts.ruling ? ((R.cooperation.initial as Record<string, number>)[p.id] ?? 0) : ruling.partners.includes(p.id) ? 60 : 10;
   }
   const state: GameState = {
     seed,
@@ -132,12 +143,13 @@ export function createGame(seed: number, ctx?: GameContext, opts: GameStartOptio
     year: startYear,
     month: startMonth,
     actionPoints: R.action_points_per_turn,
-    approval: R.approval.initial,
-    approvalHistory: [R.approval.initial],
+    approval: opts.approval ?? R.approval.initial,
+    approvalHistory: [opts.approval ?? R.approval.initial],
     cohesion: R.cohesion.initial,
     cooperation,
     bills,
     budgetYear: startYear,
+    ruling: { party: ruling.party, partners: [...ruling.partners] },
     termEnd: opts.termEnd ?? { ...R.term_end },
     log: [],
     scenes: [],
@@ -161,7 +173,7 @@ export const primeMinister = (ctx: GameContext) => holder(ctx, "pm")!;
 export const ministerFor = (ctx: GameContext, bill: BillDef) => ctx.government.find((a) => a.post.field === bill.field)?.member ?? primeMinister(ctx);
 
 export function voteContext(state: GameState): VoteContext {
-  return { rulingParty: RULING_PARTY, coalitionPartners: COALITION_PARTNERS, cooperation: state.cooperation, cohesion: state.cohesion };
+  return { rulingParty: state.ruling.party, coalitionPartners: state.ruling.partners, cooperation: state.cooperation, cohesion: state.cohesion };
 }
 
 export const billLike = (b: BillDef): BillLike => ({ position: b.ideology, popularity: b.on_pass });
@@ -224,7 +236,7 @@ export function talkWithParty(state: GameState, ctx: GameContext, partyId: strin
   const negotiator = holder(ctx, "chief_cabinet_secretary") ?? primeMinister(ctx);
   const gain = Math.max(
     2,
-    R.cooperation.talk_base + negotiator.abilities.調整 * R.cooperation.talk_per_ability - partyDistance(RULING_PARTY, partyId) * R.cooperation.talk_distance_penalty -
+    R.cooperation.talk_base + negotiator.abilities.調整 * R.cooperation.talk_per_ability - partyDistance(state.ruling.party, partyId) * R.cooperation.talk_distance_penalty -
       ((R.cooperation.rival_penalty as Record<string, number>)[partyId] ?? 0) +
       (rand(state) - 0.5) * 6,
   );
@@ -283,7 +295,7 @@ function runEvent(state: GameState, ctx: GameContext): void {
     let x = rand(state) * weights.reduce((a, b) => a + b, 0);
     who = ministers.find((_, i) => (x -= weights[i]) <= 0) ?? ministers[0];
   } else if (ev.target === "ruling_member") {
-    const ruling = ctx.roster.filter((m) => m.party === RULING_PARTY && !m.fixedRole);
+    const ruling = ctx.roster.filter((m) => m.party === state.ruling.party && !m.fixedRole);
     who = ruling[Math.floor(rand(state) * ruling.length)];
   }
   changeApproval(state, ev.approval);
@@ -325,7 +337,7 @@ export function endTurn(state: GameState, ctx: GameContext): void {
       log(state, "採決", `${billName(state, b)}は賛成${result.yes}・反対${result.no}で否決された（支持率 −2）。`, result);
       pushScene(state, ctx, "vote_fail", { bill: billName(state, b), yes: result.yes, no: result.no, minister: ministerFor(ctx, b) });
     }
-    const rulingRebels = result.rebels.filter((id) => ctx.roster.find((m) => m.id === id)?.party === RULING_PARTY).length;
+    const rulingRebels = result.rebels.filter((id) => ctx.roster.find((m) => m.id === id)?.party === state.ruling.party).length;
     if (rulingRebels >= 3) pushScene(state, ctx, "rebels", { rebels: rulingRebels });
   }
   // 予算の期限
@@ -337,7 +349,7 @@ export function endTurn(state: GameState, ctx: GameContext): void {
   }
   runEvent(state, ctx);
   // 支持率は基準の値に少しずつ戻り、毎月少し揺れる
-  changeApproval(state, (R.approval.baseline - state.approval) * R.approval.drift + (rand(state) - 0.5) * 2 * R.approval.noise);
+  changeApproval(state, (R.approval.baseline - (state.fatigue ?? 0) - state.approval) * R.approval.drift + (rand(state) - 0.5) * 2 * R.approval.noise);
   // 協力度と結束は放っておくと下がる
   for (const p of Object.keys(state.cooperation)) state.cooperation[p] = Math.max(0, state.cooperation[p] - R.cooperation.decay);
   state.cohesion = Math.round(clamp(state.cohesion - R.cohesion.decay, 0, 1) * 100) / 100;

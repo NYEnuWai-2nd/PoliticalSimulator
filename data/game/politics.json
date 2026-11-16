@@ -1,0 +1,110 @@
+{
+  "note": "政局の数値（試作用の仮の値）。連立の組み直し、党首選、首相の辞任、役職ごとの公務。",
+  "coalition": {
+    "note": "第一党が連立を組む相手は、党の中心どうしの思想の距離が max_partner_distance 以内の党だけ。最大 max_partners 党まで。",
+    "max_partner_distance": 2,
+    "max_partners": 2
+  },
+  "leader": {
+    "note": "党首選。score は党首の点数の重み。各議員は（点数 ÷ score_divisor − 思想の差 × ideology_weight + 揺らぎ）が最も高い候補に入れる。term_months は与党の党首の任期。プレイヤーは当選 min_terms 回以上で、党の幹部との関係が min_party_relation 以上なら立候補できる。 現職の党首には incumbent_bonus に (内閣支持率 − 35) × incumbent_approval_weight を足す（与党のとき）。党首は連続 term_limit 期まで。 プレイヤーは生涯で term_limit 期まで（返り咲いても通算で数える）。",
+    "score": {
+      "terms": 3,
+      "coord": 1,
+      "fame": 1,
+      "fund": 0.5
+    },
+    "candidates": 2,
+    "score_divisor": 15,
+    "ideology_weight": 1.2,
+    "noise": 4,
+    "incumbent_bonus": 1.5,
+    "self_bonus": 3,
+    "term_months": 36,
+    "first_term_end": {
+      "year": 2027,
+      "month": 9
+    },
+    "min_terms": 3,
+    "min_party_relation": 50,
+    "player_bonus": {
+      "note": "プレイヤーへの上乗せ = (党の幹部との関係 − 50) ÷ party + 当選回数 × terms",
+      "party": 15,
+      "terms": 0.2
+    },
+    "incumbent_approval_weight": 0.15,
+    "term_limit": 3
+  },
+  "pm": {
+    "note": "AI の首相は、支持率が resign_approval 未満の月が resign_months 続くと辞任し、党首選で次の首相を選ぶ。内閣不信任案が可決されたら、支持率が dissolve_approval 以上なら解散し、それ未満なら総辞職する。新しい首相の内閣は支持率が honeymoon だけ上がって始まる。",
+    "resign_approval": 20,
+    "resign_months": 3,
+    "dissolve_approval": 25,
+    "honeymoon": 10
+  },
+  "duties": {
+    "note": "役職に就いているときの公務（活動「公務」）。minister は大臣（担当分野の法案の準備が進む）、ほかは役職ごと。leader は野党の党首。",
+    "stamina": -10,
+    "minister": {
+      "exp": {
+        "policy": 16,
+        "media": 4
+      },
+      "bill_progress": 2,
+      "approval": 0.3
+    },
+    "pm": {
+      "exp": {
+        "media": 10,
+        "network": 8
+      },
+      "approval": 0.5
+    },
+    "chief_cabinet_secretary": {
+      "exp": {
+        "network": 14,
+        "media": 4
+      },
+      "cooperation": 6
+    },
+    "secretary_general": {
+      "exp": {
+        "network": 14,
+        "election": 6
+      },
+      "cohesion": 0.05,
+      "relations": {
+        "party": 4
+      }
+    },
+    "policy_chief": {
+      "exp": {
+        "policy": 16
+      },
+      "all_progress": 0.6
+    },
+    "general_council_chair": {
+      "exp": {
+        "network": 14
+      },
+      "cohesion": 0.04
+    },
+    "leader": {
+      "exp": {
+        "media": 14,
+        "network": 4
+      },
+      "approval": -0.5,
+      "relations": {
+        "press": 3
+      }
+    }
+  },
+  "fatigue": {
+    "note": "長期政権の疲れ。与党が政権に就いて n 年たつと、内閣支持率が戻っていく基準の値が min(cap, n × per_year) だけ下がる。政権交代で0に戻る。開始時点の与党は initial_years 年たっているものとする。 さらに同じ首相が n 年続くと n × pm_per_year 下がる（合計で total_cap まで）。",
+    "per_year": 0.8,
+    "cap": 10,
+    "initial_years": 6,
+    "pm_per_year": 0.7,
+    "total_cap": 14
+  }
+}

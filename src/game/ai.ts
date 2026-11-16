@@ -13,6 +13,7 @@ import {
 } from "./game.js";
 import type { GameContext, GameState } from "./game.js";
 import { MAJORITY } from "./districts.js";
+import { partyDistance } from "./vote.js";
 
 /** その月の首相の行動を選んで実行する（月末の処理は呼び出し側で endTurn を呼ぶ） */
 export function aiGovernmentActions(g: GameState, ctx: GameContext): void {
@@ -32,12 +33,28 @@ export function aiGovernmentActions(g: GameState, ctx: GameContext): void {
       startDrafting(g, ctx, todo[0].id);
       continue;
     }
-    // 3. 協力してくれそうな野党と協議する。結束が落ちていれば根回し、余れば記者会見
-    if ((g.cooperation.kyowa ?? 0) < 65) talkWithParty(g, ctx, "kyowa");
-    else if ((g.cooperation.sasshin ?? 0) < 60) talkWithParty(g, ctx, "sasshin");
+    // 3. 協力してくれそうな党（連立相手と、議席が多く思想の近い野党）と協議する。
+    //    結束が落ちていれば根回し、余れば記者会見
+    const target = talkTargets(g, ctx).find(({ id, goal }) => (g.cooperation[id] ?? 0) < goal);
+    if (target) talkWithParty(g, ctx, target.id);
     else if (g.cohesion < 0.6) nemawashi(g, ctx);
     else pressConference(g, ctx);
   }
+}
+
+/**
+ * 協議の相手の候補と、目標の協力度。連立相手は60、野党は議席が多く思想の近い順に上位2党を65・60まで上げる。
+ * 政権が替わっても同じ考え方で相手を選ぶ。
+ */
+export function talkTargets(g: GameState, ctx: GameContext): { id: string; goal: number }[] {
+  const seats = (p: string) => ctx.roster.filter((m) => m.party === p).length;
+  const partners = g.ruling.partners.filter((p) => p in g.cooperation && seats(p) > 0).map((id) => ({ id, goal: 60 }));
+  const opposition = Object.keys(g.cooperation)
+    .filter((p) => !g.ruling.partners.includes(p) && seats(p) > 0)
+    .sort((a, b) => seats(b) / (1 + partyDistance(g.ruling.party, b)) - seats(a) / (1 + partyDistance(g.ruling.party, a)))
+    .slice(0, 2)
+    .map((id, i) => ({ id, goal: i === 0 ? 65 : 60 }));
+  return [...partners, ...opposition];
 }
 
 /** 首相が解散に踏み切るか。支持率が高いうちに解散する。rand は0以上1未満の乱数 */

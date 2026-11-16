@@ -4,7 +4,8 @@ import dialogueRaw from "../../data/game/dialogue.json";
 import { partyById } from "./parties.js";
 import type { Member } from "./roster.js";
 import type { Appointment } from "./cabinet.js";
-import { COALITION_PARTNERS, RULING_PARTY } from "./cabinet.js";
+import { INITIAL_RULING, rulingOf } from "./cabinet.js";
+import type { Ruling } from "./cabinet.js";
 
 export interface SceneLine {
   /** 話し手の名前。地の文なら空 */
@@ -41,10 +42,10 @@ interface SceneContext {
 const DIALOGUE = dialogueRaw as unknown as { scenes: Record<string, { title: string; variants: LineTemplate[][] }> };
 
 /** 野党第一党（議席が最も多い野党）の党首。当選回数と知名度が最も高い議員とする */
-export function oppositionLeader(roster: Member[]): Member | undefined {
+export function oppositionLeader(roster: Member[], ruling: Ruling = INITIAL_RULING): Member | undefined {
   const counts = new Map<string, number>();
   for (const m of roster) {
-    if (m.party === RULING_PARTY || COALITION_PARTNERS.includes(m.party) || partyById(m.party).is_independent) continue;
+    if (m.party === ruling.party || ruling.partners.includes(m.party) || partyById(m.party).is_independent) continue;
     counts.set(m.party, (counts.get(m.party) ?? 0) + 1);
   }
   const top = [...counts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0];
@@ -90,7 +91,7 @@ export function resolveLines(templates: LineTemplate[], ctx: SceneContext, vars:
         return speak(m, role, t);
       }
       case "opposition_leader": {
-        const m = oppositionLeader(ctx.roster);
+        const m = oppositionLeader(ctx.roster, rulingOf(ctx.government));
         return speak(m, m ? `${partyById(m.party).short}・党首` : "野党党首", t);
       }
       case "chair":

@@ -163,7 +163,7 @@
         "money": 18,
         "network": 4
       },
-      "money_per_ability": 4,
+      "money_per_ability": 2.5,
       "relations": {
         "supporters": 1
       }
@@ -255,8 +255,11 @@
     "threshold": 20,
     "breakdown_chance": 0.35
   },
-  "monthly_expense": 30,
-  "relation_decay": 2,
+  "monthly_expense": {
+    "候補": 30,
+    "浪人": 30,
+    "議員": 60
+  },
   "jiban_step": [
     0,
     70,
@@ -264,7 +267,7 @@
     200
   ],
   "upgrade": {
-    "note": "能力を1上げるのに使う経験点。cost の各経験点を、今の能力値に応じた倍率（1 + (値 − 40) / 40、最低0.6）でかける。",
+    "note": "能力を1上げるのに使う経験点。cost の各経験点に、今の能力値に応じた倍率（1 + (値 − 40) / slope、最低0.6。80以上はさらに high_mult 倍）をかける。高い能力ほど上げにくい。",
     "cost": {
       "弁舌": {
         "media": 2,
@@ -287,7 +290,10 @@
       "資金": {
         "money": 3
       }
-    }
+    },
+    "slope": 20,
+    "high": 80,
+    "high_mult": 2
   },
   "ai_dissolution": {
     "min_turn": 12,
@@ -338,5 +344,25 @@
     "杉本",
     "平野"
   ],
-  "jiban_neglect_months": 6
+  "jiban_neglect_months": 6,
+  "election_cost": {
+    "note": "総選挙のたびにかかる選挙費用（万円）。手元の資金から最大 max まで使う。",
+    "max": 800
+  },
+  "relation_effects": {
+    "note": "関係の効き目。secretary は活動で得る経験点の倍率（関係0で min、100で max）。press は選挙での本人の票への上乗せ（(関係−50)/50 × press_weight）。party は内閣・党の人事での評価（関係が party_exclude 未満なら役職に選ばれず、それ以上は (関係−50) × party_score が点数に足される）。",
+    "secretary": {
+      "min": 0.8,
+      "max": 1.15
+    },
+    "press_weight": 0.02,
+    "party_exclude": 25,
+    "party_score": 0.3
+  },
+  "event_cooldown_months": 18,
+  "relation_drift": {
+    "note": "関係は放っておくと base に向かって毎月 step ずつ近づく（上にあれば下がり、下にあれば上がる）。",
+    "base": 40,
+    "step": 1
+  }
 }

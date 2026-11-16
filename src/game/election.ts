@@ -3,12 +3,22 @@
 import rulesRaw from "../../data/game/rules.json";
 import { PARTIES, partyById } from "./parties.js";
 import type { Member, MemberFactory } from "./roster.js";
-import { COALITION_PARTNERS, RULING_PARTY } from "./cabinet.js";
+import { INITIAL_RULING } from "./cabinet.js";
+import type { Ruling } from "./cabinet.js";
 import { PR_SEATS, SMD_SEATS, dhondt, prefStrength, prefWeight } from "./districts.js";
 import type { PrefCode } from "./districts.js";
 import { TABLES } from "./tables.js";
 
 const E = rulesRaw.election;
+/** 選挙協力をする小さい連立相手（全国の支持が小さく、現職の県だけで候補を立てる） */
+const SMALL_PARTNERS = new Set(["kosei"]);
+
+/** 選挙協力：与党第一党が立てない県では、その票の一部が連立相手に流れる */
+function addPartnerTransfer(local: Record<string, number>, running: string[], support: Record<string, number>, pref: PrefCode, ruling: Ruling): void {
+  for (const partner of ruling.partners)
+    if (running.includes(partner) && !running.includes(ruling.party))
+      local[partner] += (support[ruling.party] ?? 0) * (E.regional_base + E.regional_strength * prefStrength(pref, ruling.party)) * E.partner_transfer;
+}
 const PREFS: PrefCode[] = Array.from({ length: SMD_SEATS }, (_, i) => i + 1);
 
 export interface Candidacy {
@@ -45,6 +55,8 @@ export interface ElectionInput {
   month: number;
   /** 選挙前の議員 */
   roster: Member[];
+  /** 与党と連立相手（全国の風と選挙協力に使う） */
+  ruling?: Ruling;
   /** 浪人中の元議員と、前回落選した候補 */
   ronin: Member[];
   /** 内閣支持率（%）。基準からのずれが全国の風になる */
@@ -62,7 +74,7 @@ const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v
 const ageAt = (m: Member, year: number) => year - m.birthYear;
 
 /** 全国の政党支持（%）。合計100 */
-export function nationalSupport(approval: number, rand: () => number): Record<string, number> {
+export function nationalSupport(approval: number, rand: () => number, ruling: Ruling = INITIAL_RULING): Record<string, number> {
   const base = E.support_base as unknown as Record<string, number>;
   const out: Record<string, number> = {};
   for (const p of PARTIES) {
@@ -74,8 +86,8 @@ export function nationalSupport(approval: number, rand: () => number): Record<st
   // 全国の風：内閣支持率が基準より高ければ与党が伸び、低ければ減る。増減は他党が支持の比で引き受ける
   // 基準は内閣として「ふつう」の支持率（wind_reference）。それより低ければ与党に逆風になる
   const dev = approval - E.wind_reference;
-  const shift: Record<string, number> = { [RULING_PARTY]: dev * E.wind_ruling };
-  for (const p of COALITION_PARTNERS) shift[p] = dev * E.wind_partner;
+  const shift: Record<string, number> = { [ruling.party]: dev * E.wind_ruling };
+  for (const p of ruling.partners) shift[p] = dev * E.wind_partner;
   const moved = Object.values(shift).reduce((a, b) => a + b, 0);
   const others = Object.keys(out).filter((id) => !(id in shift));
   const othersTotal = others.reduce((a, id) => a + out[id], 0);
@@ -88,14 +100,14 @@ export function nationalSupport(approval: number, rand: () => number): Record<st
 }
 
 /** その県で候補者を立てる政党 */
-export function partiesRunning(pref: PrefCode, incumbentParty: string | undefined): string[] {
+export function partiesRunning(pref: PrefCode, incumbentParty: string | undefined, ruling: Ruling = INITIAL_RULING): string[] {
   const set = new Set<string>();
   if (incumbentParty && !partyById(incumbentParty).is_independent) set.add(incumbentParty);
   for (const id of E.always_run) set.add(id);
   for (const p of PARTIES) if (!p.is_independent && !p.appears_later && prefStrength(pref, p.id) > 0) set.add(p.id);
   // 連立相手が現職の県では、与党第一党は候補を立てない（選挙協力）。連立相手は現職の県でだけ立てる
-  for (const partner of COALITION_PARTNERS) {
-    if (incumbentParty === partner) set.delete(RULING_PARTY);
+  for (const partner of ruling.partners.filter((p) => SMALL_PARTNERS.has(p))) {
+    if (incumbentParty === partner) set.delete(ruling.party);
     else set.delete(partner);
   }
   return [...set];
@@ -131,7 +143,8 @@ function toRonin(m: Member): Member {
 export async function runElection(input: ElectionInput): Promise<ElectionResult> {
   const { factory, year } = input;
   const rand = factory.rand;
-  const support = nationalSupport(input.approval, rand);
+  const ruling = input.ruling ?? INITIAL_RULING;
+  const support = nationalSupport(input.approval, rand, ruling);
 
   // 引退：高齢の議員は立候補しない（首相などの固定キャラクターは引退させない）
   const forcedRetire = new Set(input.retireIds ?? []);
@@ -156,15 +169,13 @@ export async function runElection(input: ElectionInput): Promise<ElectionResult>
   const smd: DistrictResult[] = [];
   for (const pref of PREFS) {
     const incumbent = sitting.find((m) => m.seat === "小選挙区" && m.district === pref);
-    const running = partiesRunning(pref, incumbent?.party);
+    const running = partiesRunning(pref, incumbent?.party, ruling);
     // 決まった候補者の党は、その県で必ず候補を立てる
     for (const f of input.forced ?? []) if (f.pref === pref && !running.includes(f.party)) running.push(f.party);
     const local: Record<string, number> = {};
     for (const p of running) local[p] = (support[p] ?? 0) * (E.regional_base + E.regional_strength * prefStrength(pref, p));
     // 選挙協力：与党第一党が立てない県では、その票の一部が連立相手に流れる
-    for (const partner of COALITION_PARTNERS)
-      if (running.includes(partner) && !running.includes(RULING_PARTY))
-        local[partner] += (support[RULING_PARTY] ?? 0) * (E.regional_base + E.regional_strength * prefStrength(pref, RULING_PARTY)) * E.partner_transfer;
+    addPartnerTransfer(local, running, support, pref, ruling);
     const localTotal = Object.values(local).reduce((a, b) => a + b, 0) || 1;
     const entries: { member: Member; raw: number }[] = [];
     for (const p of running) {
@@ -256,14 +267,13 @@ export function estimateDistrict(
   pref: PrefCode,
   approval: number,
   entries: { party: string; member?: Member; incumbent: boolean; bonus?: number }[],
+  ruling: Ruling = INITIAL_RULING,
 ): { party: string; member?: Member; share: number }[] {
-  const support = nationalSupport(approval, () => 0.5);
+  const support = nationalSupport(approval, () => 0.5, ruling);
   const running = entries.map((e) => e.party);
   const local: Record<string, number> = {};
   for (const p of running) local[p] = (support[p] ?? 0) * (E.regional_base + E.regional_strength * prefStrength(pref, p));
-  for (const partner of COALITION_PARTNERS)
-    if (running.includes(partner) && !running.includes(RULING_PARTY))
-      local[partner] += (support[RULING_PARTY] ?? 0) * (E.regional_base + E.regional_strength * prefStrength(pref, RULING_PARTY)) * E.partner_transfer;
+  addPartnerTransfer(local, running, support, pref, ruling);
   const localTotal = Object.values(local).reduce((a, b) => a + b, 0) || 1;
   const raw = entries.map((e) => Math.max(0.01, local[e.party] / localTotal + (e.member ? personalVote(e.member, e.incumbent, () => 0.5) : 0) + (e.bonus ?? 0)));
   const sum = raw.reduce((a, b) => a + b, 0);

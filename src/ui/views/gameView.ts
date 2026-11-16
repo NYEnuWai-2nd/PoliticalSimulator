@@ -16,7 +16,6 @@ import {
   talkWithParty,
 } from "../../game/game.js";
 import type { GameContext, GameState, LogEntry } from "../../game/game.js";
-import { COALITION_PARTNERS } from "../../game/cabinet.js";
 import { partyById } from "../../game/parties.js";
 import { MAJORITY } from "../../game/districts.js";
 import type { AppState } from "../state.js";
@@ -58,11 +57,11 @@ function partiesPanel(g: GameState, ctx: GameContext): string {
   const seated = new Set(ctx.roster.map((m) => m.party));
   const rows = Object.entries(g.cooperation)
     .filter(([id]) => seated.has(id))
-    .sort((a, b) => (COALITION_PARTNERS.includes(b[0]) ? 1 : 0) - (COALITION_PARTNERS.includes(a[0]) ? 1 : 0) || b[1] - a[1])
+    .sort((a, b) => (g.ruling.partners.includes(b[0]) ? 1 : 0) - (g.ruling.partners.includes(a[0]) ? 1 : 0) || b[1] - a[1])
     .map(([id, v]) => {
       const p = partyById(id);
       return `<li>
-        <span class="who">${partyChip(id)}${COALITION_PARTNERS.includes(id) ? `<span class="tag">連立</span>` : ""}</span>
+        <span class="who">${partyChip(id)}${g.ruling.partners.includes(id) ? `<span class="tag">連立</span>` : ""}</span>
         <span class="bar"><span style="width:${v}%;background:${p.color}"></span></span>
         <span class="num">${v}</span>
         <button data-act="talk" data-party="${id}" ${g.actionPoints <= 0 || g.over ? "disabled" : ""}>協議</button>

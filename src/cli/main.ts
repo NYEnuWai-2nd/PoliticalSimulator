@@ -18,12 +18,17 @@ import {
   ORIGINS,
   RELATIONS,
   ROUTE_NAMES,
+  canRunForLeader,
   canUpgrade,
   careerSummary,
   chooseEvent,
   startCareer,
   startOptions,
   takeTurn,
+  govAction,
+  govBills,
+  isPrimeMinister,
+  postCategory,
   upgradeAbility,
   upgradeCost,
 } from "../game/career.js";
@@ -49,6 +54,17 @@ const HELP = `議員人生モード（CLI 版）
   up <能力> [回数]                 経験点で能力を上げる（例: up 知名度 3）。月は進まない
   choose <番号>                    出来事の選択肢を選ぶ（1から）。選ぶまで月を進められない
   log [件数]                       記録
+  do duty                          公務（役職に就いているとき。役職ごとに効果が違う）
+  run on|off                       次の党首選に立候補する／しない（当選3回以上・党の幹部との関係50以上）
+
+首相のときのコマンド（毎月3回まで。月を進めるのは do <活動>）
+  bills                            法案の一覧と状況
+  gov draft <法案>                 法案の準備を始める
+  gov submit <法案>                準備ができた法案を国会に出す（月末に採決）
+  gov talk <政党>                  政策協議で協力度を上げる
+  gov nemawashi                    党内の根回し
+  gov press                        記者会見
+  gov dissolve                     衆議院を解散する（月末に総選挙）
   help                             この説明
   quit                             終わる
 
@@ -152,7 +168,8 @@ function statusText(s: Session): string {
     `能力 ${ab}`,
     `経験点 ${exp}`,
     `関係 ${rel}`,
-    `内閣支持率 ${sum.approval}%　次の総選挙 ${sum.nextElection}`,
+    `内閣支持率 ${sum.approval}%　与党 ${sum.ruling}　首相 ${sum.primeMinister}${sum.isPrimeMinister ? `（自分・政権の行動あと${sum.actionPoints}回）` : ""}　自党の党首 ${sum.partyLeader}`,
+    `次の総選挙 ${sum.nextElection}　与党の党首選 ${sum.leaderElection}${sum.canRunForLeader ? `　党首選に${sum.runForLeader ? "立候補する" : "立候補できる（run on）"}` : ""}${sum.canDuty ? "　公務ができる（do duty）" : ""}`,
   ];
   if (sum.forecast.length) lines.push(`情勢 ${sum.forecast.map((f) => `${f.isPlayer ? "★" : ""}${f.name}(${partyById(f.party).short})${f.share}`).join(" ／ ")}`);
   if (sum.pendingEvent)
@@ -227,6 +244,17 @@ async function handle(s: Session, line: string): Promise<Reply | "quit"> {
       return upReply(s, args[0] ?? "", args[1]);
     case "choose":
       return chooseEvent(s.state, s.world, Number(args[0]) - 1);
+    case "run": {
+      const on = args[0] !== "off";
+      s.state.runForLeader = on;
+      const note = on && !canRunForLeader(s.state, s.world) ? "（今は立候補の条件を満たしていない。条件を満たしたら次の党首選から立候補する）" : "";
+      return { ok: true, message: on ? `次の党首選に立候補する。${note}` : "次の党首選には立候補しない。" };
+    }
+    case "bills":
+      if (!isPrimeMinister(s.state, s.world)) return { ok: false, message: "法案の一覧は首相のときに見られます。" };
+      return { ok: true, message: govBills(s.state).map((b) => `  ${b.id}（${b.name}・${b.field}）${b.status}${b.status === "準備中" ? ` ${b.progress}/${b.work}` : ""}`).join("\n"), data: govBills(s.state) };
+    case "gov":
+      return govAction(s.state, s.world, args[0] ?? "", args[1]);
     case "log": {
       const n = Number(args[0] ?? 15) || 15;
       return { ok: true, message: s.state.log.slice(-n).map((l) => `${l.date} ${l.text}`).join("\n") };
@@ -241,13 +269,18 @@ function available(s: Session): string[] {
   if (!s.state) return ["options", "prefs <出自> <政党>", "start <出自> <政党> <道> <県> <経歴類型>", "help", "quit"];
   if (s.state.over) return ["status", "log", "quit"];
   if (s.state.pendingEvent) return [...s.state.pendingEvent.choices.map((_, i) => `choose ${i + 1}`), "status", "costs", "up <能力> [回数]", "log"];
-  return [...ACTIVITIES.map((a) => `do ${a.id}`), "status", "costs", "up <能力> [回数]", "log", "quit"];
+  const extra: string[] = [];
+  if (postCategory(s.state, s.world!)) extra.push("do duty");
+  if (canRunForLeader(s.state, s.world!)) extra.push(s.state.runForLeader ? "run off" : "run on");
+  if (isPrimeMinister(s.state, s.world!) && s.state.gov.actionPoints > 0) extra.push("bills", "gov draft <法案>", "gov submit <法案>", "gov talk <政党>", "gov nemawashi", "gov press", "gov dissolve");
+  return [...ACTIVITIES.map((a) => `do ${a.id}`), ...extra, "status", "costs", "up <能力> [回数]", "log", "quit"];
 }
 
-function emit(s: Session, r: Reply): void {
+/** type は "ready"（起動直後の1行。コマンドへの応答ではない）か "response"（コマンド1つへの応答） */
+function emit(s: Session, r: Reply, type: "ready" | "response" = "response"): void {
   if (s.json) {
     const state = s.state && s.world ? careerSummary(s.state, s.world) : undefined;
-    process.stdout.write(JSON.stringify({ ok: r.ok, message: r.message, data: r.data, state, available: available(s) }) + "\n");
+    process.stdout.write(JSON.stringify({ type, ok: r.ok, message: r.message, data: r.data, state, available: available(s) }) + "\n");
   } else if (r.message) process.stdout.write(r.message + "\n");
 }
 
@@ -255,8 +288,8 @@ async function main(): Promise<void> {
   const args = parseArgs(process.argv.slice(2));
   const world = await createWorld(NAME_DATA, args.seed);
   const s: Session = { seed: args.seed, json: args.json, base: { ...world, government: formInitialGovernment(world.roster) } };
-  if (args.start) emit(s, await startReply(s, args.start.split(/\s+/)));
-  else emit(s, { ok: true, message: args.json ? "準備ができました。options で選べるものの一覧を見られます。" : `${HELP}\n\nまず options と入力してください。` });
+  if (args.start) emit(s, await startReply(s, args.start.split(/\s+/)), "ready");
+  else emit(s, { ok: true, message: args.json ? "準備ができました。options で選べるものの一覧を見られます。" : `${HELP}\n\nまず options と入力してください。` }, "ready");
 
   const interactive = process.stdin.isTTY && !s.json;
   const rl = createInterface({ input: process.stdin, terminal: false });

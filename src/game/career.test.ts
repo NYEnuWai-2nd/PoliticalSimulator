@@ -126,7 +126,7 @@ describe("日常の出来事", () => {
   });
 
   it("出来事の効果はすべて決まった項目だけを使い、恋愛の出来事はない", () => {
-    const keys = new Set(["stamina", "max_stamina", "mood", "money", "exp", "relations", "jiban_progress", "abilities"]);
+    const keys = new Set(["approval", "stamina", "max_stamina", "mood", "money", "exp", "relations", "jiban_progress", "abilities"]);
     const rel = new Set(career.relations.map((r) => r.id));
     for (const e of lifeEvents.events) {
       expect(e.choices.length).toBeGreaterThanOrEqual(2);
@@ -136,6 +136,44 @@ describe("日常の出来事", () => {
         for (const r of Object.keys((c.effects as { relations?: object }).relations ?? {})) expect(rel, `${e.id}.${r}`).toContain(r);
       }
     }
+  });
+});
+
+describe("プレイレポートを受けた直し", () => {
+  it("一生に一度の出来事（健康診断）は繰り返さず、同じ出来事は間を空けないと起きない", async () => {
+    const { state, world } = await begin("newcomer", "minsei", 9);
+    const seen: string[] = [];
+    for (let t = 0; t < 240 && !state.over; t++) {
+      if (state.pendingEvent) {
+        seen.push(`${state.turn}:${state.pendingEvent.id}`);
+        chooseEvent(state, world, 0);
+      }
+      await takeTurn(state, world, t % 3 === 2 ? "rest" : "local");
+    }
+    expect(seen.filter((x) => x.endsWith(":jogging")).length).toBeLessThanOrEqual(1);
+    const last: Record<string, number> = {};
+    for (const x of seen) {
+      const [turn, id] = x.split(":");
+      if (last[id] !== undefined) expect(Number(turn) - last[id]).toBeGreaterThanOrEqual(career.event_cooldown_months);
+      last[id] = Number(turn);
+    }
+  }, 120000);
+
+  it("地盤が最大なら進み具合はたまらず、表示は「最大」", async () => {
+    const { state, world } = await begin("dynasty");
+    for (let t = 0; t < 5; t++) {
+      state.pendingEvent = undefined;
+      await takeTurn(state, world, "local");
+    }
+    expect(world.player.jiban).toBe(4);
+    expect(state.jibanProgress).toBe(0);
+  });
+
+  it("高い能力ほど費用が急に大きくなる（80以上はさらに倍）", async () => {
+    const { world } = await begin();
+    const at = (v: number) => upgradeCost({ ...world.player, abilities: { ...world.player.abilities, 知名度: v } }, "知名度").media!;
+    expect(at(79) * 1.9).toBeLessThan(at(80));
+    expect(at(95)).toBeGreaterThan(at(50) * 4);
   });
 });
 
