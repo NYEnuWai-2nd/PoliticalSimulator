@@ -1,0 +1,5 @@
+# 実在議員の個人単位のデータ（ライセンスと個人への配慮のため公開しない）
+data/private/
+node_modules/
+dist/
+.DS_Store
