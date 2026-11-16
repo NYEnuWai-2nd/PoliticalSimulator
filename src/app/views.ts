@@ -4,6 +4,11 @@
 // data-member を付けた要素は、押すとその人物の詳しい情報が出る。
 import { ACTIVITIES, EXP_TYPES, ORIGINS, RELATIONS, ROUTE_NAMES, canRunForLeader, canUpgrade, careerSummary, govBills, isPrimeMinister, moneyOutlook, postCategory, prRank, raceForecast, startOptions, upgradeCost } from "../game/career.js";
 import type { Party } from "../game/parties.js";
+import { COLOR_NAMES, SKILLS, conditionProgress, sortSkills } from "../game/skills.js";
+import { adviseMonth, recommendedActivity } from "../game/advice.js";
+
+/** 画面のモード。通常は秘書の助言とおすすめを出して数字を絞り、プロは全部の数字を出す */
+export type UiMode = "normal" | "pro";
 import type { CareerState, CareerWorld, OriginId, RouteId } from "../game/career.js";
 import { IDEOLOGY_AXES, PARTIES, partyById } from "../game/parties.js";
 import { ABILITIES, TABLES, rankOf } from "../game/tables.js";
@@ -45,14 +50,14 @@ export const FX: Record<string, string> = {
 export const SETUP_STEPS = ["出自", "政党", "出馬の道と県", "経歴類型", "確認"] as const;
 
 /** saved：自動保存のデータがあればその説明（「続きから」に出す） */
-export function setupView(roster: Member[], c: SetupChoice, step: number, saved?: string): string {
+export function setupView(roster: Member[], c: SetupChoice, step: number, saved?: string, mode: UiMode = "normal"): string {
   const progress = SETUP_STEPS.map((s, i) => `<span class="step-dot${i === step ? " is-active" : i < step ? " is-done" : ""}">${i + 1}. ${s}</span>`).join("");
   const back = step > 0 ? `<button class="btn small" data-action="setup-back">◀ 戻る</button>` : `<span></span>`;
   let title = "";
   let body = "";
   if (step === 0) {
     title = "出自（難易度）を選ぶ";
-    body = `<div class="cut box resume">${saved ? `<button class="btn primary" data-action="continue">続きから</button><span class="muted">${esc(saved)}</span>` : `<span class="muted">はじめから遊ぶ</span>`}<button class="btn small push" data-action="import">ファイルから読み込む</button></div><div class="options cols-1">${ORIGINS.map(
+    body = `<div class="cut box resume">${saved ? `<button class="btn primary" data-action="continue">続きから</button><span class="muted">${esc(saved)}</span>` : `<span class="muted">はじめから遊ぶ</span>`}<button class="btn small push" data-action="import">ファイルから読み込む</button></div><div class="cut box resume mode-box"><b>画面のモード</b>${modeSwitch(mode)}</div><div class="options cols-1">${ORIGINS.map(
       (o) => `<button class="option${c.origin === o.id ? " is-active" : ""}" data-setup="origin" data-value="${o.id}"><b>${o.name}（${o.difficulty}）</b><small>${esc(o.description)}</small></button>`,
     ).join("")}</div>`;
   } else if (step === 1) {
@@ -110,6 +115,12 @@ export function partyLean(p: Party): string {
       .map((a) => (a.v < 0 ? a.x.minus : a.x.plus))
       .join("・") || "中道"
   );
+}
+
+/** 通常とプロの切り替え（始め方と自分の画面で使う） */
+export function modeSwitch(mode: UiMode): string {
+  return `<div class="mode-switch"><button class="btn small${mode === "normal" ? " is-active" : ""}" data-action="mode-normal">通常</button><button class="btn small${mode === "pro" ? " is-active" : ""}" data-action="mode-pro">プロ</button></div>
+    <p class="muted" style="margin:6px 0 0">${mode === "normal" ? "通常：秘書が毎月の助言とおすすめの活動を教えてくれる。細かい数字は省く。" : "プロ：経験点や関係など、すべての数字を画面に出す。助言は出ない。"}</p>`;
 }
 
 // ---------- 状態の帯 ----------
@@ -189,8 +200,17 @@ export function activityIds(state: CareerState, world: CareerWorld): string[] {
   return activityList(state, world).map((a) => a.id);
 }
 
-export function activityView(state: CareerState, world: CareerWorld, selected: string | undefined, last: { text: string; fx: string; note?: string } | undefined): string {
+export function activityView(
+  state: CareerState,
+  world: CareerWorld,
+  selected: string | undefined,
+  last: { text: string; fx: string; note?: string } | undefined,
+  mode: UiMode = "pro",
+): string {
   const acts = activityList(state, world);
+  const normal = mode === "normal";
+  const advice = normal ? adviseMonth(state, world) : [];
+  const rec = recommendedActivity(advice);
   const sel = acts.find((a) => a.id === selected);
   const exp = EXP_TYPES.map(
     (e) => `<div class="cut exp-row" ${tip(`${e.name}の経験点 ${state.exp[e.id]}\n「自分」の画面で能力を上げるのに使う`)}>${icon(e.icon, 22)}<span class="exp-name">${e.name}</span><span class="exp-val">${state.exp[e.id]}</span><span class="exp-add">${sel?.exp[e.id] ? `見込み+${sel.exp[e.id]}` : ""}</span></div>`,
@@ -198,7 +218,7 @@ export function activityView(state: CareerState, world: CareerWorld, selected: s
   const cards = acts
     .map(
       (a) => `<button class="card${a.id === selected ? " is-active" : ""}" data-act="${a.id}" aria-label="${esc(a.name)}">
-      ${a.id === "local" && world.player.jiban < 4 ? `<span class="tag">地盤UP</span>` : ""}
+      ${normal ? (a.id === rec ? `<span class="tag rec">おすすめ</span>` : "") : a.id === "local" && world.player.jiban < 4 ? `<span class="tag">地盤UP</span>` : ""}
       <span class="card-in">${icon(a.icon, 40)}<span class="lb">${esc(a.name)}</span></span>
       <span class="cost" style="${a.stamina > 0 ? "color:#16a33a" : ""}">体力${a.stamina > 0 ? "+" : ""}${a.stamina}</span></button>`,
     )
@@ -208,10 +228,13 @@ export function activityView(state: CareerState, world: CareerWorld, selected: s
     : last
       ? `${esc(last.text)}${last.note ? `<span class="note">${esc(last.note)}</span>` : ""}<small>次の活動を選んでください</small>`
       : `今月の活動を選んでください<small>カードを押すと説明が出て、もう一度押すと実行します</small>`;
-  return `<div class="arena">
+  const side = normal
+    ? `<div class="cut advice-panel">${adviceHtml(state, world, advice)}</div>`
+    : `<div class="cut dark exp-panel"><div class="panel-title">経験点</div>${exp}</div>
+    <div class="rel-panel">${relPanel(state)}</div>`;
+  return `<div class="arena${normal ? " normal" : ""}">
     <div class="race-panel">${racePanel(state, world)}</div>
-    <div class="cut dark exp-panel"><div class="panel-title">経験点</div>${exp}</div>
-    <div class="rel-panel">${relPanel(state)}</div>
+    ${side}
     <div class="center">
       <div class="fx">${sel ? FX[sel.id] ?? "" : last?.fx ?? ""}</div>
       <button class="hero-btn" data-member="${world.player.id}" aria-label="自分の詳しい情報">${face(world.player.name.surname, state.setup.party, "hero")}</button>
@@ -220,6 +243,52 @@ export function activityView(state: CareerState, world: CareerWorld, selected: s
     </div>
     <div class="cards-wrap"><div class="cards" role="list">${cards}</div><span class="scroll-hint left" aria-hidden="true"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M10 3 L5 8 L10 13" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="scroll-hint right" aria-hidden="true"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M6 3 L11 8 L6 13" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
   </div>`;
+}
+
+// ---------- 特殊能力 ----------
+
+/** 特殊能力の札（色ごとに形を変えず色だけ変える。押せないので角ばった形） */
+export function skillChips(ids: readonly string[]): string {
+  const list = sortSkills(ids);
+  if (!list.length) return `<span class="muted">なし</span>`;
+  return list.map((sk) => `<span class="skill skill-${sk.color}" ${tip(`${sk.name}（${COLOR_NAMES[sk.color]}特）\n${sk.description}`)}>${esc(sk.name)}</span>`).join("");
+}
+
+const ACT_NAME: Record<string, string> = Object.fromEntries([...ACTIVITIES.map((a) => [a.id, a.name]), ["duty", "公務"]]);
+
+function skillSection(state: CareerState, world: CareerWorld): string {
+  const p = world.player;
+  const ctx = { activityCounts: state.activityCounts ?? {}, abilities: p.abilities, terms: p.terms, jiban: p.jiban };
+  const have = sortSkills(p.skills)
+    .map((sk) => {
+      const cure = sk.cure ? `<small class="muted">克服の条件：${esc(conditionProgress(sk.cure, ctx, (id) => ACT_NAME[id] ?? id))}</small>` : "";
+      return `<div class="cut row sm skill-row"><span class="skill skill-${sk.color}">${esc(sk.name)}</span><span class="grow">${esc(sk.description)}${cure}</span></div>`;
+    })
+    .join("");
+  // 身につけられる特殊能力（上位のものを持っていれば下位は出さない）
+  const next = SKILLS.filter((sk) => sk.acquire && !p.skills.includes(sk.id) && !SKILLS.some((x) => x.replaces?.includes(sk.id) && p.skills.includes(x.id)))
+    .map((sk) => `<div class="cut row sm skill-row"><span class="skill skill-${sk.color} is-locked">${esc(sk.name)}</span><span class="grow">${esc(sk.description)}<small class="muted">条件：${esc(conditionProgress(sk.acquire!, ctx, (id) => ACT_NAME[id] ?? id))}</small></span></div>`)
+    .join("");
+  return `<section class="cut box"><h2>特殊能力</h2><div class="rows">${have || "<p class='muted' style='margin:0'>まだない</p>"}</div>
+    <h3 class="sub-h">身につけられる特殊能力</h3><div class="rows">${next}</div></section>`;
+}
+
+// ---------- 秘書の助言（通常モード） ----------
+
+function adviceHtml(state: CareerState, world: CareerWorld, advice: ReturnType<typeof adviseMonth>): string {
+  const items = advice
+    .map((a) => {
+      const go = a.tab
+        ? `<button class="btn small" data-tab="${a.tab}">${a.tab === "self" ? "自分の画面へ" : a.tab === "party" ? "党内の画面へ" : "内閣の画面へ"}</button>`
+        : a.act
+          ? `<button class="btn small" data-act="${a.act}">${esc(activityList(state, world).find((x) => x.id === a.act)?.name ?? "")}を選ぶ</button>`
+          : "";
+      return `<li><span>${esc(a.text)}</span>${go}</li>`;
+    })
+    .join("");
+  return `<div class="advice-head">${face(state.secretaryName, state.setup.party)}<div><b>秘書 ${esc(state.secretaryName)}</b><small class="muted">今月の助言</small></div></div>
+    <ul class="advice-list">${items}</ul>
+    <button class="link-btn" data-action="mode-pro">数字を全部見る（プロモードにする）</button>`;
 }
 
 // ---------- 人物の詳しい情報 ----------
@@ -251,6 +320,7 @@ export function memberDetail(state: CareerState, world: CareerWorld, id: number)
       <button class="btn small close" data-action="close-member" aria-label="閉じる">✕</button></div>
     <p class="d-facts"><span>${esc(seat)}</span><span>当選${m.terms}回</span><span>地盤${m.jiban}</span>${post ? `<span class="post">${esc(post)}</span>` : ""}${leader ? `<span class="post">${esc(leader)}</span>` : ""}</p>
     <p class="d-facts"><span>${esc(m.archetype)}</span>${m.lineage !== "なし" ? `<span>${esc(m.lineage)}</span>` : ""}<span>得意：${esc(m.specialties.join("・"))}</span><span>性格：${esc(m.traits.join("・"))}</span></p>
+    <p class="d-skills">${skillChips(m.skills)}</p>
     <div class="d-grid"><div>${abilities}</div><div>${ideology}<p class="muted" style="margin:6px 0 0">信念 ${m.conviction}/5・党への忠誠 ${m.loyalty}/5</p></div></div>
   </div></div>`;
 }
@@ -273,7 +343,7 @@ function canUpgradeTimes(state: CareerState, p: Member, a: (typeof ABILITIES)[nu
 }
 
 /** savedAt：最後に自動保存した時刻（保存できなかったら undefined） */
-export function selfView(state: CareerState, world: CareerWorld, savedAt?: string): string {
+export function selfView(state: CareerState, world: CareerWorld, savedAt?: string, mode: UiMode = "pro"): string {
   const p = world.player;
   const s = careerSummary(state, world);
   const rows = ABILITIES.map((a) => {
@@ -301,7 +371,9 @@ export function selfView(state: CareerState, world: CareerWorld, savedAt?: strin
         <section class="cut box" style="--party:${partyColor(p.party)}"><h2>地盤</h2><span class="pips">${pips}</span> <b>${p.jiban}</b> <span class="muted">（次まで ${esc(s.jibanProgress)}）</span></section>
         <section class="cut box"><h2>関係</h2><div class="rows">${rel}</div></section>
         <section class="cut box"><h2>党首選</h2>${leader}</section>
+        ${skillSection(state, world)}
         <section class="cut box"><h2>経歴</h2><ul style="margin:0;padding-left:1.2em">${ach}</ul></section>
+        <section class="cut box"><h2>画面のモード</h2>${modeSwitch(mode)}</section>
         <section class="cut box"><h2>セーブ</h2><p class="muted" style="margin:0 0 8px">${savedAt ? `このブラウザに自動で保存しています（最後の保存 ${esc(savedAt)}）。` : "このブラウザには保存できていません。ファイルに書き出してください。"}</p>
           <p class="btn-row" style="margin:0"><button class="btn small" data-action="export">ファイルに書き出す</button><button class="btn small" data-action="import">ファイルから読み込む</button></p>
           <p class="btn-row" style="margin:8px 0 0"><button class="btn small" data-action="restart-same">同じ世界で最初から</button><button class="btn small" data-action="restart">新しい世界で最初から</button></p></section>
@@ -431,6 +503,7 @@ const HELP: [string, string][] = [
   ["地盤と関係", "地盤（1〜4）は地元回り、地域行事、県議と連携で固まり、半年何もしないと1段下がる。関係（秘書、党の幹部、後援会、地元紙、県議団）は放っておくと40に戻っていく。数字や棒にマウスを乗せるか長押しすると、何に効くかが出る。"],
   ["党首選と首相", "当選3回以上で党の幹部との関係が50以上なら、党内の画面で党首選への立候補を届け出られる。与党の党首選は党首の任期切れのときに行う。与党の党首になると首相になり、内閣の画面で法案や解散などの政権の行動を選べる。"],
   ["記録", "状態の帯（日付や資金の並び）の「記録」で、自分に起きたことと政局の動き（政権の行動、採決、政界の出来事）を月ごとに振り返れる。"],
+  ["画面のモード", "通常モードでは、秘書が毎月の助言とおすすめの活動を教えてくれ、細かい数字は省かれる。プロモードでは、経験点や関係などのすべての数字が出る。始め方の最初の画面と「自分」の画面で切り替えられる。"],
   ["保存", "状態はこのブラウザに自動で保存され、始め方の画面の「続きから」で再開できる。「自分」の画面からファイルへの書き出しと読み込みができる。"],
   ["キー操作", "1〜5：画面の切り替え。活動の画面では ← → で選んで Enter で実行。出来事は数字キーで選ぶ。Esc でポップアップを閉じる。"],
 ];

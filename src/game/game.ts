@@ -285,9 +285,11 @@ export function pressConference(state: GameState, ctx: GameContext): ActionResul
 
 function runEvent(state: GameState, ctx: GameContext): void {
   if (rand(state) >= eventsRaw.chance) return;
-  const total = eventsRaw.events.reduce((s, e) => s + e.weight, 0);
+  // 季節のある出来事（months）は、その月だけ候補にする
+  const pool = eventsRaw.events.filter((e) => !("months" in e) || (e.months as number[]).includes(state.month));
+  const total = pool.reduce((s, e) => s + e.weight, 0);
   let r = rand(state) * total;
-  const ev = eventsRaw.events.find((e) => (r -= e.weight) <= 0) ?? eventsRaw.events[0];
+  const ev = pool.find((e) => (r -= e.weight) <= 0) ?? pool[0];
   let who: Member | undefined;
   if (ev.target === "cabinet_low_speech") {
     const ministers = ctx.government.filter((a) => a.post.kind === "内閣" && a.post.id !== "pm").map((a) => a.member);

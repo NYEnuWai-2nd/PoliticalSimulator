@@ -9,6 +9,7 @@ import type { Ideology, Party } from "./parties.js";
 import { SMD_SEATS, initialSeatPlan, prefWeight } from "./districts.js";
 import type { PrefCode } from "./districts.js";
 import scenario from "../../data/game/scenario.json";
+import { rollNpcSkills } from "./skills.js";
 
 /** ゲーム開始時の年 */
 export const START_YEAR = 2026;
@@ -47,6 +48,8 @@ export interface Member {
   conviction: number;
   /** 党への忠誠（1〜5）。高いほど党の方針に従い、政界再編で党を離れにくい */
   loyalty: number;
+  /** 特殊能力の id（data/game/skills.json） */
+  skills: string[];
   /** 手作りの固定キャラクターの役割（首相など）。生成した議員にはない */
   fixedRole?: string;
 }
@@ -70,6 +73,7 @@ interface FixedMember {
   ideology: Ideology;
   conviction: number;
   loyalty: number;
+  skills?: string[];
 }
 
 export const FIXED_MEMBERS = (scenario as unknown as { fixed_members: FixedMember[] }).fixed_members;
@@ -95,6 +99,7 @@ function fixedToMember(f: FixedMember, id: number): Member {
     ideology: { ...f.ideology },
     conviction: f.conviction,
     loyalty: f.loyalty,
+    skills: [...(f.skills ?? [])],
     fixedRole: f.role,
   };
 }
@@ -219,8 +224,9 @@ async function generateMember(g: Generator, party: Party, assignment: SeatAssign
   const jiban = rollJiban(tier, lineage, assignment.seat, rand);
   const specialties = rollSpecialties(arch, rand);
   const traits = rollTraits(rand);
+  const id = ++g.nextId;
   return {
-    id: ++g.nextId,
+    id,
     party: party.id,
     name,
     gender,
@@ -239,6 +245,7 @@ async function generateMember(g: Generator, party: Party, assignment: SeatAssign
     ideology: rollIdeology(party, rand),
     conviction: rollConviction(traits, rand),
     loyalty: rollLoyalty(traits, lineage, rand),
+    skills: rollNpcSkills({ id, archetypeId: arch.id, lineageId: lineage.id, terms, abilitySum: Object.values(abilities).reduce((a, b) => a + b, 0) }),
   };
 }
 

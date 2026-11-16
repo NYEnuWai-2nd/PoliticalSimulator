@@ -126,7 +126,7 @@ describe("日常の出来事", () => {
   });
 
   it("出来事の効果はすべて決まった項目だけを使い、恋愛の出来事はない", () => {
-    const keys = new Set(["approval", "stamina", "max_stamina", "mood", "money", "exp", "relations", "jiban_progress", "abilities"]);
+    const keys = new Set(["approval", "stamina", "max_stamina", "mood", "money", "exp", "relations", "jiban_progress", "abilities", "skills_add", "skills_remove"]);
     const rel = new Set(career.relations.map((r) => r.id));
     for (const e of lifeEvents.events) {
       expect(e.choices.length).toBeGreaterThanOrEqual(2);

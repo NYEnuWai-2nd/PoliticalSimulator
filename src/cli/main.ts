@@ -2,6 +2,8 @@
 // 人が遊ぶときは文字で、AI などのプログラムが遊ぶときは --json で1行1つの JSON を返す。
 // ビルド: npm run build:cli → cli/seiji.mjs（Node.js だけで動く1ファイル）
 import { createInterface } from "node:readline";
+import { COLOR_NAMES, sortSkills } from "../game/skills.js";
+import { adviseMonth } from "../game/advice.js";
 import surnames from "../../data/names/surnames.json";
 import givenNames from "../../data/names/given_names.json";
 import exclusion from "../../data/names/exclude_real_politicians.json";
@@ -54,6 +56,7 @@ const HELP = `議員人生モード（CLI 版）
   up <能力> [回数]                 経験点で能力を上げる（例: up 知名度 3）。月は進まない
   choose <番号>                    出来事の選択肢を選ぶ（1から）。選ぶまで月を進められない
   log [件数] [self|gov|all]        記録（既定は自分の記録。gov は政局、all は両方）
+  hint                             秘書の助言（今月やるとよいこと。おすすめの活動は do の後ろに書く id）
   do duty                          公務（役職に就いているとき。役職ごとに効果が違う）
   run on|off                       次の党首選に立候補する／しない（当選3回以上・党の幹部との関係50以上）
 
@@ -168,6 +171,7 @@ function statusText(s: Session): string {
     `能力 ${ab}`,
     `経験点 ${exp}`,
     `関係 ${rel}`,
+    `特殊能力 ${sortSkills(s.world!.player.skills).map((k) => `${k.name}(${COLOR_NAMES[k.color]})`).join(" ") || "なし"}`,
     `内閣支持率 ${sum.approval}%　与党 ${sum.ruling}　首相 ${sum.primeMinister}${sum.isPrimeMinister ? `（自分・政権の行動あと${sum.actionPoints}回）` : ""}　自党の党首 ${sum.partyLeader}`,
     `次の総選挙 ${sum.nextElection}　与党の党首選 ${sum.leaderElection}${sum.canRunForLeader ? `　党首選に${sum.runForLeader ? "立候補する" : "立候補できる（run on）"}` : ""}${sum.canDuty ? "　公務ができる（do duty）" : ""}`,
   ];
@@ -255,6 +259,14 @@ async function handle(s: Session, line: string): Promise<Reply | "quit"> {
       return { ok: true, message: govBills(s.state).map((b) => `  ${b.id}（${b.name}・${b.field}）${b.status}${b.status === "準備中" ? ` ${b.progress}/${b.work}` : ""}`).join("\n"), data: govBills(s.state) };
     case "gov":
       return govAction(s.state, s.world, args[0] ?? "", args[1]);
+    case "hint": {
+      const advice = adviseMonth(s.state, s.world!, 5);
+      return {
+        ok: true,
+        message: advice.map((a, i) => `${i + 1}. ${a.text}${a.act ? `（do ${a.act}）` : a.tab ? `（${a.tab === "self" ? "costs と up" : a.tab === "party" ? "run on" : "bills と gov"}）` : ""}`).join("\n"),
+        data: advice,
+      };
+    }
     case "log": {
       const n = Number(args[0] ?? 15) || 15;
       const which = args[1] ?? "self";
@@ -275,7 +287,7 @@ function available(s: Session): string[] {
   if (postCategory(s.state, s.world!)) extra.push("do duty");
   if (canRunForLeader(s.state, s.world!)) extra.push(s.state.runForLeader ? "run off" : "run on");
   if (isPrimeMinister(s.state, s.world!) && s.state.gov.actionPoints > 0) extra.push("bills", "gov draft <法案>", "gov submit <法案>", "gov talk <政党>", "gov nemawashi", "gov press", "gov dissolve");
-  return [...ACTIVITIES.map((a) => `do ${a.id}`), ...extra, "status", "costs", "up <能力> [回数]", "log", "quit"];
+  return [...ACTIVITIES.map((a) => `do ${a.id}`), ...extra, "status", "costs", "up <能力> [回数]", "log", "hint", "quit"];
 }
 
 /** type は "ready"（起動直後の1行。コマンドへの応答ではない）か "response"（コマンド1つへの応答） */

@@ -5,6 +5,8 @@
 // 画面に依存しないので、ブラウザでも CLI（src/cli/）でも同じように動く。
 import careerRaw from "../../data/game/career.json";
 import lifeRaw from "../../data/game/life_events.json";
+import flavorRaw from "../../data/game/activity_flavor.json";
+import { expMultiplier, jibanMultiplier, mishapsFor, moneyMultiplier, neglectShift, relationMultiplier, riskBonus, skillById, staminaMultiplier, startingSkills, updateSkills } from "./skills.js";
 import { mulberry32 } from "../lib/nameGenerator.js";
 import type { Member, MemberFactory } from "./roster.js";
 import { START_YEAR } from "./roster.js";
@@ -70,6 +72,9 @@ interface Effects {
   relations?: Partial<Record<RelationId, number>>;
   jiban_progress?: number;
   abilities?: Partial<Record<Ability, number>>;
+  /** 特殊能力を身につける／外す（id の配列） */
+  skills_add?: string[];
+  skills_remove?: string[];
 }
 
 interface LifeEvent {
@@ -200,6 +205,8 @@ export interface CareerState {
   /** プレイヤーが与党の党首を務めた期数の通算（生涯の上限に使う） */
   playerLeaderTerms: number;
   rngCounter: number;
+  /** 活動ごとに行った回数（特殊能力を身につける条件に使う） */
+  activityCounts?: Record<string, number>;
   /** 政権の記録（gov.log）のうち、自分の記録に写し終えた数 */
   govLogCopied?: number;
   over?: string;
@@ -440,7 +447,8 @@ function doDuty(state: CareerState, world: CareerWorld): string {
   const D = PL.duties as unknown as Record<string, { exp?: Partial<Exp>; approval?: number; bill_progress?: number; all_progress?: number; cooperation?: number; cohesion?: number; relations?: Partial<Record<RelationId, number>> }>;
   const d = D[cat];
   if (!d) return "";
-  const out = applyEffects(state, world, { stamina: PL.duties.stamina, exp: d.exp, relations: d.relations, approval: d.approval });
+  const out = applyEffects(state, world, { stamina: PL.duties.stamina, exp: scaleExp(d.exp, expMultiplier(world.player.skills, "duty")), relations: d.relations, approval: d.approval });
+  state.activityCounts = { ...state.activityCounts, duty: (state.activityCounts?.duty ?? 0) + 1 };
   const g = state.gov;
   if (d.bill_progress) {
     const field = world.government.find((a) => a.member.id === world.player.id)?.post.field;
@@ -504,6 +512,7 @@ export async function startCareer(
     district: null,
     home: setup.pref,
     jiban: origin.jiban,
+    skills: startingSkills(setup.archetype, setup.origin),
   };
   const state: CareerState = {
     seed,
@@ -542,6 +551,7 @@ export async function startCareer(
     playerLeaderTerms: 0,
     rulingSince: START_YEAR - PL.fatigue.initial_years,
     rngCounter: 0,
+    activityCounts: {},
   };
   state.gov.scenes = [];
   const where = prefName(setup.pref);
@@ -667,8 +677,11 @@ function applyEffects(state: CareerState, world: CareerWorld, e: Effects): strin
     state.exp[k as ExpId] = Math.max(0, state.exp[k as ExpId] + v);
     out.push(`${EXP_TYPES.find((x) => x.id === k)!.name}${v >= 0 ? "+" : ""}${v}`);
   }
-  for (const [k, n] of Object.entries(e.relations ?? {}))
-    state.relations[k as RelationId] = clamp(state.relations[k as RelationId] + (n as number), 0, 100);
+  for (const [k, n] of Object.entries(e.relations ?? {})) {
+    // 関係が上がるときは特殊能力（根回しの鬼、調整下手など）の倍率がかかる
+    const v = (n as number) > 0 ? Math.round((n as number) * relationMultiplier(world.player.skills, k)) : (n as number);
+    state.relations[k as RelationId] = clamp(state.relations[k as RelationId] + v, 0, 100);
+  }
   if (e.money) {
     state.money = Math.max(0, state.money + e.money);
     out.push(`資金${e.money >= 0 ? "+" : ""}${e.money}万円`);
@@ -682,8 +695,61 @@ function applyEffects(state: CareerState, world: CareerWorld, e: Effects): strin
     setPlayer(world, { ...world.player, abilities: { ...world.player.abilities, [k]: clamp(world.player.abilities[k as Ability] + (n as number), 1, 100) } });
     out.push(`${k}+${n}`);
   }
-  if (e.jiban_progress) addJibanProgress(state, world, Math.round(e.jiban_progress * mult), out);
+  if (e.jiban_progress) addJibanProgress(state, world, Math.round(e.jiban_progress * mult * (e.jiban_progress > 0 ? jibanMultiplier(world.player.skills) : 1)), out);
+  for (const id of e.skills_add ?? []) {
+    const sk = skillById(id);
+    if (sk && !world.player.skills.includes(id)) {
+      setPlayer(world, { ...world.player, skills: [...world.player.skills.filter((x) => !sk.replaces?.includes(x)), id] });
+      out.push(`特殊能力「${sk.name}」を身につけた`);
+    }
+  }
+  for (const id of e.skills_remove ?? []) {
+    const sk = skillById(id);
+    if (sk && world.player.skills.includes(id)) {
+      setPlayer(world, { ...world.player, skills: world.player.skills.filter((x) => x !== id) });
+      out.push(`特殊能力「${sk.name}」が外れた`);
+    }
+  }
   return out;
+}
+
+interface FlavorLine {
+  text: string;
+  months?: number[];
+  status?: string[];
+  jiban?: "low" | "high";
+}
+
+/** 活動のあとに出す短い文（data/game/activity_flavor.json）。今の月、立場、地盤の固さに合うものから選ぶ */
+function flavorLine(state: CareerState, world: CareerWorld, activity: string): string | undefined {
+  const all = ((flavorRaw as unknown as { lines: Record<string, FlavorLine[]> }).lines[activity] ?? []).filter(
+    (l) =>
+      (!l.months || l.months.includes(state.month)) &&
+      (!l.status || l.status.includes(state.status)) &&
+      (!l.jiban || (l.jiban === "high") === world.player.jiban >= 3),
+  );
+  if (!all.length) return undefined;
+  // 条件付きの文（季節、立場、地盤）は、合うときにはやや出やすくする
+  const weights = all.map((l) => (l.months || l.status || l.jiban ? 2 : 1));
+  let r = rand(state) * weights.reduce((a, b) => a + b, 0);
+  const pick = all.find((_, i) => (r -= weights[i]) <= 0) ?? all[0];
+  return pick.text.replaceAll("{secretary}", state.secretaryName);
+}
+
+/** 条件を満たした特殊能力を身につけ、条件を満たした欠点を外す */
+function checkSkills(state: CareerState, world: CareerWorld): void {
+  const p = world.player;
+  const r = updateSkills(p.skills, { activityCounts: state.activityCounts ?? {}, abilities: p.abilities, terms: p.terms, jiban: p.jiban });
+  if (!r.gained.length && !r.lost.length) return;
+  setPlayer(world, { ...p, skills: r.skills });
+  for (const g of r.gained) log(state, `特殊能力「${g.name}」を身につけた！ ${g.description}`);
+  for (const l of r.lost) log(state, l.color === "red" ? `欠点「${l.name}」を克服した。` : `特殊能力「${l.name}」は上位の能力に置き換わった。`);
+}
+
+/** 活動の経験点に特殊能力の倍率をかける */
+function scaleExp(exp: Partial<Exp> | undefined, factor: number): Partial<Exp> | undefined {
+  if (!exp || factor === 1) return exp;
+  return Object.fromEntries(Object.entries(exp).map(([k, v]) => [k, Math.round((v as number) * factor)])) as Partial<Exp>;
 }
 
 function addJibanProgress(state: CareerState, world: CareerWorld, amount: number, out: string[]): void {
@@ -725,15 +791,16 @@ export async function takeTurn(state: CareerState, world: CareerWorld, activityI
     state.mood = clamp(state.mood - 1, 1, 5);
     message = `${act.name}の途中で体調を崩し、寝込んでしまった。`;
   } else {
+    const sk = world.player.skills;
     const gained = applyEffects(state, world, {
-      stamina: act.stamina,
+      stamina: act.stamina < 0 ? Math.round(act.stamina * staminaMultiplier(sk)) : act.stamina,
       max_stamina: act.max_stamina,
-      exp: act.exp,
+      exp: scaleExp(act.exp, expMultiplier(sk, act.id)),
       relations: act.relations,
       jiban_progress: act.jiban_progress,
     });
     if (act.money_per_ability) {
-      const m = Math.round(world.player.abilities.資金 * act.money_per_ability * gainMultiplier(state));
+      const m = Math.round(world.player.abilities.資金 * act.money_per_ability * gainMultiplier(state) * moneyMultiplier(sk));
       state.money += m;
       gained.push(`資金+${m}万円`);
     }
@@ -741,8 +808,17 @@ export async function takeTurn(state: CareerState, world: CareerWorld, activityI
       state.mood = clamp(state.mood + 1, 1, 5);
       gained.push("やる気が上がった");
     }
-    message = `${act.name}：${gained.join("、") || "体力が戻った"}`;
+    const scene = flavorLine(state, world, act.id);
+    const nums = gained.join("、") || "体力が戻った";
+    message = scene ? `${act.name}：${scene}（${nums}）` : `${act.name}：${nums}`;
+    // 欠点の特殊能力による失敗（失言癖など）
+    for (const { skill, mishap } of mishapsFor(sk, act.id)) {
+      if (rand(state) >= mishap.chance) continue;
+      const lost = applyEffects(state, world, mishap.effects as Effects);
+      message += `。【${skill.name}】${mishap.text}${lost.length ? `（${lost.join("、")}）` : ""}`;
+    }
   }
+  state.activityCounts = { ...state.activityCounts, [act.id]: (state.activityCounts?.[act.id] ?? 0) + 1 };
   log(state, message);
   await endMonth(state, world);
   return { ok: true, message };
@@ -755,7 +831,7 @@ export function chooseEvent(state: CareerState, world: CareerWorld, index: numbe
   const ev = LIFE_EVENTS.find((e) => e.id === pe.id)!;
   const choice = ev.choices[index];
   if (!choice) return { ok: false, message: `選択肢は1〜${ev.choices.length}です。` };
-  const failed = choice.risk && world.player.abilities[choice.risk.ability] < choice.risk.threshold;
+  const failed = choice.risk && world.player.abilities[choice.risk.ability] + riskBonus(world.player.skills, choice.risk.ability) < choice.risk.threshold;
   const changes = applyEffects(state, world, failed ? choice.risk!.fail_effects : choice.effects);
   const result = failed ? choice.risk!.fail_result : choice.result;
   const text = `${pe.title}：${choice.label} → ${result.replaceAll("{secretary}", state.secretaryName)}${changes.length ? `（${changes.join("、")}）` : ""}`;
@@ -786,7 +862,7 @@ function maybeLifeEvent(state: CareerState, world: CareerWorld): void {
     id: ev.id,
     title: ev.title,
     text: ev.text.replaceAll("{secretary}", state.secretaryName),
-    choices: ev.choices.map((c) => c.label),
+    choices: ev.choices.map((c) => c.label.replaceAll("{secretary}", state.secretaryName)),
   };
 }
 
@@ -811,11 +887,12 @@ async function endMonth(state: CareerState, world: CareerWorld): Promise<void> {
   state.jibanProgress = Math.max(0, state.jibanProgress - C.jiban_decay);
   state.jibanNeglect = state.jibanTouched ? 0 : state.jibanNeglect + 1;
   state.jibanTouched = false;
-  if (state.jibanNeglect >= C.jiban_neglect_months && world.player.jiban > 1) {
+  if (state.jibanNeglect >= C.jiban_neglect_months + neglectShift(world.player.skills) && world.player.jiban > 1) {
     setPlayer(world, { ...world.player, jiban: world.player.jiban - 1 });
     state.jibanNeglect = 0;
     log(state, `地元に顔を出さない日が続き、地盤が${world.player.jiban}に下がった。`);
   }
+  checkSkills(state, world);
   // 政権：プレイヤーが首相なら自分で行動を選んでいる。そうでなければ AI が動かす
   state.gov.fatigue = fatigueOf(state);
   const pm = isPrimeMinister(state, world);
@@ -1021,6 +1098,7 @@ export function careerSummary(state: CareerState, world: CareerWorld) {
     jiban: p.jiban,
     jibanProgress: p.jiban >= 4 ? "最大" : `${state.jibanProgress}/${C.jiban_step[p.jiban]}`,
     abilities: p.abilities,
+    skills: p.skills,
     exp: state.exp,
     relations: state.relations,
     approval: state.gov.approval,

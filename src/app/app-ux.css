@@ -867,3 +867,237 @@
     display: none;
   }
 }
+
+/* ===== 特殊能力（読むだけなので角を切り落とした札） ===== */
+
+.skill {
+  display: inline-block;
+  padding: 2px 10px;
+  margin: 0 4px 4px 0;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 900;
+  white-space: nowrap;
+  clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px);
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.35);
+}
+
+.skill-gold {
+  background: linear-gradient(135deg, #b8860b 0%, #ffd84a 45%, #c99a12 100%);
+  color: #3a2600;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+
+.skill-blue {
+  background: linear-gradient(180deg, #3d8fe0, #1f5fae);
+}
+
+.skill-red {
+  background: linear-gradient(180deg, #e8505b, #b3202c);
+}
+
+.skill-green {
+  background: linear-gradient(180deg, #3fb36b, #1f7d45);
+}
+
+.skill.is-locked {
+  filter: grayscale(0.85);
+  opacity: 0.6;
+}
+
+.d-skills {
+  margin: 8px 0 0;
+}
+
+.skill-row {
+  align-items: flex-start;
+}
+
+.skill-row .skill {
+  margin: 2px 0 0;
+  min-width: 7.5em;
+  text-align: center;
+}
+
+.skill-row small {
+  display: block;
+  margin-top: 2px;
+}
+
+.sub-h {
+  margin: 12px 0 6px;
+  font-size: 14px;
+  color: var(--ink);
+}
+
+/* ===== 通常モード：秘書の助言とおすすめ ===== */
+
+.arena.normal {
+  grid-template-columns: minmax(280px, 380px) minmax(0, 1fr);
+  grid-template-areas:
+    "race race"
+    "advice center"
+    "cards cards";
+}
+
+.advice-panel {
+  grid-area: advice;
+  --c: 14px;
+  align-self: start;
+  padding: 12px 14px;
+}
+
+.advice-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.advice-head b {
+  display: block;
+  color: var(--ink);
+}
+
+.advice-head small {
+  font-size: 12px;
+}
+
+.advice-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 8px;
+}
+
+.advice-list li {
+  display: grid;
+  gap: 6px;
+  padding: 8px 10px;
+  border-left: 4px solid var(--focus);
+  background: rgba(255, 255, 255, 0.7);
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+.advice-list li .btn {
+  justify-self: start;
+}
+
+.link-btn {
+  margin-top: 10px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: #2b6aa8;
+  font-size: 12px;
+  font-weight: 800;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.card .tag.rec {
+  background: linear-gradient(90deg, #ff8a00, #ffd000);
+  color: #3a2200;
+}
+
+.mode-switch {
+  display: inline-flex;
+  gap: 6px;
+}
+
+.mode-box {
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+/* 通常モードでは状態の帯の細かい数字（支持率、与党、総選挙の年月）を省く */
+.mode-normal .status .hp-meta > span:first-child {
+  visibility: hidden;
+}
+
+@media (max-width: 760px) {
+  .arena.normal {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "race"
+      "advice"
+      "center"
+      "cards";
+    grid-template-rows: auto auto minmax(0, 1fr) auto;
+  }
+
+  .advice-panel {
+    padding: 8px 10px;
+    max-height: 34dvh;
+    overflow-y: auto;
+  }
+
+  .advice-head {
+    margin-bottom: 4px;
+  }
+
+  .advice-head .face {
+    width: 30px;
+    height: 30px;
+    font-size: 16px;
+  }
+
+  .advice-list {
+    gap: 5px;
+  }
+
+  .advice-list li {
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    padding: 5px 8px;
+    font-size: 12px;
+  }
+
+  .advice-list li .btn {
+    min-height: 36px;
+    padding: 2px 8px;
+    font-size: 11px;
+  }
+
+  .mode-normal .status .hp-meta > span:first-child {
+    display: none;
+  }
+
+  .mode-normal .center .msg small {
+    display: none;
+  }
+}
+
+/* PC ではカードを全部並べるので、横スクロールの矢印と影は出さない */
+@media (min-width: 761px) {
+  .cards-wrap.can-left .scroll-hint.left,
+  .cards-wrap.can-right .scroll-hint.right {
+    display: none;
+  }
+
+  .cards-wrap.can-left::before,
+  .cards-wrap.can-right::after {
+    opacity: 0;
+  }
+}
+
+/* スマホでも「おすすめ」の札は出す（ほかの札は省く） */
+@media (max-width: 760px) {
+  .cards-wrap .card .tag.rec {
+    display: block;
+    top: -8px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 0 5px;
+    font-size: 9px;
+    white-space: nowrap;
+    z-index: 2;
+  }
+
+  .cards-wrap .cards {
+    padding-top: 14px;
+  }
+}

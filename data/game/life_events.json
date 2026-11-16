@@ -4,7 +4,11 @@
   "events": [
     {
       "id": "festival_mikoshi",
-      "months": [9, 10, 11],
+      "months": [
+        9,
+        10,
+        11
+      ],
       "weight": 3,
       "title": "秋祭りの神輿",
       "text": "地元の秋祭りで、町内会長から「今年は神輿を担いでみないか」と声をかけられた。",
@@ -158,7 +162,11 @@
     },
     {
       "id": "heavy_snow",
-      "months": [12, 1, 2],
+      "months": [
+        12,
+        1,
+        2
+      ],
       "weight": 1,
       "title": "大雪",
       "text": "記録的な大雪で、地元の高齢者の家が雪に埋もれていると連絡が入った。",
@@ -302,7 +310,11 @@
     },
     {
       "id": "farmer_visit",
-      "months": [4, 5, 6],
+      "months": [
+        4,
+        5,
+        6
+      ],
       "weight": 1,
       "title": "農家の手伝い",
       "text": "田植えの時期、支援者の農家から「人手が足りない」と電話があった。",
@@ -837,6 +849,2511 @@
             },
             "relations": {
               "press": 4
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "family_birthday",
+      "weight": 3,
+      "title": "家族の誕生日",
+      "text": "今日は家族の誕生日。忙しい日々の中で、夜の予定をどう調整しようか。",
+      "choices": [
+        {
+          "label": "仕事を切り上げて家で祝う",
+          "result": "家族の笑顔に癒やされ、明日への活力が湧いてきた。",
+          "effects": {
+            "stamina": -5,
+            "mood": 1,
+            "money": -3
+          }
+        },
+        {
+          "label": "{secretary}に花を頼む",
+          "result": "花束は喜ばれたが、遅い帰宅に少し寂しそうだった。",
+          "effects": {
+            "money": -2,
+            "relations": {
+              "secretary": -2
+            }
+          }
+        },
+        {
+          "label": "電話でお祝いだけ伝える",
+          "result": "声は聞けたが、どこか物足りなさが残った。",
+          "effects": {
+            "mood": -1
+          }
+        }
+      ]
+    },
+    {
+      "id": "parent_care_call",
+      "weight": 2,
+      "title": "親の介護の相談",
+      "text": "実家の親の足腰が弱ってきたと、きょうだいから連絡が入った。",
+      "choices": [
+        {
+          "label": "週末に実家へ帰り話し合う",
+          "result": "家族で協力体制を決め、福祉への関心も深まった。",
+          "effects": {
+            "stamina": -10,
+            "mood": 1,
+            "exp": {
+              "policy": 6,
+              "network": 4
+            }
+          }
+        },
+        {
+          "label": "介護サービスの資料を送る",
+          "result": "制度を調べるうちに、現場の課題が見えてきた。",
+          "effects": {
+            "money": -5,
+            "exp": {
+              "policy": 10
+            }
+          }
+        },
+        {
+          "label": "今は忙しいと返信する",
+          "result": "頭では仕方ないと思いつつ、心に引っかかりが残る。",
+          "effects": {
+            "mood": -1
+          }
+        }
+      ]
+    },
+    {
+      "id": "child_exam",
+      "weight": 2,
+      "once": true,
+      "title": "子どもの受験",
+      "text": "子どもが志望校の受験を控えている。家の中も少しピリついた空気だ。",
+      "choices": [
+        {
+          "label": "塾の送り迎えを買って出る",
+          "result": "車中での会話が増え、親子の絆が少し深まった。",
+          "effects": {
+            "stamina": -12,
+            "mood": 1,
+            "exp": {
+              "network": 5
+            }
+          }
+        },
+        {
+          "label": "夜食を作って応援する",
+          "result": "「おいしい」と食べてくれ、ほっと一息ついた。",
+          "effects": {
+            "stamina": -6,
+            "mood": 1
+          }
+        },
+        {
+          "label": "静かに部屋で見守る",
+          "result": "子どもを信じて待ち、自分も政策の勉強に集中した。",
+          "effects": {
+            "exp": {
+              "policy": 6
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "stray_dog_protection",
+      "weight": 2,
+      "title": "迷い犬の保護",
+      "text": "朝の散歩中、首輪をつけた迷い犬が足元に寄ってきた。どうしようか。",
+      "choices": [
+        {
+          "label": "交番へ連れて行き飼い主を待つ",
+          "result": "無事に飼い主が見つかり、近所で評判になった。",
+          "effects": {
+            "stamina": -8,
+            "jiban_progress": 10,
+            "relations": {
+              "supporters": 3
+            }
+          }
+        },
+        {
+          "label": "ネットで飼い主を探してみる",
+          "result": "多くの人が拡散してくれ、その日のうちに無事戻った。",
+          "effects": {
+            "exp": {
+              "media": 8
+            },
+            "jiban_progress": 6
+          },
+          "risk": {
+            "ability": "知名度",
+            "threshold": 40,
+            "fail_result": "なかなか情報が広がらず、結局保健所へ連絡した。",
+            "fail_effects": {
+              "stamina": -6
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "cooking_challenge",
+      "weight": 3,
+      "title": "手料理への挑戦",
+      "text": "たまには自分で夕食を作ろうと思い立ち、スーパーで食材を買い込んだ。",
+      "choices": [
+        {
+          "label": "凝った煮込み料理に挑戦する",
+          "result": "時間をかけた甲斐があり、家族から大絶賛された。",
+          "effects": {
+            "stamina": -6,
+            "mood": 1,
+            "money": -2
+          },
+          "risk": {
+            "ability": "調整",
+            "threshold": 50,
+            "fail_result": "焦がしてしまい、結局出前を頼む羽目になった。",
+            "fail_effects": {
+              "stamina": -6,
+              "mood": -1,
+              "money": -4
+            }
+          }
+        },
+        {
+          "label": "得意のカレーをたっぷり作る",
+          "result": "安定の味に身も心も温まり、しっかり英気を養った。",
+          "effects": {
+            "stamina": 5,
+            "mood": 1,
+            "money": -1
+          }
+        }
+      ]
+    },
+    {
+      "id": "moving_house",
+      "weight": 1,
+      "once": true,
+      "title": "事務所兼自宅の引越し",
+      "text": "手狭になったため、少し広い家へ引っ越すことになった。荷造りが大変だ。",
+      "choices": [
+        {
+          "label": "支援者に手伝いを頼む",
+          "result": "和気あいあいと作業が進み、仲間との結束が強まった。",
+          "effects": {
+            "stamina": -10,
+            "money": -20,
+            "relations": {
+              "supporters": 4
+            },
+            "jiban_progress": 8
+          }
+        },
+        {
+          "label": "業者にすべて任せて休む",
+          "result": "出費は痛かったが、おかげで体力を温存できた。",
+          "effects": {
+            "stamina": 10,
+            "money": -50
+          }
+        },
+        {
+          "label": "自力でコツコツ運ぶ",
+          "result": "全身筋肉痛になったが、いい体力づくりになった。",
+          "effects": {
+            "stamina": -18,
+            "max_stamina": 2,
+            "money": -10
+          }
+        }
+      ]
+    },
+    {
+      "id": "alumni_reunion",
+      "weight": 2,
+      "title": "懐かしい同窓会",
+      "text": "学生時代の同窓会の案内が届いた。地元を離れた旧友も集まるらしい。",
+      "choices": [
+        {
+          "label": "顔を出して旧交を温める",
+          "result": "気のおけない仲間と語り合い、新たな人脈も広がった。",
+          "effects": {
+            "stamina": -8,
+            "mood": 1,
+            "money": -5,
+            "exp": {
+              "network": 12
+            }
+          },
+          "risk": {
+            "ability": "弁舌",
+            "threshold": 45,
+            "fail_result": "選挙の話ばかりしてしまい、場が白けてしまった。",
+            "fail_effects": {
+              "stamina": -8,
+              "mood": -1,
+              "money": -5
+            }
+          }
+        },
+        {
+          "label": "祝電だけ打って欠席する",
+          "result": "少し寂しいが、その分ほかの仕事に時間を使った。",
+          "effects": {
+            "money": -1,
+            "exp": {
+              "policy": 4
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "local_sports_club",
+      "weight": 3,
+      "title": "スポーツクラブの練習会",
+      "text": "休日に地元のスポーツクラブが練習会を開く。参加を勧められた。",
+      "choices": [
+        {
+          "label": "選手に混じって一緒に走る",
+          "result": "息は上がったが、清々しい汗をかき顔も覚えてもらえた。",
+          "effects": {
+            "stamina": -15,
+            "max_stamina": 3,
+            "jiban_progress": 12
+          }
+        },
+        {
+          "label": "給水所で水を配って応援する",
+          "result": "ランナーたちにお礼を言われ、地域との一体感を得た。",
+          "effects": {
+            "stamina": -8,
+            "relations": {
+              "supporters": 4
+            },
+            "jiban_progress": 8
+          }
+        },
+        {
+          "label": "見学だけして挨拶する",
+          "result": "無理せず軽く顔を出し、穏やかな休日を過ごした。",
+          "effects": {
+            "relations": {
+              "supporters": 1
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "dental_toothache",
+      "weight": 3,
+      "title": "突然の歯痛",
+      "text": "朝から奥歯がズキズキと痛む。演説にも差し支えそうなほどだ。",
+      "choices": [
+        {
+          "label": "予定を空けて歯医者へ走る",
+          "result": "早めに治療してもらい、痛みから解放されてすっきり。",
+          "effects": {
+            "stamina": -5,
+            "money": -3,
+            "mood": 1
+          }
+        },
+        {
+          "label": "痛み止めを飲んで我慢する",
+          "result": "痛みをこらえながらの活動で、どっと疲れが出た。",
+          "effects": {
+            "stamina": -15,
+            "mood": -1
+          }
+        }
+      ]
+    },
+    {
+      "id": "home_appliances_break",
+      "weight": 3,
+      "title": "洗濯機の故障",
+      "text": "自宅の洗濯機が変な音を立てて止まった。洗濯物が山積みになっている。",
+      "choices": [
+        {
+          "label": "地元の家電店で買い替える",
+          "result": "店主が「応援してます」と割引してくれ、話も弾んだ。",
+          "effects": {
+            "money": -15,
+            "jiban_progress": 6,
+            "relations": {
+              "supporters": 2
+            }
+          }
+        },
+        {
+          "label": "自分で修理を試みる",
+          "result": "原因を突き止めて見事復活。達成感を味わった。",
+          "effects": {
+            "stamina": -8,
+            "mood": 1
+          },
+          "risk": {
+            "ability": "調整",
+            "threshold": 55,
+            "fail_result": "床が水浸しになり、結局業者を呼ぶことになった。",
+            "fail_effects": {
+              "stamina": -12,
+              "money": -20,
+              "mood": -1
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "hobby_reading",
+      "weight": 4,
+      "title": "古書店での発見",
+      "text": "移動の合間に立ち寄った古書店で、興味深い政治史の本を見つけた。",
+      "choices": [
+        {
+          "label": "買って徹夜で読みふける",
+          "result": "睡眠不足だが、先人たちの知恵に大いに刺激を受けた。",
+          "effects": {
+            "stamina": -12,
+            "money": -2,
+            "exp": {
+              "policy": 15
+            }
+          }
+        },
+        {
+          "label": "買って移動中に少しずつ読む",
+          "result": "良い気分転換になり、政策のヒントも得られた。",
+          "effects": {
+            "money": -2,
+            "exp": {
+              "policy": 8
+            },
+            "mood": 1
+          }
+        },
+        {
+          "label": "立ち読みだけで済ませる",
+          "result": "要点だけ頭に入れ、財布の紐を締めた。",
+          "effects": {
+            "exp": {
+              "policy": 4
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "speech_training",
+      "weight": 2,
+      "title": "話し方教室の案内",
+      "text": "家族から「早口で聞き取りにくい時がある」と指摘された。直す好機だ。",
+      "choices": [
+        {
+          "label": "専門のボイトレに通ってみる",
+          "result": "発声の基礎を学び、悪い癖が抜けて通る声になった。",
+          "effects": {
+            "stamina": -10,
+            "money": -15,
+            "abilities": {
+              "弁舌": 2
+            },
+            "skills_remove": [
+              "shitsugen"
+            ]
+          }
+        },
+        {
+          "label": "家族の前で練習して直してもらう",
+          "result": "照れくさかったが、温かい指摘で聞きやすくなった。",
+          "effects": {
+            "stamina": -6,
+            "mood": 1,
+            "exp": {
+              "media": 8
+            }
+          }
+        },
+        {
+          "label": "個性だと思って気にしない",
+          "result": "勢いだけは誰にも負けないと割り切った。",
+          "effects": {
+            "exp": {
+              "election": 4
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "gym_membership",
+      "weight": 2,
+      "title": "ジムへの入会案内",
+      "text": "駅前に新しいスポーツジムができた。秘書からも体力づくりを勧められた。",
+      "choices": [
+        {
+          "label": "本格的に通い詰めて鍛える",
+          "result": "見違えるほど体が引き締まり、タフに動けるようになった。",
+          "effects": {
+            "stamina": -15,
+            "max_stamina": 4,
+            "money": -10,
+            "skills_add": [
+              "tairyoku_jiman"
+            ]
+          }
+        },
+        {
+          "label": "週一回のペースで無理なく通う",
+          "result": "体調が整い、以前より風邪を引きにくくなった。",
+          "effects": {
+            "stamina": 8,
+            "max_stamina": 2,
+            "money": -5,
+            "skills_remove": [
+              "byoujaku"
+            ]
+          }
+        },
+        {
+          "label": "チラシだけもらって帰る",
+          "result": "いつか行こうと思いながら、引き出しにしまった。",
+          "effects": {}
+        }
+      ]
+    },
+    {
+      "id": "spouse_complaint",
+      "weight": 3,
+      "title": "配偶者のため息",
+      "text": "「最近、家にいても電話ばかり」と配偶者がぽつりとこぼした。",
+      "choices": [
+        {
+          "label": "電話を切り食事に誘う",
+          "result": "久しぶりのゆっくりした食事で、笑顔が戻った。",
+          "effects": {
+            "stamina": 5,
+            "mood": 1,
+            "money": -5
+          }
+        },
+        {
+          "label": "次の選挙までと頭を下げる",
+          "result": "理解はしてくれたものの、胸が少し痛んだ。",
+          "effects": {
+            "mood": -1,
+            "exp": {
+              "election": 5
+            }
+          }
+        },
+        {
+          "label": "政治の愚痴を聞いてもらう",
+          "result": "話を聞いてもらい、少し心が軽くなった。",
+          "effects": {
+            "stamina": 5
+          },
+          "risk": {
+            "ability": "調整",
+            "threshold": 50,
+            "fail_result": "逆に説教されてしまい、余計に気まずくなった。",
+            "fail_effects": {
+              "mood": -1,
+              "stamina": -5
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "suit_tailoring",
+      "weight": 3,
+      "title": "ヨレヨレのスーツ",
+      "text": "鏡を見ると、毎日着ているスーツの袖口がすり切れているのに気づいた。",
+      "choices": [
+        {
+          "label": "地元の洋品店で新調する",
+          "result": "ぴったりの仕立てで、街を歩く姿も引き締まった。",
+          "effects": {
+            "money": -12,
+            "jiban_progress": 5,
+            "abilities": {
+              "知名度": 1
+            }
+          }
+        },
+        {
+          "label": "量販店で安いのをまとめ買い",
+          "result": "出費を抑えつつ清潔感を保てて満足だ。",
+          "effects": {
+            "money": -6,
+            "stamina": 5
+          }
+        },
+        {
+          "label": "クリーニングに出して粘る",
+          "result": "節約の鬼に徹し、資金を温存した。",
+          "effects": {
+            "money": -1,
+            "exp": {
+              "money": 4
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "coming_of_age_day",
+      "weight": 3,
+      "months": [
+        1
+      ],
+      "title": "成人のつどい",
+      "text": "今日は地元の成人のつどい。晴れ着姿の若者たちが会場に集まっている。",
+      "choices": [
+        {
+          "label": "会場前で若者たちに声をかける",
+          "result": "写真撮影にも応じ、若い世代への良いアピールになった。",
+          "effects": {
+            "stamina": -10,
+            "exp": {
+              "media": 10
+            },
+            "jiban_progress": 10
+          },
+          "risk": {
+            "ability": "知名度",
+            "threshold": 45,
+            "fail_result": "誰だか分かられず、ビラを受け取ってもらえなかった。",
+            "fail_effects": {
+              "stamina": -10,
+              "mood": -1
+            }
+          }
+        },
+        {
+          "label": "式典に参列して祝辞を聞く",
+          "result": "来賓の県議や地元の有力者と挨拶を交わせた。",
+          "effects": {
+            "stamina": -5,
+            "relations": {
+              "kengi": 3,
+              "supporters": 3
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "setsubun_event",
+      "weight": 3,
+      "months": [
+        2
+      ],
+      "title": "地元の節分祭",
+      "text": "地元の神社から、節分祭の豆まきに参加してほしいと声がかかった。",
+      "choices": [
+        {
+          "label": "元気に檀上から豆をまく",
+          "result": "「福は内！」の掛け声で、子どもも大人も大喜びだった。",
+          "effects": {
+            "stamina": -8,
+            "money": -3,
+            "jiban_progress": 12,
+            "relations": {
+              "supporters": 5
+            }
+          },
+          "risk": {
+            "ability": "知名度",
+            "threshold": 45,
+            "fail_result": "自分の周りだけ人が少なく、少し寂しい思いをした。",
+            "fail_effects": {
+              "stamina": -8,
+              "money": -3,
+              "mood": -1
+            }
+          }
+        },
+        {
+          "label": "観客に混じって豆を拾う",
+          "result": "気さくな人柄が伝わり、隣の人と笑顔で話せた。",
+          "effects": {
+            "stamina": -5,
+            "mood": 1,
+            "jiban_progress": 5
+          }
+        }
+      ]
+    },
+    {
+      "id": "spring_clean_up",
+      "weight": 3,
+      "months": [
+        3
+      ],
+      "title": "春の河川敷清掃",
+      "text": "雪解けの季節になり、町内会総出で河川敷のゴミ拾いが行われる。",
+      "choices": [
+        {
+          "label": "朝から参加して汗を流す",
+          "result": "泥だらけになって働き、町内会長から信頼を得た。",
+          "effects": {
+            "stamina": -12,
+            "jiban_progress": 15,
+            "relations": {
+              "supporters": 5
+            }
+          }
+        },
+        {
+          "label": "差し入れの飲み物を届ける",
+          "result": "冷たいお茶が喜ばれ、感謝の言葉をもらった。",
+          "effects": {
+            "money": -3,
+            "relations": {
+              "supporters": 2
+            }
+          }
+        },
+        {
+          "label": "{secretary}だけ行かせる",
+          "result": "「本人は忙しいのか」と少し不満そうにされた。",
+          "effects": {
+            "relations": {
+              "secretary": -4,
+              "supporters": -2
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "cherry_blossom_viewing",
+      "weight": 3,
+      "months": [
+        4
+      ],
+      "title": "桜の名所でお花見",
+      "text": "満開の桜の下、商店街の人たちが花見の席を開いているのに出くわした。",
+      "choices": [
+        {
+          "label": "輪に加わって一緒に語り合う",
+          "result": "美しい桜の下で本音を聞き出し、ぐっと距離が縮まった。",
+          "effects": {
+            "stamina": -8,
+            "money": -3,
+            "jiban_progress": 10,
+            "exp": {
+              "network": 8
+            }
+          },
+          "risk": {
+            "ability": "弁舌",
+            "threshold": 50,
+            "fail_result": "飲みすぎてしまい、余計な冗談で場を凍らせた。",
+            "fail_effects": {
+              "stamina": -15,
+              "mood": -1,
+              "relations": {
+                "supporters": -4
+              }
+            }
+          }
+        },
+        {
+          "label": "挨拶だけしてその場を離れる",
+          "result": "礼儀正しく顔を出し、印象を損ねずに済んだ。",
+          "effects": {
+            "stamina": -3,
+            "jiban_progress": 5
+          }
+        }
+      ]
+    },
+    {
+      "id": "golden_week_traffic",
+      "weight": 3,
+      "months": [
+        5
+      ],
+      "title": "連休の観光地PR",
+      "text": "大型連休で地元の観光スポットが賑わっている。駅前も人通りが多い。",
+      "choices": [
+        {
+          "label": "駅前で観光案内を手伝う",
+          "result": "観光客にも地元の人にも感謝され、好感度が上がった。",
+          "effects": {
+            "stamina": -10,
+            "jiban_progress": 10,
+            "exp": {
+              "media": 8
+            }
+          }
+        },
+        {
+          "label": "家族サービスにあてる",
+          "result": "近場へ出かけてリフレッシュし、英気を養えた。",
+          "effects": {
+            "stamina": 10,
+            "mood": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": "rainy_season_patrol",
+      "weight": 3,
+      "months": [
+        6
+      ],
+      "title": "梅雨の長雨と水路",
+      "text": "梅雨入りしてから強い雨が続く。低地の水路があふれないか心配だ。",
+      "choices": [
+        {
+          "label": "長靴で危険箇所を見回る",
+          "result": "傘を差して歩く姿に、住民から安心の声が上がった。",
+          "effects": {
+            "stamina": -12,
+            "jiban_progress": 15,
+            "exp": {
+              "policy": 8
+            }
+          }
+        },
+        {
+          "label": "役所の担当課に状況を確認する",
+          "result": "県議とも連携し、素早く対策の手配ができた。",
+          "effects": {
+            "stamina": -5,
+            "relations": {
+              "kengi": 4
+            },
+            "exp": {
+              "policy": 10
+            }
+          },
+          "risk": {
+            "ability": "調整",
+            "threshold": 50,
+            "fail_result": "担当者のたらい回しに遭い、話が進まなかった。",
+            "fail_effects": {
+              "stamina": -6,
+              "mood": -1
+            }
+          }
+        },
+        {
+          "label": "事務所で様子を見守る",
+          "result": "幸い大きな被害は出ず、雨が止むのを待った。",
+          "effects": {}
+        }
+      ]
+    },
+    {
+      "id": "summer_fireworks",
+      "weight": 3,
+      "months": [
+        7,
+        8
+      ],
+      "title": "夏の花火大会",
+      "text": "河川敷で恒例の花火大会が開かれる。多くの有権者が集まる大イベントだ。",
+      "choices": [
+        {
+          "label": "浴衣姿で会場を練り歩く",
+          "result": "祭りの熱気の中、たくさんの人と握手を交わせた。",
+          "effects": {
+            "stamina": -10,
+            "jiban_progress": 14,
+            "relations": {
+              "supporters": 5
+            }
+          },
+          "risk": {
+            "ability": "知名度",
+            "threshold": 50,
+            "fail_result": "暗闇と人混みで誰にも気づかれず、疲れただけだった。",
+            "fail_effects": {
+              "stamina": -12
+            }
+          }
+        },
+        {
+          "label": "協賛金を出して本部席に座る",
+          "result": "地域の重鎮たちと肩を並べて花火を見上げた。",
+          "effects": {
+            "money": -10,
+            "relations": {
+              "kengi": 4,
+              "supporters": 4
+            }
+          }
+        },
+        {
+          "label": "翌朝のゴミ拾いに参加する",
+          "result": "地味だが誠実な行動が、支援者の心を打った。",
+          "effects": {
+            "stamina": -8,
+            "jiban_progress": 10
+          }
+        }
+      ]
+    },
+    {
+      "id": "obon_ancestors",
+      "weight": 3,
+      "months": [
+        8
+      ],
+      "title": "お盆の挨拶回り",
+      "text": "お盆休みで帰省客が地元に戻ってきている。街の空気もどこか穏やかだ。",
+      "choices": [
+        {
+          "label": "支援者の家を一軒ずつ回る",
+          "result": "帰省中の若い家族にも会え、票の掘り起こしができた。",
+          "effects": {
+            "stamina": -14,
+            "jiban_progress": 16,
+            "relations": {
+              "supporters": 6
+            }
+          }
+        },
+        {
+          "label": "家族とゆっくり墓参りをする",
+          "result": "ご先祖様に手を合わせ、穏やかな気持ちになった。",
+          "effects": {
+            "stamina": 8,
+            "mood": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": "respect_for_aged_day",
+      "weight": 3,
+      "months": [
+        9
+      ],
+      "title": "地域の敬老会",
+      "text": "公民館で敬老会が開かれる。お年寄りたちの前で一言挨拶を頼まれた。",
+      "choices": [
+        {
+          "label": "福祉への熱い思いを語る",
+          "result": "分かりやすい話が好評で、大きな拍手が起きた。",
+          "effects": {
+            "stamina": -6,
+            "jiban_progress": 10,
+            "exp": {
+              "policy": 6
+            }
+          },
+          "risk": {
+            "ability": "弁舌",
+            "threshold": 55,
+            "fail_result": "話が長すぎて、会場から小さなため息が漏れた。",
+            "fail_effects": {
+              "stamina": -6,
+              "relations": {
+                "supporters": -3
+              }
+            }
+          }
+        },
+        {
+          "label": "昔の歌を一緒に歌う",
+          "result": "手拍子が広がり、和やかな雰囲気に包まれた。",
+          "effects": {
+            "stamina": -8,
+            "mood": 1,
+            "relations": {
+              "supporters": 6
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "autumn_sports_day",
+      "weight": 3,
+      "months": [
+        10
+      ],
+      "title": "町内対抗の運動会",
+      "text": "秋晴れの下、小学校のグラウンドで町内会対抗の運動会が開かれている。",
+      "choices": [
+        {
+          "label": "リレーや玉入れに本気で出る",
+          "result": "転びながらも全力で走り、会場のヒーローになった。",
+          "effects": {
+            "stamina": -15,
+            "jiban_progress": 15,
+            "relations": {
+              "supporters": 6
+            }
+          },
+          "risk": {
+            "ability": "組織",
+            "threshold": 45,
+            "fail_result": "気合が入りすぎてバトンを落とし、最下位になった。",
+            "fail_effects": {
+              "stamina": -15,
+              "mood": -1
+            }
+          }
+        },
+        {
+          "label": "応援席で声を張り上げる",
+          "result": "町内の人たちと一緒に盛り上がり、親睦が深まった。",
+          "effects": {
+            "stamina": -8,
+            "relations": {
+              "supporters": 4
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "autumn_leaves_festival",
+      "weight": 3,
+      "months": [
+        11
+      ],
+      "title": "紅葉まつりの賑わい",
+      "text": "地元の山が紅葉し、観光客で賑わう季節になった。商工会が物産展を開く。",
+      "choices": [
+        {
+          "label": "地元の名産品をSNSでPR",
+          "result": "発信を見た人が足を運んでくれ、商工会から感謝された。",
+          "effects": {
+            "stamina": -5,
+            "exp": {
+              "media": 12
+            },
+            "jiban_progress": 8
+          }
+        },
+        {
+          "label": "名産品を買い込んで応援する",
+          "result": "地元商店が喜び、事務所のみんなにも好評だった。",
+          "effects": {
+            "money": -8,
+            "relations": {
+              "secretary": 4,
+              "supporters": 4
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "year_end_party",
+      "weight": 4,
+      "months": [
+        12
+      ],
+      "title": "師走の忘年会ラッシュ",
+      "text": "町内会や業界団体の忘年会が毎晩のように重なり、体がいくつあっても足りない。",
+      "choices": [
+        {
+          "label": "すべての会場に顔を出して回る",
+          "result": "胃腸は悲鳴を上げたが、地元での存在感は抜群になった。",
+          "effects": {
+            "stamina": -18,
+            "money": -20,
+            "jiban_progress": 20,
+            "relations": {
+              "supporters": 8
+            }
+          }
+        },
+        {
+          "label": "義理の深い会だけに絞る",
+          "result": "無理のない範囲で付き合い、うまく年を越せそうだ。",
+          "effects": {
+            "stamina": -8,
+            "money": -8,
+            "jiban_progress": 8,
+            "relations": {
+              "supporters": 2
+            }
+          }
+        },
+        {
+          "label": "{secretary}に代理を頼む",
+          "result": "代理ばかりではと、一部の会合で苦言を呈された。",
+          "effects": {
+            "money": -5,
+            "relations": {
+              "secretary": -5,
+              "supporters": -3
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "shopping_street_walk",
+      "weight": 2,
+      "title": "商店街の御用聞き",
+      "text": "シャッターが増えた地元の商店街。店主たちの本音を聞きに出かけよう。",
+      "choices": [
+        {
+          "label": "一軒ずつ店に入り話を聞く",
+          "result": "地道な歩き回りが評価され、ドブ板選挙のコツを掴んだ。",
+          "effects": {
+            "stamina": -12,
+            "jiban_progress": 14,
+            "skills_add": [
+              "dobuita"
+            ]
+          }
+        },
+        {
+          "label": "買い物しながら世間話をする",
+          "result": "気さくな買い物客として、店先で笑顔を交わせた。",
+          "effects": {
+            "stamina": -6,
+            "money": -3,
+            "relations": {
+              "supporters": 4
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "fire_brigade_drill",
+      "weight": 2,
+      "title": "消防団の激励",
+      "text": "地元の消防団が早朝から訓練に励んでいる。週末には大会も控えているそうだ。",
+      "choices": [
+        {
+          "label": "早起きして見学と激励に行く",
+          "result": "寒い中での訪問が喜ばれ、団員たちと強い絆ができた。",
+          "effects": {
+            "stamina": -8,
+            "relations": {
+              "supporters": 6
+            },
+            "jiban_progress": 10
+          }
+        },
+        {
+          "label": "団員たちの要望を聞き取る",
+          "result": "装備や待遇の課題を把握し、政策の種が見つかった。",
+          "effects": {
+            "exp": {
+              "policy": 10
+            },
+            "relations": {
+              "kengi": 3
+            }
+          },
+          "risk": {
+            "ability": "政策",
+            "threshold": 45,
+            "fail_result": "現場の専門用語が分からず、話が噛み合わなかった。",
+            "fail_effects": {
+              "relations": {
+                "supporters": -2
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "pta_meeting",
+      "weight": 3,
+      "title": "小学校のPTA相談",
+      "text": "通学路の安全対策について、PTAの保護者たちから相談を受けた。",
+      "choices": [
+        {
+          "label": "通学路を一緒に歩いて点検する",
+          "result": "危険箇所を一緒に確認し、母親たちの信頼を得た。",
+          "effects": {
+            "stamina": -10,
+            "jiban_progress": 12,
+            "exp": {
+              "policy": 8
+            }
+          }
+        },
+        {
+          "label": "行政への橋渡しを約束する",
+          "result": "県議と市役所に掛け合い、ガードレール設置が決まった。",
+          "effects": {
+            "relations": {
+              "kengi": 5
+            },
+            "exp": {
+              "network": 8
+            }
+          },
+          "risk": {
+            "ability": "調整",
+            "threshold": 50,
+            "fail_result": "縦割り行政の壁に阻まれ、話が前に進まなかった。",
+            "fail_effects": {
+              "relations": {
+                "supporters": -3
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "local_factory_visit",
+      "weight": 3,
+      "title": "町工場の現場視察",
+      "text": "地元の部品メーカーの社長から「現場の苦労を見てほしい」と招かれた。",
+      "choices": [
+        {
+          "label": "作業着を借りて現場を体験する",
+          "result": "職人たちの技術に感動し、中小企業支援のヒントを得た。",
+          "effects": {
+            "stamina": -10,
+            "exp": {
+              "policy": 10
+            },
+            "relations": {
+              "supporters": 5
+            }
+          }
+        },
+        {
+          "label": "社長とじっくり経営談義をする",
+          "result": "資金繰りの実情を学び、経営者仲間の紹介も受けた。",
+          "effects": {
+            "exp": {
+              "money": 10,
+              "network": 8
+            }
+          },
+          "risk": {
+            "ability": "資金",
+            "threshold": 50,
+            "fail_result": "数字の感覚が甘いと思われ、話が浅く終わってしまった。",
+            "fail_effects": {
+              "relations": {
+                "supporters": -3
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "typhoon_cleanup",
+      "weight": 2,
+      "title": "台風一過の後片付け",
+      "text": "昨夜の台風で、地元の道路に折れた枝やトタンが散乱している。",
+      "choices": [
+        {
+          "label": "軍手をはめて撤去作業を手伝う",
+          "result": "泥にまみれて片付けを手伝い、住民から大いに感謝された。",
+          "effects": {
+            "stamina": -15,
+            "jiban_progress": 18,
+            "relations": {
+              "supporters": 7
+            }
+          }
+        },
+        {
+          "label": "災害相談の窓口を案内する",
+          "result": "的確な助言が役に立ち、行政との連携もスムーズだった。",
+          "effects": {
+            "stamina": -5,
+            "exp": {
+              "policy": 8
+            },
+            "relations": {
+              "kengi": 4
+            }
+          },
+          "risk": {
+            "ability": "政策",
+            "threshold": 45,
+            "fail_result": "制度を間違えて伝えてしまい、混乱を招いた。",
+            "fail_effects": {
+              "relations": {
+                "supporters": -4
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "neighborhood_funeral",
+      "weight": 3,
+      "title": "支援者の通夜",
+      "text": "長年応援してくれていた町内会の重鎮が亡くなった。通夜の連絡が入る。",
+      "choices": [
+        {
+          "label": "予定を変更して通夜に参列する",
+          "result": "遺族に深く感謝され、生前の支援に報いることができた。",
+          "effects": {
+            "stamina": -8,
+            "relations": {
+              "supporters": 8
+            },
+            "jiban_progress": 10
+          }
+        },
+        {
+          "label": "弔電を送り後日墓参りする",
+          "result": "遅れても手を合わせに行き、義理を果たせた。",
+          "effects": {
+            "stamina": -5,
+            "relations": {
+              "supporters": 4
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "local_newspaper_column",
+      "weight": 2,
+      "title": "地方紙の投稿欄",
+      "text": "地元紙の読者欄に、地域の交通不便を訴える切実な投稿が載っていた。",
+      "choices": [
+        {
+          "label": "バス会社と町内会に話を聞く",
+          "result": "問題の背景を丁寧に取材し、記者からも一目置かれた。",
+          "effects": {
+            "stamina": -10,
+            "exp": {
+              "policy": 10,
+              "network": 6
+            },
+            "relations": {
+              "press": 4
+            }
+          }
+        },
+        {
+          "label": "自分のSNSで問題提起する",
+          "result": "地域の声がネット上で広がり、注目を集めることができた。",
+          "effects": {
+            "exp": {
+              "media": 10
+            },
+            "relations": {
+              "press": 2
+            }
+          },
+          "risk": {
+            "ability": "政策",
+            "threshold": 50,
+            "fail_result": "的外れなコメントが炎上し、評判を落としてしまった。",
+            "fail_effects": {
+              "relations": {
+                "press": -4,
+                "supporters": -3
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "senior_club_karaoke",
+      "weight": 3,
+      "title": "老人クラブの茶話会",
+      "text": "公民館の茶話会に顔を出したら、お年寄りたちから歌を一曲せがまれた。",
+      "choices": [
+        {
+          "label": "照れずに十八番を熱唱する",
+          "result": "堂々たる歌いっぷりに大喝采。ファンが一気に増えた。",
+          "effects": {
+            "stamina": -6,
+            "mood": 1,
+            "relations": {
+              "supporters": 6
+            }
+          },
+          "risk": {
+            "ability": "知名度",
+            "threshold": 40,
+            "fail_result": "音程が外れまくり、苦笑いで拍手されてしまった。",
+            "fail_effects": {
+              "stamina": -6,
+              "mood": -1
+            }
+          }
+        },
+        {
+          "label": "聞き役に徹してお茶を注ぐ",
+          "result": "昔話に笑顔で相槌を打ち、穏やかに距離を縮めた。",
+          "effects": {
+            "stamina": -4,
+            "relations": {
+              "supporters": 4
+            },
+            "jiban_progress": 6
+          }
+        }
+      ]
+    },
+    {
+      "id": "chamber_of_commerce_talk",
+      "weight": 2,
+      "title": "若手経営者との対話",
+      "text": "地元の若手経営者たちが集まり、町の将来について語り合う場を設けた。",
+      "choices": [
+        {
+          "label": "遅くまで本音で意見を交わす",
+          "result": "現場の切実な声を吸収し、住民目線の感覚が磨かれた。",
+          "effects": {
+            "stamina": -14,
+            "money": -5,
+            "exp": {
+              "network": 12
+            },
+            "skills_add": [
+              "genba_no_koe"
+            ]
+          }
+        },
+        {
+          "label": "自分の政策案をプレゼンする",
+          "result": "具体案に納得の声が多く、頼もしい仲間が増えた。",
+          "effects": {
+            "stamina": -6,
+            "exp": {
+              "policy": 8
+            }
+          },
+          "risk": {
+            "ability": "政策",
+            "threshold": 55,
+            "fail_result": "現場感がないと反論され、議論が噛み合わなかった。",
+            "fail_effects": {
+              "stamina": -6,
+              "relations": {
+                "supporters": -4
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "stray_wild_boar",
+      "weight": 2,
+      "title": "農村部の獣害対策",
+      "text": "山間部の集落から「イノシシに畑を荒らされて困っている」と連絡が入った。",
+      "choices": [
+        {
+          "label": "現地を見て防護柵の設置を動く",
+          "result": "素早い対応に農家の人々が喜び、強い支持を得た。",
+          "effects": {
+            "stamina": -12,
+            "jiban_progress": 14,
+            "relations": {
+              "supporters": 6,
+              "kengi": 3
+            }
+          },
+          "risk": {
+            "ability": "調整",
+            "threshold": 50,
+            "fail_result": "予算の壁に阻まれ、設置が先送りになってしまった。",
+            "fail_effects": {
+              "stamina": -12,
+              "relations": {
+                "supporters": -3
+              }
+            }
+          }
+        },
+        {
+          "label": "猟友会のベテランに相談する",
+          "result": "野生動物の生態と現実的な対策を深く学べた。",
+          "effects": {
+            "stamina": -6,
+            "exp": {
+              "network": 8,
+              "policy": 8
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "nomination_rivalry",
+      "weight": 2,
+      "status": [
+        "候補"
+      ],
+      "once": true,
+      "title": "公認をめぐる綱引き",
+      "text": "党の公認枠をめぐり、別の有力候補も名乗りを上げた。党支部の空気は微妙だ。",
+      "choices": [
+        {
+          "label": "県議たちに頭を下げて回る",
+          "result": "地道な誠意が伝わり、県議団からの推薦を取り付けた。",
+          "effects": {
+            "stamina": -12,
+            "relations": {
+              "kengi": 8,
+              "party": 4
+            },
+            "jiban_progress": 10
+          },
+          "risk": {
+            "ability": "調整",
+            "threshold": 50,
+            "fail_result": "根回し不足を見透かされ、冷たくあしらわれた。",
+            "fail_effects": {
+              "stamina": -12,
+              "relations": {
+                "kengi": -4,
+                "party": -3
+              }
+            }
+          }
+        },
+        {
+          "label": "街頭演説の実績で勝負する",
+          "result": "聴衆の熱気を見た党本部が、実力を認めてくれた。",
+          "effects": {
+            "stamina": -14,
+            "exp": {
+              "election": 12,
+              "media": 8
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "poster_pasting",
+      "weight": 4,
+      "status": [
+        "候補",
+        "浪人"
+      ],
+      "title": "二連ポスター貼り",
+      "text": "雨上がり、剥がれかけた政治活動用のポスターを貼り替える作業が残っている。",
+      "choices": [
+        {
+          "label": "{secretary}と二人で回る",
+          "result": "息の合った作業で一気に片付き、仲も深まった。",
+          "effects": {
+            "stamina": -12,
+            "jiban_progress": 14,
+            "relations": {
+              "secretary": 4
+            }
+          }
+        },
+        {
+          "label": "支援者の壁を借りて新規開拓",
+          "result": "交渉が実り、目立つ角地に新しいポスターが増えた。",
+          "effects": {
+            "stamina": -15,
+            "jiban_progress": 18,
+            "exp": {
+              "election": 8
+            }
+          },
+          "risk": {
+            "ability": "組織",
+            "threshold": 45,
+            "fail_result": "断られ続けて心が折れそうになり、疲れだけが残った。",
+            "fail_effects": {
+              "stamina": -15,
+              "mood": -1
+            }
+          }
+        },
+        {
+          "label": "業者に貼り替えを依頼する",
+          "result": "資金は減ったが、美しい状態で維持できた。",
+          "effects": {
+            "money": -15,
+            "jiban_progress": 8
+          }
+        }
+      ]
+    },
+    {
+      "id": "family_anxiety_budget",
+      "weight": 3,
+      "status": [
+        "候補",
+        "浪人"
+      ],
+      "title": "家計簿と家族の不安",
+      "text": "政治活動で貯金が減る一方だ。家族が家計簿を見ながら不安そうにしている。",
+      "choices": [
+        {
+          "label": "必ず結果を出そうと誓い合う",
+          "result": "家族の覚悟に触れ、迷いが吹き飛んだ。",
+          "effects": {
+            "mood": 1,
+            "exp": {
+              "election": 6
+            }
+          }
+        },
+        {
+          "label": "身の回りの節約を徹底する",
+          "result": "無駄を削り出し、少しでも活動資金を捻出した。",
+          "effects": {
+            "money": 15,
+            "stamina": -6
+          }
+        },
+        {
+          "label": "生活費のため私物を売る",
+          "result": "大切にしていた趣味の品を手放し、資金を作った。",
+          "effects": {
+            "money": 30,
+            "mood": -1
+          }
+        }
+      ]
+    },
+    {
+      "id": "ronin_fellow_meetup",
+      "weight": 3,
+      "status": [
+        "浪人"
+      ],
+      "title": "同じ浪人仲間との酒",
+      "text": "前回の選挙で惜敗した他県の元議員から「情報交換しよう」と誘われた。",
+      "choices": [
+        {
+          "label": "敗因を語り合い再起を誓う",
+          "result": "苦労がわかる者同士で励まし合い、元気が湧いた。",
+          "effects": {
+            "stamina": -6,
+            "money": -3,
+            "mood": 1,
+            "exp": {
+              "election": 12
+            }
+          }
+        },
+        {
+          "label": "相手の選挙戦術を聞き出す",
+          "result": "他県の事情を知り、次の戦いに活かせる知恵を得た。",
+          "effects": {
+            "stamina": -5,
+            "money": -3,
+            "exp": {
+              "network": 10,
+              "election": 8
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "ronin_supporters_leave",
+      "weight": 2,
+      "status": [
+        "浪人"
+      ],
+      "title": "後援会の動揺",
+      "text": "落選後、後援会の若手メンバーが「次の選挙まで待てない」と離れかけている。",
+      "choices": [
+        {
+          "label": "直接会って熱意を伝える",
+          "result": "本気の覚悟が伝わり、もう一度ついていくと約束してくれた。",
+          "effects": {
+            "stamina": -12,
+            "relations": {
+              "supporters": 8
+            }
+          },
+          "risk": {
+            "ability": "弁舌",
+            "threshold": 55,
+            "fail_result": "引き留めに失敗し、数名が会を抜けてしまった。",
+            "fail_effects": {
+              "stamina": -12,
+              "relations": {
+                "supporters": -6
+              },
+              "mood": -1
+            }
+          }
+        },
+        {
+          "label": "青年部の運営を任せてみる",
+          "result": "責任を持たせたことで、彼らにやる気が戻ってきた。",
+          "effects": {
+            "exp": {
+              "network": 10
+            },
+            "relations": {
+              "supporters": 5
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "candidate_pamphlet",
+      "weight": 3,
+      "status": [
+        "候補"
+      ],
+      "title": "手作りの政策ビラ",
+      "text": "自分の考えを知ってもらうため、政策ビラを自作して駅前で配ることにした。",
+      "choices": [
+        {
+          "label": "熱い演説と共に毎日配り切る",
+          "result": "街頭で立ち止まる人が増え、辻説法の感覚を掴んだ。",
+          "effects": {
+            "stamina": -15,
+            "jiban_progress": 15,
+            "skills_add": [
+              "tsuji_seppou"
+            ]
+          }
+        },
+        {
+          "label": "デザインに凝りSNSにも載せる",
+          "result": "見やすい図解が好評で、政策への関心が高まった。",
+          "effects": {
+            "stamina": -8,
+            "money": -5,
+            "exp": {
+              "media": 12
+            }
+          },
+          "risk": {
+            "ability": "政策",
+            "threshold": 45,
+            "fail_result": "文字が多すぎて読みづらく、受け取ってもらえなかった。",
+            "fail_effects": {
+              "stamina": -8,
+              "money": -5
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "ronin_study_lecture",
+      "weight": 2,
+      "status": [
+        "浪人"
+      ],
+      "title": "カルチャー講座の講師",
+      "text": "地元のカルチャースクールから、政治の仕組みを解説する講座を頼まれた。",
+      "choices": [
+        {
+          "label": "丁寧な資料を作り全力で話す",
+          "result": "分かりやすい解説が評判になり、謝礼ももらえた。",
+          "effects": {
+            "stamina": -8,
+            "money": 10,
+            "exp": {
+              "policy": 10,
+              "media": 8
+            }
+          },
+          "risk": {
+            "ability": "弁舌",
+            "threshold": 50,
+            "fail_result": "専門用語を並べすぎて、受講生が眠そうにしていた。",
+            "fail_effects": {
+              "stamina": -8,
+              "money": 5
+            }
+          }
+        },
+        {
+          "label": "質疑応答中心で気楽にこなす",
+          "result": "市民の素朴な疑問に触れ、いい勉強になった。",
+          "effects": {
+            "money": 5,
+            "exp": {
+              "network": 5
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "candidate_office_opening",
+      "weight": 2,
+      "status": [
+        "候補"
+      ],
+      "once": true,
+      "title": "小さな事務所開き",
+      "text": "プレハブを借りて個人事務所を開いた。支援者や記者が数人集まっている。",
+      "choices": [
+        {
+          "label": "決意表明を力強くぶち上げる",
+          "result": "気迫のこもった挨拶に、会場が熱気に包まれた。",
+          "effects": {
+            "stamina": -8,
+            "mood": 1,
+            "relations": {
+              "supporters": 6,
+              "press": 4
+            },
+            "jiban_progress": 12
+          },
+          "risk": {
+            "ability": "弁舌",
+            "threshold": 45,
+            "fail_result": "緊張で声が裏返り、迫力に欠けてしまった。",
+            "fail_effects": {
+              "stamina": -8,
+              "relations": {
+                "press": -2
+              }
+            }
+          }
+        },
+        {
+          "label": "来場者一人ひとりと握手する",
+          "result": "感謝の気持ちを直接伝え、支援の輪が広がった。",
+          "effects": {
+            "stamina": -6,
+            "relations": {
+              "supporters": 8
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "diet_dormitory_life",
+      "weight": 3,
+      "status": [
+        "議員"
+      ],
+      "title": "議員宿舎の夜",
+      "text": "国会会期中、東京の議員宿舎で一人カップ麺をすする。ふと地元を思い出す。",
+      "choices": [
+        {
+          "label": "地元の支援者に近況を電話する",
+          "result": "「体には気をつけて」と温かい言葉を掛けられた。",
+          "effects": {
+            "stamina": -5,
+            "relations": {
+              "supporters": 5
+            },
+            "jiban_progress": 6
+          }
+        },
+        {
+          "label": "翌日の法案資料を読み込む",
+          "result": "論点が整理でき、国会での議論に自信がついた。",
+          "effects": {
+            "stamina": -8,
+            "exp": {
+              "policy": 12
+            }
+          }
+        },
+        {
+          "label": "今夜は早く寝て体力を回復する",
+          "result": "ぐっすり眠り、翌朝すっきりと目覚めた。",
+          "effects": {
+            "stamina": 15,
+            "mood": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": "overseas_inspection",
+      "weight": 2,
+      "status": [
+        "議員"
+      ],
+      "title": "委員会の海外視察",
+      "text": "所属委員会で海外視察の話が持ち上がった。ただし世論の目も厳しい。",
+      "choices": [
+        {
+          "label": "参加して現地の制度を学ぶ",
+          "result": "充実した報告書をまとめ、政策に活かすことができた。",
+          "effects": {
+            "stamina": -10,
+            "exp": {
+              "policy": 15,
+              "network": 8
+            }
+          },
+          "risk": {
+            "ability": "政策",
+            "threshold": 60,
+            "fail_result": "「税金で物見遊山」と地元紙に厳しく叩かれた。",
+            "fail_effects": {
+              "relations": {
+                "press": -6,
+                "supporters": -4
+              },
+              "skills_add": [
+                "jimoto_fuzai"
+              ]
+            }
+          }
+        },
+        {
+          "label": "地元対応を優先して辞退する",
+          "result": "堅実な姿勢が地元で評価されたが、党内では少し浮いた。",
+          "effects": {
+            "relations": {
+              "supporters": 4,
+              "party": -3
+            },
+            "jiban_progress": 8
+          }
+        }
+      ]
+    },
+    {
+      "id": "suspicious_donation",
+      "weight": 2,
+      "status": [
+        "議員"
+      ],
+      "title": "怪しい献金の打診",
+      "text": "見知らぬ人物が事務所を訪れ「表に出ない形で資金を用意できる」と囁いた。",
+      "choices": [
+        {
+          "label": "きっぱりと断り追い返す",
+          "result": "甘い誘いを退け、クリーンな政治姿勢を守り抜いた。",
+          "effects": {
+            "exp": {
+              "election": 5
+            },
+            "relations": {
+              "secretary": 4
+            },
+            "mood": 1
+          }
+        },
+        {
+          "label": "内密に受け取ってしまう",
+          "result": "後日違法献金が発覚し、巨額の返金と謝罪に追われた。",
+          "effects": {
+            "money": -80,
+            "relations": {
+              "press": -10,
+              "supporters": -10,
+              "party": -8
+            },
+            "mood": -1
+          }
+        },
+        {
+          "label": "{secretary}に記録させ通報",
+          "result": "毅然とした対応が称賛され、関係各所から信頼を得た。",
+          "effects": {
+            "exp": {
+              "policy": 8
+            },
+            "relations": {
+              "press": 4,
+              "secretary": 3
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "party_bukai_debate",
+      "weight": 3,
+      "status": [
+        "議員"
+      ],
+      "title": "党の部会での激論",
+      "text": "党の部会で、地元の利益と国益がぶつかる法案について激しい議論になった。",
+      "choices": [
+        {
+          "label": "地元の反対意見を堂々と主張",
+          "result": "筋を通す姿勢が評価され、地元の期待に応えられた。",
+          "effects": {
+            "stamina": -10,
+            "relations": {
+              "supporters": 8,
+              "party": -4
+            },
+            "exp": {
+              "policy": 8
+            }
+          },
+          "risk": {
+            "ability": "弁舌",
+            "threshold": 65,
+            "fail_result": "感情的な反論になり、党の重鎮から冷ややかな目で見られた。",
+            "fail_effects": {
+              "stamina": -10,
+              "relations": {
+                "party": -8
+              }
+            }
+          }
+        },
+        {
+          "label": "妥協点を探りながら根回しする",
+          "result": "双方の顔を立てる修正案をまとめ、党内で評価された。",
+          "effects": {
+            "stamina": -8,
+            "relations": {
+              "party": 6
+            },
+            "exp": {
+              "network": 10
+            }
+          }
+        },
+        {
+          "label": "空気を読んで賛成に回る",
+          "result": "波風は立たなかったが、後援会からは不満が漏れた。",
+          "effects": {
+            "relations": {
+              "party": 4,
+              "supporters": -4
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "diet_school_visit",
+      "weight": 3,
+      "status": [
+        "議員"
+      ],
+      "title": "地元校の国会見学",
+      "text": "地元の中学生たちが修学旅行で国会議事堂に見学に来た。案内を頼まれている。",
+      "choices": [
+        {
+          "label": "合間を縫って直接案内する",
+          "result": "生徒たちの目が輝き、保護者たちにも評判が広がった。",
+          "effects": {
+            "stamina": -8,
+            "jiban_progress": 12,
+            "relations": {
+              "supporters": 5
+            }
+          }
+        },
+        {
+          "label": "議事堂前で記念撮影だけする",
+          "result": "短い時間だったが、先生と生徒に笑顔で挨拶できた。",
+          "effects": {
+            "stamina": -3,
+            "jiban_progress": 5
+          }
+        },
+        {
+          "label": "{secretary}に案内を任せる",
+          "result": "「忙しいから仕方ないね」と少し残念そうにされた。",
+          "effects": {
+            "relations": {
+              "secretary": -3
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "tv_debate_appearance",
+      "weight": 2,
+      "status": [
+        "議員"
+      ],
+      "title": "討論番組への出演",
+      "text": "週末のテレビの討論番組に、議員代表の一人として出演してほしいと依頼が来た。",
+      "choices": [
+        {
+          "label": "鋭い論理で相手をやり込める",
+          "result": "切れ味のある弁論が評判を呼び、名前が一気に広まった。",
+          "effects": {
+            "stamina": -10,
+            "abilities": {
+              "知名度": 2
+            },
+            "exp": {
+              "media": 15
+            },
+            "skills_add": [
+              "hasshinryoku"
+            ]
+          },
+          "risk": {
+            "ability": "弁舌",
+            "threshold": 65,
+            "fail_result": "言葉尻を捉えられて炎上し、イメージを損ねてしまった。",
+            "fail_effects": {
+              "stamina": -10,
+              "relations": {
+                "party": -4,
+                "press": -5
+              },
+              "skills_add": [
+                "enjou"
+              ]
+            }
+          }
+        },
+        {
+          "label": "穏健な解説に徹してまとめる",
+          "result": "落ち着いた語り口で、幅広い層に安心感を与えた。",
+          "effects": {
+            "stamina": -6,
+            "exp": {
+              "media": 8,
+              "policy": 6
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "secretary_poaching",
+      "weight": 2,
+      "status": [
+        "議員"
+      ],
+      "title": "秘書の引き抜き話",
+      "text": "他の議員事務所から、優秀な{secretary}を引き抜こうとしている噂を聞いた。",
+      "choices": [
+        {
+          "label": "待遇を上げて労をねぎらう",
+          "result": "「先生についていきます」と力強く言ってくれた。",
+          "effects": {
+            "money": -20,
+            "relations": {
+              "secretary": 10
+            },
+            "mood": 1
+          }
+        },
+        {
+          "label": "今後の夢を語り引き留める",
+          "result": "熱意が通じ、これからも二人三脚で歩むと誓い合った。",
+          "effects": {
+            "stamina": -5,
+            "relations": {
+              "secretary": 6
+            }
+          },
+          "risk": {
+            "ability": "調整",
+            "threshold": 50,
+            "fail_result": "言葉だけでは響かず、少し距離を置かれてしまった。",
+            "fail_effects": {
+              "relations": {
+                "secretary": -6
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "diet_corridor_press",
+      "weight": 3,
+      "status": [
+        "議員"
+      ],
+      "title": "廊下でのぶら下がり",
+      "text": "本会議を終えて廊下に出ると、記者たちがマイクを向けて一斉に囲んできた。",
+      "choices": [
+        {
+          "label": "記者の目を見て明快に答える",
+          "result": "分かりやすい一言が夕方のニュースで取り上げられた。",
+          "effects": {
+            "stamina": -6,
+            "exp": {
+              "media": 12
+            },
+            "relations": {
+              "press": 5
+            }
+          },
+          "risk": {
+            "ability": "弁舌",
+            "threshold": 60,
+            "fail_result": "誘導尋問に引っかかり、失言扱いされてしまった。",
+            "fail_effects": {
+              "stamina": -6,
+              "relations": {
+                "press": -6,
+                "party": -3
+              }
+            }
+          }
+        },
+        {
+          "label": "コメントを控え足早に去る",
+          "result": "失言は防いだが、記者からは少し渋い顔をされた。",
+          "effects": {
+            "relations": {
+              "press": -2
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "diet_bill_drafting",
+      "weight": 2,
+      "status": [
+        "議員"
+      ],
+      "title": "議員立法の勉強会",
+      "text": "志を同じくする議員仲間から、新しい議員立法の共同提案者に誘われた。",
+      "choices": [
+        {
+          "label": "徹夜で条文の検討に加わる",
+          "result": "法制局との折衝をやり遂げ、政策通として成長した。",
+          "effects": {
+            "stamina": -15,
+            "exp": {
+              "policy": 18,
+              "network": 8
+            },
+            "abilities": {
+              "政策": 1
+            }
+          },
+          "risk": {
+            "ability": "政策",
+            "threshold": 60,
+            "fail_result": "法案の穴を指摘され、修正作業に追われて疲弊した。",
+            "fail_effects": {
+              "stamina": -18,
+              "exp": {
+                "policy": 6
+              }
+            }
+          }
+        },
+        {
+          "label": "名前だけ連ねて資金を出す",
+          "result": "勉強会への協力に感謝され、議員間の繋がりができた。",
+          "effects": {
+            "money": -10,
+            "exp": {
+              "network": 6
+            }
+          }
+        },
+        {
+          "label": "時期尚早と見送る",
+          "result": "無理に背伸びせず、自分の担当分野に注力した。",
+          "effects": {}
+        }
+      ]
+    },
+    {
+      "id": "minister_bureaucrat_clash",
+      "weight": 3,
+      "status": [
+        "議員"
+      ],
+      "post": [
+        "minister"
+      ],
+      "title": "官僚たちの抵抗",
+      "text": "大臣として新しい改革案を示したが、省庁の幹部たちが「前例がない」と渋っている。",
+      "choices": [
+        {
+          "label": "データを突きつけ決断を迫る",
+          "result": "大臣のリーダーシップに官僚も折れ、改革が前進した。",
+          "effects": {
+            "stamina": -12,
+            "exp": {
+              "policy": 15
+            },
+            "approval": 1
+          },
+          "risk": {
+            "ability": "政策",
+            "threshold": 65,
+            "fail_result": "官僚の理屈に言い負かされ、案が骨抜きになった。",
+            "fail_effects": {
+              "stamina": -12,
+              "approval": -1,
+              "mood": -1
+            }
+          }
+        },
+        {
+          "label": "現場を交えて折衷案を作る",
+          "result": "粘り強い対話が実り、実行可能な現実案にまとまった。",
+          "effects": {
+            "stamina": -10,
+            "exp": {
+              "network": 10
+            },
+            "relations": {
+              "party": 3
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "minister_disaster_site",
+      "weight": 2,
+      "status": [
+        "議員"
+      ],
+      "post": [
+        "minister"
+      ],
+      "title": "閣僚としての現地視察",
+      "text": "他県で大きな災害が発生し、担当大臣として急遽現地を視察することになった。",
+      "choices": [
+        {
+          "label": "被災者の目線で話を聞き続ける",
+          "result": "真摯な姿勢が報道され、国民からの信頼が高まった。",
+          "effects": {
+            "stamina": -15,
+            "approval": 1,
+            "exp": {
+              "policy": 10
+            }
+          }
+        },
+        {
+          "label": "自治体首長との連携を最優先",
+          "result": "迅速な支援策を約束し、地域の安心感につながった。",
+          "effects": {
+            "stamina": -10,
+            "relations": {
+              "kengi": 5
+            },
+            "exp": {
+              "network": 10
+            }
+          },
+          "risk": {
+            "ability": "調整",
+            "threshold": 60,
+            "fail_result": "発言の一部が切り取られて報じられ、批判を浴びた。",
+            "fail_effects": {
+              "stamina": -10,
+              "approval": -2,
+              "relations": {
+                "press": -4
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "party_exec_nomination",
+      "weight": 3,
+      "status": [
+        "議員"
+      ],
+      "post": [
+        "party_exec"
+      ],
+      "title": "次期選挙の公認調整",
+      "text": "党三役として全国から届く公認申請をさばく。競合する選挙区の扱いが難しい。",
+      "choices": [
+        {
+          "label": "双方の顔を立てて円満に調整",
+          "result": "見事な差配でしこりを残さず、根回しの神髄を見せた。",
+          "effects": {
+            "stamina": -14,
+            "relations": {
+              "party": 8
+            },
+            "exp": {
+              "network": 15
+            },
+            "skills_add": [
+              "nemawashi_oni"
+            ]
+          },
+          "risk": {
+            "ability": "調整",
+            "threshold": 75,
+            "fail_result": "分裂選挙になってしまい、党内の不満が一気に噴出した。",
+            "fail_effects": {
+              "stamina": -14,
+              "relations": {
+                "party": -8
+              },
+              "approval": -1
+            }
+          }
+        },
+        {
+          "label": "世論調査の数字で機械的に決める",
+          "result": "合理的ではあったが、落選した陣営から恨みを買った。",
+          "effects": {
+            "stamina": -6,
+            "exp": {
+              "election": 10
+            },
+            "relations": {
+              "party": -3
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "pm_summit_dinner",
+      "weight": 3,
+      "status": [
+        "議員"
+      ],
+      "post": [
+        "pm"
+      ],
+      "title": "首脳会議の舞台裏",
+      "text": "国際会議に出席し、各国の首脳と非公式の夕食会に臨む。緊張感が高まる。",
+      "choices": [
+        {
+          "label": "ユーモアを交え信頼関係を築く",
+          "result": "和やかな笑いが生まれ、首脳間の距離が一気に縮まった。",
+          "effects": {
+            "stamina": -12,
+            "approval": 1,
+            "exp": {
+              "network": 15
+            },
+            "abilities": {
+              "知名度": 1
+            }
+          },
+          "risk": {
+            "ability": "弁舌",
+            "threshold": 70,
+            "fail_result": "通訳を介したやり取りが噛み合わず、場が微妙になった。",
+            "fail_effects": {
+              "stamina": -12,
+              "approval": -1
+            }
+          }
+        },
+        {
+          "label": "日本の主張を淡々と正確に伝える",
+          "result": "実直な外交姿勢を示し、国益をしっかりと守り抜いた。",
+          "effects": {
+            "stamina": -10,
+            "exp": {
+              "policy": 12
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "pm_citizen_letter",
+      "weight": 1,
+      "status": [
+        "議員"
+      ],
+      "post": [
+        "pm"
+      ],
+      "once": true,
+      "title": "官邸に届いた手紙",
+      "text": "激務の合間、机の上に置かれた一般市民からの直筆の手紙が目に留まった。",
+      "choices": [
+        {
+          "label": "隅々まで読み返し返事を書く",
+          "result": "国民の暮らしの重みを再確認し、政治への情熱が燃えた。",
+          "effects": {
+            "stamina": -10,
+            "mood": 1,
+            "exp": {
+              "policy": 15
+            },
+            "approval": 1
+          }
+        },
+        {
+          "label": "秘書官に状況の調査を指示する",
+          "result": "現場の実態が分かり、次の施策を打つ参考になった。",
+          "effects": {
+            "exp": {
+              "policy": 8
+            },
+            "relations": {
+              "party": 2
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "leader_unity_speech",
+      "weight": 3,
+      "status": [
+        "議員"
+      ],
+      "post": [
+        "leader"
+      ],
+      "title": "野党共闘の話し合い",
+      "text": "野党の党首として他党との協力関係を築くべきか、独自路線を行くべきか迫られている。",
+      "choices": [
+        {
+          "label": "他党の党首と膝を詰めて話す",
+          "result": "共通の政策で一致点を見出し、選挙協力への道を開いた。",
+          "effects": {
+            "stamina": -12,
+            "exp": {
+              "network": 15
+            },
+            "relations": {
+              "press": 4
+            }
+          },
+          "risk": {
+            "ability": "調整",
+            "threshold": 65,
+            "fail_result": "条件面で折り合わず、決裂が報じられてしまった。",
+            "fail_effects": {
+              "stamina": -12,
+              "relations": {
+                "party": -5,
+                "press": -4
+              }
+            }
+          }
+        },
+        {
+          "label": "党の独自色を打ち出す演説をする",
+          "result": "ぶれない姿勢が支持層に刺さり、党内の結束が強まった。",
+          "effects": {
+            "stamina": -10,
+            "exp": {
+              "media": 12
+            },
+            "relations": {
+              "supporters": 5,
+              "party": 4
             }
           }
         }

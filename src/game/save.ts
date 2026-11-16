@@ -65,6 +65,8 @@ export async function deserializeCareer(save: SaveData, names: NameData): Promis
   // 読み込んだデータを書き換えても元に影響しないよう、写しを使う
   const s = structuredClone(save);
   const roster = s.world.roster;
+  // 特殊能力を入れる前のセーブデータには skills がない
+  for (const m of [...roster, ...s.world.ronin, s.world.player]) m.skills ??= [];
   // 議員のプレイヤーは名簿の中の本人と同じものにする
   const player = roster.find((m) => m.id === s.world.player.id) ?? s.world.player;
   const byId = new Map<number, Member>([...roster, ...s.world.ronin, player].map((m) => [m.id, m]));

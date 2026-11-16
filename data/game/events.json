@@ -1,5 +1,5 @@
 {
-  "note": "毎月の終わりに起きうる出来事。chance はひと月に起きる確率、weight は起きたときにどれが選ばれるかの重み。target が cabinet_low_speech なら弁舌の低い閣僚ほど選ばれやすい。text は記録に残る文。lines はポップアップで見せるセリフ（speaker は dialogue.json と同じ役割に加え、member が出来事の当事者）。{member} は当事者の名前に置き換える。",
+  "note": "毎月の終わりに起きうる出来事。chance はひと月に起きる確率、weight は起きたときにどれが選ばれるかの重み。target が cabinet_low_speech なら弁舌の低い閣僚ほど選ばれやすい。text は記録に残る文。lines はポップアップで見せるセリフ（speaker は dialogue.json と同じ役割に加え、member が出来事の当事者）。{member} は当事者の名前に置き換える。 months を書いた出来事はその月だけ起きる。",
   "chance": 0.35,
   "events": [
     {
@@ -10,10 +10,22 @@
       "title": "閣僚の失言",
       "text": "{member}が記者会見で失言し、批判を浴びた。",
       "lines": [
-        { "speaker": "reporter", "text": "先ほどの発言は、被災された方々への配慮に欠けるのではありませんか。" },
-        { "speaker": "member", "text": "え、いや、その……そういう意味で申し上げたのではなく……。" },
-        { "speaker": "chief_cabinet_secretary", "text": "総理、すぐに釈明させます。これ以上、騒ぎが大きくならないように。" },
-        { "speaker": "pm", "text": "言葉一つで政権が揺らぐ。肝に銘じてもらわないと困る。" }
+        {
+          "speaker": "reporter",
+          "text": "先ほどの発言は、被災された方々への配慮に欠けるのではありませんか。"
+        },
+        {
+          "speaker": "member",
+          "text": "え、いや、その……そういう意味で申し上げたのではなく……。"
+        },
+        {
+          "speaker": "chief_cabinet_secretary",
+          "text": "総理、すぐに釈明させます。これ以上、騒ぎが大きくならないように。"
+        },
+        {
+          "speaker": "pm",
+          "text": "言葉一つで政権が揺らぐ。肝に銘じてもらわないと困る。"
+        }
       ]
     },
     {
@@ -25,10 +37,22 @@
       "title": "政治資金の疑惑",
       "text": "{member}の政治資金をめぐる疑惑が報じられた。",
       "lines": [
-        { "speaker": "narrator", "text": "週刊誌が、{member}の政治資金をめぐる疑惑を報じた。" },
-        { "speaker": "member", "text": "記載に不備があったかもしれませんが、私的に使ったことは一切ありません。" },
-        { "speaker": "opposition_leader", "text": "与党はいつまで同じことを繰り返すつもりですか。徹底的に追及します。" },
-        { "speaker": "secretary_general", "text": "党内も動揺しています。早めに手を打たないと。" }
+        {
+          "speaker": "narrator",
+          "text": "週刊誌が、{member}の政治資金をめぐる疑惑を報じた。"
+        },
+        {
+          "speaker": "member",
+          "text": "記載に不備があったかもしれませんが、私的に使ったことは一切ありません。"
+        },
+        {
+          "speaker": "opposition_leader",
+          "text": "与党はいつまで同じことを繰り返すつもりですか。徹底的に追及します。"
+        },
+        {
+          "speaker": "secretary_general",
+          "text": "党内も動揺しています。早めに手を打たないと。"
+        }
       ]
     },
     {
@@ -38,9 +62,18 @@
       "title": "景気指標が好調",
       "text": "景気指標が予想を上回り、政権への評価が上向いた。",
       "lines": [
-        { "speaker": "narrator", "text": "発表された景気指標が、市場の予想を上回った。" },
-        { "speaker": "chief_cabinet_secretary", "text": "総理、追い風です。この勢いで政策を前に進めましょう。" },
-        { "speaker": "pm", "text": "浮かれずに、実感の伴う景気回復を目指そう。" }
+        {
+          "speaker": "narrator",
+          "text": "発表された景気指標が、市場の予想を上回った。"
+        },
+        {
+          "speaker": "chief_cabinet_secretary",
+          "text": "総理、追い風です。この勢いで政策を前に進めましょう。"
+        },
+        {
+          "speaker": "pm",
+          "text": "浮かれずに、実感の伴う景気回復を目指そう。"
+        }
       ]
     },
     {
@@ -50,9 +83,18 @@
       "title": "物価高への不満",
       "text": "物価の上昇が続き、生活への不満が高まった。",
       "lines": [
-        { "speaker": "reporter", "text": "総理、物価の上昇が止まりません。政府の対策は後手に回っているのではありませんか。" },
-        { "speaker": "pm", "text": "国民の皆さんの不安は重く受け止めています。必要な手は打ってまいります。" },
-        { "speaker": "opposition_leader", "text": "口先だけで、暮らしは一向によくなりません。" }
+        {
+          "speaker": "reporter",
+          "text": "総理、物価の上昇が止まりません。政府の対策は後手に回っているのではありませんか。"
+        },
+        {
+          "speaker": "pm",
+          "text": "国民の皆さんの不安は重く受け止めています。必要な手は打ってまいります。"
+        },
+        {
+          "speaker": "opposition_leader",
+          "text": "口先だけで、暮らしは一向によくなりません。"
+        }
       ]
     },
     {
@@ -62,9 +104,18 @@
       "title": "大雨への対応",
       "text": "大雨被害への政府の対応が評価された。",
       "lines": [
-        { "speaker": "narrator", "text": "各地を大雨が襲った。政府は直ちに対策本部を立ち上げた。" },
-        { "speaker": "pm", "text": "人命第一だ。自治体と連携して、できることはすべてやってくれ。" },
-        { "speaker": "chief_cabinet_secretary", "text": "迅速な初動は、現地でも高く評価されています。" }
+        {
+          "speaker": "narrator",
+          "text": "各地を大雨が襲った。政府は直ちに対策本部を立ち上げた。"
+        },
+        {
+          "speaker": "pm",
+          "text": "人命第一だ。自治体と連携して、できることはすべてやってくれ。"
+        },
+        {
+          "speaker": "chief_cabinet_secretary",
+          "text": "迅速な初動は、現地でも高く評価されています。"
+        }
       ]
     },
     {
@@ -74,9 +125,531 @@
       "title": "首脳会談",
       "text": "首脳会談が成果を上げ、首相への評価が高まった。",
       "lines": [
-        { "speaker": "narrator", "text": "首相は首脳会談に臨み、共同声明をまとめ上げた。" },
-        { "speaker": "reporter", "text": "総理、今回の会談の手応えはいかがでしたか。" },
-        { "speaker": "pm", "text": "率直に意見を交わすことができました。信頼関係を築く第一歩になったと思います。" }
+        {
+          "speaker": "narrator",
+          "text": "首相は首脳会談に臨み、共同声明をまとめ上げた。"
+        },
+        {
+          "speaker": "reporter",
+          "text": "総理、今回の会談の手応えはいかがでしたか。"
+        },
+        {
+          "speaker": "pm",
+          "text": "率直に意見を交わすことができました。信頼関係を築く第一歩になったと思います。"
+        }
+      ]
+    },
+    {
+      "id": "wage_hike_surge",
+      "weight": 2,
+      "approval": 2,
+      "months": [
+        3,
+        4
+      ],
+      "title": "春闘で大幅賃上げ",
+      "text": "春の労使交渉で大幅な賃上げ回答が相次ぎ、家計改善への期待が広がった。",
+      "lines": [
+        {
+          "speaker": "narrator",
+          "text": "主要企業の労使交渉で、前年を大きく上回る賃上げが妥結した。"
+        },
+        {
+          "speaker": "reporter",
+          "text": "政府の賃上げ要請が一定の成果を上げたとの見方もあります。"
+        },
+        {
+          "speaker": "chief_cabinet_secretary",
+          "text": "物価を上回る所得の伸びを、中小企業や地方にも波及させたい。"
+        },
+        {
+          "speaker": "pm",
+          "text": "経済の好循環が動き出した。気を緩めず後押しを続けよう。"
+        }
+      ]
+    },
+    {
+      "id": "intl_conference_lead",
+      "weight": 2,
+      "approval": 2,
+      "title": "国際会議で合意主導",
+      "text": "多国間会議で日本提案の協力枠組みが採択され、外交手腕が評価された。",
+      "lines": [
+        {
+          "speaker": "reporter",
+          "text": "総理、今回の国際会議で共同声明の取りまとめに成功しましたね。"
+        },
+        {
+          "speaker": "pm",
+          "text": "関係各国の粘り強い対話の成果です。今後も責任ある役割を果たします。"
+        },
+        {
+          "speaker": "opposition_leader",
+          "text": "合意自体は評価するが、国内への具体的な還元策を示してほしい。"
+        },
+        {
+          "speaker": "chief_cabinet_secretary",
+          "text": "各社とも総理の外交姿勢を好意的に報じています。"
+        }
+      ]
+    },
+    {
+      "id": "global_sports_triumph",
+      "weight": 1,
+      "approval": 2,
+      "title": "国際大会で快挙",
+      "text": "国際スポーツ大会で日本勢が躍進し、国内に明るい祝賀ムードが広がった。",
+      "lines": [
+        {
+          "speaker": "narrator",
+          "text": "世界の舞台での快挙に、全国各地から喜びの声が上がっている。"
+        },
+        {
+          "speaker": "chief_cabinet_secretary",
+          "text": "国民的な盛り上がりが、社会の空気を明るくしています。"
+        },
+        {
+          "speaker": "pm",
+          "text": "選手たちの努力に敬意を表したい。政府としても競技環境を整えよう。"
+        }
+      ]
+    },
+    {
+      "id": "science_breakthrough",
+      "weight": 1,
+      "approval": 2,
+      "title": "先端技術の成果発表",
+      "text": "国内研究機関の画期的な成果が発表され、政府の支援策にも注目が集まった。",
+      "lines": [
+        {
+          "speaker": "reporter",
+          "text": "世界初の技術実用化に目処がつき、関連産業の期待が高まっています。"
+        },
+        {
+          "speaker": "chief_cabinet_secretary",
+          "text": "地道な基礎研究への投資が、ようやく実を結び始めました。"
+        },
+        {
+          "speaker": "pm",
+          "text": "若い研究者が力を発揮できる環境を、これからさらに厚くしていこう。"
+        }
+      ]
+    },
+    {
+      "id": "emergency_relief_praised",
+      "weight": 2,
+      "approval": 3,
+      "title": "緊急支援策が迅速化",
+      "text": "燃料費や生活支援の給付が速やかに届き始め、政府の対応が評価された。",
+      "lines": [
+        {
+          "speaker": "narrator",
+          "text": "自治体と連携した給付手続きが例年になく円滑に進んでいる。"
+        },
+        {
+          "speaker": "reporter",
+          "text": "現場からは「今回は手続きが早くて助かった」との声が届いています。"
+        },
+        {
+          "speaker": "pm",
+          "text": "困っている人の手元に早く届いてこそ支援だ。引き続き現場を支える。"
+        },
+        {
+          "speaker": "secretary_general",
+          "text": "地元の支援者からも好評です。政権への追い風になります。"
+        }
+      ]
+    },
+    {
+      "id": "ruling_unity_agreement",
+      "weight": 2,
+      "approval": 2,
+      "cohesion": 0.04,
+      "title": "連立政権の結束確認",
+      "text": "与党と連立相手が重要課題の工程表で合意し、政権の安定感が評価された。",
+      "lines": [
+        {
+          "speaker": "secretary_general",
+          "text": "連立相手との協議がまとまり、共同で政策を前に進める態勢が整いました。"
+        },
+        {
+          "speaker": "pm",
+          "text": "異なる意見も丁寧にすり合わせた結果だ。政権の足場が固まったな。"
+        },
+        {
+          "speaker": "chief_cabinet_secretary",
+          "text": "安定的な政権運営への安心感が市場にも広がっています。"
+        }
+      ]
+    },
+    {
+      "id": "minister_resign_pressure",
+      "weight": 1,
+      "target": "cabinet_low_speech",
+      "approval": -4,
+      "cohesion": -0.05,
+      "title": "閣僚に辞任要求",
+      "text": "答弁の混乱が続いた{member}に辞任を求める声が強まり、任命責任が追及された。",
+      "lines": [
+        {
+          "speaker": "opposition_leader",
+          "text": "答弁が二転三転している。直ちに辞任すべきだ。"
+        },
+        {
+          "speaker": "member",
+          "text": "職責を果たすことで、信頼の回復に努めてまいります。"
+        },
+        {
+          "speaker": "pm",
+          "text": "重く受け止めている。本人には説明を尽くさせる。"
+        },
+        {
+          "speaker": "reporter",
+          "text": "与党内からも交代論が出ていますが、続投させますか。"
+        }
+      ]
+    },
+    {
+      "id": "favoritism_allegation",
+      "weight": 2,
+      "target": "ruling_member",
+      "approval": -3,
+      "cohesion": -0.04,
+      "title": "与党議員に便宜疑惑",
+      "text": "{member}の事務所が地元事業者への口利きを行ったとの疑惑が報じられた。",
+      "lines": [
+        {
+          "speaker": "reporter",
+          "text": "事業者の選定に際し、事務所側から省庁へ働きかけがあったのでは。"
+        },
+        {
+          "speaker": "member",
+          "text": "法に触れる行為は一切なく、事実関係を精査した上で説明します。"
+        },
+        {
+          "speaker": "opposition_leader",
+          "text": "政治の信頼を根底から揺るがす問題だ。参考人招致を求める。"
+        },
+        {
+          "speaker": "secretary_general",
+          "text": "当人に事実を確認し、国民に誤解を与えないよう厳正に対処します。"
+        }
+      ]
+    },
+    {
+      "id": "coalition_policy_rift",
+      "weight": 2,
+      "approval": -2,
+      "cohesion": -0.08,
+      "title": "連立内で方針対立",
+      "text": "重要法案の扱いをめぐり与党と連立相手の溝が深まり、調整が難航している。",
+      "lines": [
+        {
+          "speaker": "secretary_general",
+          "text": "連立相手が譲歩案を受け入れず、採決の日程が組めない状況です。"
+        },
+        {
+          "speaker": "pm",
+          "text": "連立の枠組みを壊すわけにはいかない。粘り強く対話を続けよう。"
+        },
+        {
+          "speaker": "opposition_leader",
+          "text": "与党内の足並みさえ揃わないまま、国会に法案を出すべきではない。"
+        },
+        {
+          "speaker": "chief_cabinet_secretary",
+          "text": "政権の不協和音が報じられ、支持層にも戸惑いが広がっています。"
+        }
+      ]
+    },
+    {
+      "id": "party_rebellion_move",
+      "weight": 2,
+      "target": "ruling_member",
+      "approval": -2,
+      "cohesion": -0.08,
+      "title": "与党内で造反の動き",
+      "text": "{member}ら党内のグループが執行部の方針に公然と異議を唱え始めた。",
+      "lines": [
+        {
+          "speaker": "member",
+          "text": "地域の声を無視した決定には従えない。採決での対応も検討する。"
+        },
+        {
+          "speaker": "secretary_general",
+          "text": "党議拘束を外れるような動きは看過できません。直ちに説得に当たります。"
+        },
+        {
+          "speaker": "pm",
+          "text": "党内で意見を戦わせるのは構わないが、最後は結束を示さねば。"
+        }
+      ]
+    },
+    {
+      "id": "market_turmoil_yen",
+      "weight": 2,
+      "approval": -3,
+      "title": "株価急落と相場混乱",
+      "text": "海外市場の動揺を受けて株価が急落し、急激な相場変動に不安が広がった。",
+      "lines": [
+        {
+          "speaker": "narrator",
+          "text": "東京市場の取引開始直後から売りが広がり、大幅安となった。"
+        },
+        {
+          "speaker": "reporter",
+          "text": "金融市場の不安定さが増していますが、政府の経済対策は十分ですか。"
+        },
+        {
+          "speaker": "chief_cabinet_secretary",
+          "text": "市場の動向を高い緊張感を持って注視し、機動的に対応します。"
+        },
+        {
+          "speaker": "pm",
+          "text": "実体経済への悪影響を抑えるため、経済官庁と連携を密にしよう。"
+        }
+      ]
+    },
+    {
+      "id": "major_firm_bankruptcy",
+      "weight": 1,
+      "approval": -3,
+      "title": "大手企業の経営破綻",
+      "text": "老舗の大手製造業者が経営破綻し、下請けの連鎖や雇用への懸念が強まった。",
+      "lines": [
+        {
+          "speaker": "reporter",
+          "text": "取引先の中小企業や従業員の先行きに深刻な不安が出ています。"
+        },
+        {
+          "speaker": "opposition_leader",
+          "text": "産業支援策の遅れが招いた事態だ。ただちに救済策を講じるべきだ。"
+        },
+        {
+          "speaker": "pm",
+          "text": "地域経済への連鎖倒産を防ぐため、資金繰り支援に全力を挙げる。"
+        }
+      ]
+    },
+    {
+      "id": "sea_border_tension",
+      "weight": 2,
+      "approval": -2,
+      "title": "周辺海域で緊張高まる",
+      "text": "周辺海域での外国船の接近が相次ぎ、政府の危機管理体制に厳しい目が向いた。",
+      "lines": [
+        {
+          "speaker": "chief_cabinet_secretary",
+          "text": "領海周辺での活動が活発化しており、関係機関が警戒監視を続けています。"
+        },
+        {
+          "speaker": "pm",
+          "text": "毅然と対応しつつ、不測の事態を招かぬよう外交ルートでも抗議する。"
+        },
+        {
+          "speaker": "opposition_leader",
+          "text": "危機管理の初動が国民に見えにくい。情報を適時公開すべきだ。"
+        },
+        {
+          "speaker": "reporter",
+          "text": "安全保障への不安が世論調査の数字にも表れ始めています。"
+        }
+      ]
+    },
+    {
+      "id": "heatwave_power_crunch",
+      "weight": 2,
+      "approval": -2,
+      "months": [
+        7,
+        8
+      ],
+      "title": "記録的猛暑で電力逼迫",
+      "text": "連日の猛暑で電力需給がひっ迫し、エネルギー政策への疑問の声が上がった。",
+      "lines": [
+        {
+          "speaker": "narrator",
+          "text": "各地で記録的な高温が続き、電力の予備率が厳しい水準に落ち込んだ。"
+        },
+        {
+          "speaker": "reporter",
+          "text": "毎年のように節電要請が出る状況に、産業界からも不満の声があります。"
+        },
+        {
+          "speaker": "chief_cabinet_secretary",
+          "text": "発電所の稼働維持と需給調整に全力を挙げ、停電の回避に努めます。"
+        },
+        {
+          "speaker": "pm",
+          "text": "中長期的な電源確保の道筋を、改めて国民に丁寧に示さねばならない。"
+        }
+      ]
+    },
+    {
+      "id": "heavy_snow_paralysis",
+      "weight": 2,
+      "approval": -2,
+      "months": [
+        1,
+        2,
+        12
+      ],
+      "title": "大雪で広範囲の立ち往生",
+      "text": "記録的な大雪で幹線道路や鉄道が麻痺し、政府の初動対応に批判が寄せられた。",
+      "lines": [
+        {
+          "speaker": "narrator",
+          "text": "寒波による豪雪で各地の交通網が寸断され、物流にも影響が出ている。"
+        },
+        {
+          "speaker": "opposition_leader",
+          "text": "通行止めや除雪の連携が遅れ、多くの住民が寒さの中で孤立した。"
+        },
+        {
+          "speaker": "chief_cabinet_secretary",
+          "text": "自治体と連携し、物資の輸送と早期の復旧作業を進めています。"
+        },
+        {
+          "speaker": "pm",
+          "text": "気象予測を踏まえた事前の警戒態勢を、今一度見直す必要がある。"
+        }
+      ]
+    },
+    {
+      "id": "boycott_diet_stalemate",
+      "weight": 2,
+      "approval": -3,
+      "cohesion": -0.02,
+      "title": "野党が審議拒否で紛糾",
+      "text": "政府の資料提出をめぐり野党が審議に応じず、国会が空転する事態となった。",
+      "lines": [
+        {
+          "speaker": "opposition_leader",
+          "text": "肝心の資料を黒塗りのまま出して、まともな審議ができるはずがない。"
+        },
+        {
+          "speaker": "chair",
+          "text": "与野党の理事で協議を整えてください。本日の委員会は散会します。"
+        },
+        {
+          "speaker": "secretary_general",
+          "text": "強行採決は避けたいところですが、会期も限られています。"
+        },
+        {
+          "speaker": "pm",
+          "text": "出せる情報は丁寧に出し、議論の場に戻ってもらうよう呼びかけよう。"
+        }
+      ]
+    },
+    {
+      "id": "poll_split_opinion",
+      "weight": 3,
+      "approval": -0.5,
+      "title": "世論調査で賛否が拮抗",
+      "text": "報道各社の世論調査で、政権の取り組みに対する評価と批判がほぼ並んだ。",
+      "lines": [
+        {
+          "speaker": "reporter",
+          "text": "内閣支持率は横ばいですが、政策ごとの評価は真っ二つに割れています。"
+        },
+        {
+          "speaker": "chief_cabinet_secretary",
+          "text": "厳しいご意見も真摯に受け止め、一つずつ結果を出すほかありません。"
+        },
+        {
+          "speaker": "opposition_leader",
+          "text": "国民の迷いが数字に表れている。政権はもっと説明責任を果たすべきだ。"
+        },
+        {
+          "speaker": "pm",
+          "text": "一喜一憂せず、掲げた公約を愚直に形にしていくだけだ。"
+        }
+      ]
+    },
+    {
+      "id": "reshuffle_rumors",
+      "weight": 2,
+      "approval": -0.5,
+      "cohesion": -0.03,
+      "title": "内閣改造の観測広がる",
+      "text": "政権内の立て直しを図る内閣改造の噂が流れ、与党内で思惑が交錯している。",
+      "lines": [
+        {
+          "speaker": "reporter",
+          "text": "総理、近く内閣改造や党役員人事に踏み切るお考えはありますか。"
+        },
+        {
+          "speaker": "pm",
+          "text": "今は目の前の課題に全力を挙げる時であり、人事は全くの白紙です。"
+        },
+        {
+          "speaker": "secretary_general",
+          "text": "閣僚や党の役職を巡り、水面下で猟官運動のような動きが見られます。"
+        },
+        {
+          "speaker": "chief_cabinet_secretary",
+          "text": "憶測が先行すると政府の業務に支障が出ます。引き締めを図ります。"
+        }
+      ]
+    },
+    {
+      "id": "typhoon_response_mixed",
+      "weight": 2,
+      "approval": -1,
+      "months": [
+        8,
+        9,
+        10
+      ],
+      "title": "大型台風が列島を通過",
+      "text": "大型台風により各地で被害が出たが、事前の避難呼びかけが被害拡大を抑えた。",
+      "lines": [
+        {
+          "speaker": "narrator",
+          "text": "強い勢力を保ったまま台風が上陸し、広い範囲で風水害が発生した。"
+        },
+        {
+          "speaker": "chief_cabinet_secretary",
+          "text": "早期の避難指示により人的被害は抑えられましたが、復旧が急がれます。"
+        },
+        {
+          "speaker": "pm",
+          "text": "被災地の自治体と緊密に連携し、生活再建の支援を迅速に届けよう。"
+        },
+        {
+          "speaker": "reporter",
+          "text": "復旧支援のスピードと財源の手当てが、今後の焦点となりそうです。"
+        }
+      ]
+    },
+    {
+      "id": "winter_infection_alert",
+      "weight": 2,
+      "approval": -1,
+      "months": [
+        12,
+        1,
+        2
+      ],
+      "title": "冬の感染症拡大に警戒",
+      "text": "季節性の感染症が急拡大し、医療体制や経済活動への影響が注視されている。",
+      "lines": [
+        {
+          "speaker": "narrator",
+          "text": "全国的に医療機関の受診者が急増し、病床のひっ迫が懸念されている。"
+        },
+        {
+          "speaker": "reporter",
+          "text": "医療現場への負担軽減と社会活動の維持をどう両立させますか。"
+        },
+        {
+          "speaker": "chief_cabinet_secretary",
+          "text": "検査や治療薬の供給体制を強化し、自治体と情報共有を進めています。"
+        },
+        {
+          "speaker": "pm",
+          "text": "過度な混乱を避けつつ、重症化リスクの高い方々を守る対策を徹底しよう。"
+        }
       ]
     }
   ]

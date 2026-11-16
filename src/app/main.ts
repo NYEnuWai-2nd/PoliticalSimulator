@@ -11,11 +11,12 @@ import { chooseEvent, govAction, raceForecast, startCareer, takeTurn, upgradeAbi
 import type { CareerState, CareerWorld, OriginId, RouteId } from "../game/career.js";
 import type { Ability } from "../game/tables.js";
 import { deserializeCareer, parseSave, saveLabel, serializeCareer } from "../game/save.js";
+import { skillById } from "../game/skills.js";
 import type { NameData } from "../data/nameData.js";
 import { partyById } from "../game/parties.js";
 import { PREFECTURES, renderJapanMap } from "../map/japanMap.js";
 import { FX, activityIds, activityView, cabinetView, helpView, logView, memberDetail, partyView, selfView, setupView, statusBar } from "./views.js";
-import type { LogFilter, SetupChoice } from "./views.js";
+import type { LogFilter, SetupChoice, UiMode } from "./views.js";
 import { chip, esc, icon, pct } from "./ui.js";
 
 type Tab = "act" | "map" | "party" | "cabinet" | "self";
@@ -53,6 +54,27 @@ interface App {
   logFilter: LogFilter;
   /** 出来事の結果（閉じるまで出しておく） */
   result?: { title: string; choice: string; text: string };
+  /** 画面のモード（このブラウザに覚えておく） */
+  mode: UiMode;
+}
+
+const MODE_KEY = "seiji.uiMode";
+function loadMode(): UiMode {
+  const q = new URLSearchParams(location.search).get("mode");
+  if (q === "normal" || q === "pro") return q;
+  try {
+    const v = localStorage.getItem(MODE_KEY);
+    return v === "pro" ? "pro" : "normal";
+  } catch {
+    return "normal";
+  }
+}
+function saveMode(mode: UiMode): void {
+  try {
+    localStorage.setItem(MODE_KEY, mode);
+  } catch {
+    /* 保存できない環境では、そのときだけ切り替える */
+  }
 }
 
 // ---------- セーブ ----------
@@ -160,6 +182,7 @@ const app: App = {
   electionsShown: 0,
   setupStep: 0,
   logFilter: "all",
+  mode: loadMode(),
 };
 const root = document.querySelector<HTMLDivElement>("#app")!;
 
@@ -171,17 +194,17 @@ function render(): void {
   if (state && world && !app.busy) autosave();
   if (!state || !world) {
     root.innerHTML = `<div class="shell"><header class="topbar"><div class="crumb"><div class="diamond"></div><div><span class="crumb-sub">議員人生</span><span class="crumb-main">はじめる</span></div></div></header>
-      <main class="view">${app.base ? setupView(app.base.roster, app.setup, app.setupStep, autosaveLabel()) : `<p class="cut box">名前データを読み込んでいます…</p>`}</main></div>`;
+      <main class="view">${app.base ? setupView(app.base.roster, app.setup, app.setupStep, autosaveLabel(), app.mode) : `<p class="cut box">名前データを読み込んでいます…</p>`}</main></div>`;
     return;
   }
   const tab = TABS.find((t) => t.id === app.tab)!;
   let body = "";
-  if (app.tab === "act") body = activityView(state, world, app.selected, app.last);
-  else if (app.tab === "self") body = selfView(state, world, app.savedAt);
+  if (app.tab === "act") body = activityView(state, world, app.selected, app.last, app.mode);
+  else if (app.tab === "self") body = selfView(state, world, app.savedAt, app.mode);
   else if (app.tab === "party") body = partyView(state, world);
   else if (app.tab === "cabinet") body = cabinetView(state, world);
   else body = mapViewShell();
-  root.innerHTML = `<div class="shell">
+  root.innerHTML = `<div class="shell mode-${app.mode}">
     <header class="topbar">
       <div class="crumb"><div class="diamond"></div><div><span class="crumb-sub">議員人生 ― ${esc(world.player.name.displayName)}・当選${world.player.terms}回</span><span class="crumb-main">${tab.title}</span></div></div>
       <nav class="tabs" aria-label="画面の切り替え">${TABS.map((t, i) => `<button class="tab${t.id === app.tab ? " is-active" : ""}" data-tab="${t.id}">${icon(t.icon, 20)}${t.label}<kbd aria-hidden="true">${i + 1}</kbd></button>`).join("")}</nav>
@@ -311,7 +334,7 @@ function snapshotNumbers() {
   const { state, world } = app;
   // 比例名簿の道では小選挙区の見込みがない
   const me = state!.setup.route === "pr" ? undefined : raceForecast(state!, world!).find((x) => x.isPlayer)?.share;
-  return { approval: state!.gov.approval, share: me, maxStamina: state!.maxStamina, ruling: state!.gov.ruling.party };
+  return { approval: state!.gov.approval, share: me, maxStamina: state!.maxStamina, ruling: state!.gov.ruling.party, skills: [...world!.player.skills] };
 }
 
 /** 月の前後の変化を短い文にする（情勢と内閣支持率が動いた理由の手がかりも添える） */
@@ -336,6 +359,8 @@ function describeChanges(before: ReturnType<typeof snapshotNumbers>, after: Retu
     }
   }
   if (after.maxStamina !== before.maxStamina) parts.push(`体力の上限が${after.maxStamina}になった`);
+  for (const id of after.skills.filter((x) => !before.skills.includes(x))) parts.push(`特殊能力「${skillById(id)?.name}」を身につけた！`);
+  for (const id of before.skills.filter((x) => !after.skills.includes(x))) parts.push(`「${skillById(id)?.name}」が外れた`);
   return parts.length ? parts.join("　") : undefined;
 }
 
@@ -468,6 +493,10 @@ root.addEventListener("click", (ev) => {
     if (d.gov === "dissolve" && !window.confirm("衆議院を解散して、月末に総選挙を行いますか？")) return;
     const r = govAction(app.state!, app.world!, d.gov, d.arg);
     showToast(r.message);
+  } else if (d.action === "mode-normal" || d.action === "mode-pro") {
+    app.mode = d.action === "mode-normal" ? "normal" : "pro";
+    saveMode(app.mode);
+    render();
   } else if (d.action === "continue") {
     const text = readAutosave();
     if (text) void loadSave(text);
@@ -606,7 +635,8 @@ function setupCardScroll(): void {
       cards.scrollBy({ left: (h.classList.contains("left") ? -1 : 1) * cards.clientWidth * 0.7, behavior: "smooth" }),
     ),
   );
-  const sel = cards.querySelector<HTMLElement>(".card.is-active");
+  // 選んだカード、なければおすすめのカードが見える位置に寄せる
+  const sel = cards.querySelector<HTMLElement>(".card.is-active") ?? cards.querySelector<HTMLElement>(".tag.rec")?.closest<HTMLElement>(".card") ?? null;
   if (sel) {
     const l = sel.offsetLeft - cards.offsetLeft;
     if (l < cards.scrollLeft || l + sel.offsetWidth > cards.scrollLeft + cards.clientWidth)

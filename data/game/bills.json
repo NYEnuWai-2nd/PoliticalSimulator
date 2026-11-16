@@ -15,7 +15,10 @@
       "id": "child",
       "name": "子育て支援拡充法案",
       "field": "厚生・労働",
-      "ideology": { "economy": 1.5, "social": 1 },
+      "ideology": {
+        "economy": 1.5,
+        "social": 1
+      },
       "work": 4,
       "on_pass": 3,
       "description": "再分配寄り。野党の多くが賛成しやすいが、財政規律派は渋る。"
@@ -24,7 +27,10 @@
       "id": "tax_cut",
       "name": "所得税減税法案",
       "field": "財政・税制",
-      "ideology": { "fiscal": -2, "economy": -0.5 },
+      "ideology": {
+        "fiscal": -2,
+        "economy": -0.5
+      },
       "work": 4,
       "on_pass": 4,
       "description": "積極財政寄り。協和党が強く望む。"
@@ -33,7 +39,9 @@
       "id": "defense",
       "name": "防衛力強化法案",
       "field": "安全保障",
-      "ideology": { "security": -2.5 },
+      "ideology": {
+        "security": -2.5
+      },
       "work": 5,
       "on_pass": -1,
       "description": "抑止重視。保守系の野党は賛成しやすいが、公正党の中にも反対が出やすい。"
@@ -42,7 +50,10 @@
       "id": "regional",
       "name": "地方創生交付金法案",
       "field": "地方・行政",
-      "ideology": { "governance": -1, "economy": 0.5 },
+      "ideology": {
+        "governance": -1,
+        "economy": 0.5
+      },
       "work": 3,
       "on_pass": 2,
       "description": "地方への財源移譲。刷新が評価しやすい。"
@@ -51,7 +62,9 @@
       "id": "surname",
       "name": "選択的夫婦別姓法案",
       "field": "法務・治安",
-      "ideology": { "social": 2.5 },
+      "ideology": {
+        "social": 2.5
+      },
       "work": 3,
       "on_pass": 1,
       "description": "多様性重視。野党の多くは賛成だが、民政党の保守派が造反しやすい。"
@@ -60,7 +73,9 @@
       "id": "funds",
       "name": "政治資金規正法改正案",
       "field": "法務・治安",
-      "ideology": { "governance": -2 },
+      "ideology": {
+        "governance": -2
+      },
       "work": 4,
       "on_pass": 3,
       "description": "改革寄り。世論の受けはよいが、安定志向の議員は乗り気でない。"
@@ -69,7 +84,10 @@
       "id": "nuclear",
       "name": "原発再稼働推進法案",
       "field": "経済・産業",
-      "ideology": { "economy": -1, "governance": 1.5 },
+      "ideology": {
+        "economy": -1,
+        "governance": 1.5
+      },
       "work": 4,
       "on_pass": -2,
       "description": "市場・安定寄り。左派の野党は強く反対する。"
@@ -78,10 +96,204 @@
       "id": "farm",
       "name": "農業所得補償法案",
       "field": "農林水産",
-      "ideology": { "economy": 1, "governance": 0.5 },
+      "ideology": {
+        "economy": 1,
+        "governance": 0.5
+      },
       "work": 3,
       "on_pass": 1,
       "description": "地方の農業票に効く。市場重視派は渋る。"
+    },
+    {
+      "id": "consumption_tax_hike",
+      "name": "社会保障目的消費税引き上げ法案",
+      "field": "財政・税制",
+      "ideology": {
+        "fiscal": 2.5,
+        "economy": -0.5
+      },
+      "work": 6,
+      "on_pass": -3,
+      "description": "財政規律派は支持するが、協和党や野党が反発し世論の抵抗も大きい。"
+    },
+    {
+      "id": "infra_bond",
+      "name": "防災インフラ長期国債発行法案",
+      "field": "財政・税制",
+      "ideology": {
+        "fiscal": -2,
+        "governance": 1
+      },
+      "work": 4,
+      "on_pass": 2,
+      "description": "協和党やれいめいが歓迎。刷新や財政規律派は将来負担を懸念し反対。"
+    },
+    {
+      "id": "startup_deregulation",
+      "name": "新興産業規制緩和促進法案",
+      "field": "経済・産業",
+      "ideology": {
+        "economy": -2,
+        "governance": -1.5
+      },
+      "work": 3,
+      "on_pass": 1,
+      "description": "市場重視派が推すが、労働環境を重視する野党や連立相手も難色を示す。"
+    },
+    {
+      "id": "wage_floor_raise",
+      "name": "全国一律最低賃金引き上げ法案",
+      "field": "経済・産業",
+      "ideology": {
+        "economy": 2,
+        "fiscal": -0.5
+      },
+      "work": 4,
+      "on_pass": 3,
+      "description": "民権党や公正党が賛成。市場派や一部与党議員は中小企業への打撃を懸念。"
+    },
+    {
+      "id": "agri_corp_entry",
+      "name": "大規模農業法人参入促進法案",
+      "field": "農林水産",
+      "ideology": {
+        "economy": -1.5,
+        "governance": -1.5
+      },
+      "work": 4,
+      "on_pass": 0,
+      "description": "刷新が強く推進。伝統的な農村基盤を重視する民政党の一部や集産党は反対。"
+    },
+    {
+      "id": "pension_age_raise",
+      "name": "年金支給開始年齢引き上げ法案",
+      "field": "厚生・労働",
+      "ideology": {
+        "fiscal": 2,
+        "economy": -1
+      },
+      "work": 6,
+      "on_pass": -3,
+      "description": "財政維持を重視する側が推すが、連立相手や野党が反対し不人気も必至。"
+    },
+    {
+      "id": "work_interval_act",
+      "name": "勤務間休息時間義務化法案",
+      "field": "厚生・労働",
+      "ideology": {
+        "economy": 1.5,
+        "social": 1
+      },
+      "work": 4,
+      "on_pass": 3,
+      "description": "民権党や公正党など野党も賛成しやすい。経済成長重視の一部議員は渋る。"
+    },
+    {
+      "id": "tuition_free_higher",
+      "name": "高等教育無償化拡充法案",
+      "field": "教育",
+      "ideology": {
+        "economy": 2,
+        "fiscal": -2
+      },
+      "work": 5,
+      "on_pass": 4,
+      "description": "協和党や民権党、世論の支持が厚い一方、財政規律派は財源確保を疑問視。"
+    },
+    {
+      "id": "local_transit_support",
+      "name": "地域公共交通維持支援法案",
+      "field": "国土・交通",
+      "ideology": {
+        "economy": 1,
+        "fiscal": -1
+      },
+      "work": 3,
+      "on_pass": 2,
+      "description": "地方選出の与野党議員が賛成しやすい。緊縮派は路線の採算性を問題視。"
+    },
+    {
+      "id": "asia_dialogue_fund",
+      "name": "多国間対話・平和協力推進法案",
+      "field": "外交",
+      "ideology": {
+        "security": 2,
+        "fiscal": -0.5
+      },
+      "work": 4,
+      "on_pass": 1,
+      "description": "対話を重んじる公正党や民権党が賛成。抑止重視の保守派は実効性に懐疑。"
+    },
+    {
+      "id": "cyber_active_defense",
+      "name": "サイバー安全・通信防衛法案",
+      "field": "安全保障",
+      "ideology": {
+        "security": -2.5,
+        "governance": 1
+      },
+      "work": 5,
+      "on_pass": 1,
+      "description": "安保重視の保守派が推進。通信の秘密を巡り野党や連立相手の一部も難色。"
+    },
+    {
+      "id": "arms_export_control",
+      "name": "防衛装備輸出管理厳格化法案",
+      "field": "安全保障",
+      "ideology": {
+        "security": 2
+      },
+      "work": 4,
+      "on_pass": 1,
+      "description": "集産党や民権党、公正党が前向き。抑止力や産業維持を重んじる民政党は反対。"
+    },
+    {
+      "id": "inclusive_equality_act",
+      "name": "包括的差別禁止・平等推進法案",
+      "field": "法務・治安",
+      "ideology": {
+        "social": 2.5,
+        "governance": -0.5
+      },
+      "work": 4,
+      "on_pass": 1,
+      "description": "多様性重視の野党が推すが、伝統重視派の反発が強く与党内の調整が難航。"
+    },
+    {
+      "id": "foreign_worker_strict",
+      "name": "外国人受け入れ基準厳格化法案",
+      "field": "法務・治安",
+      "ideology": {
+        "social": -2,
+        "governance": 1
+      },
+      "work": 4,
+      "on_pass": 0,
+      "description": "参画党や民政党の一部が支持。人手不足を憂う経済派や多様性派は反対。"
+    },
+    {
+      "id": "regional_tax_devolution",
+      "name": "地方分権・課税自主権拡大法案",
+      "field": "地方・行政",
+      "ideology": {
+        "governance": -2.5,
+        "fiscal": -0.5
+      },
+      "work": 5,
+      "on_pass": 1,
+      "description": "刷新が熱心に推進。中央省庁の権限や安定を重んじる民政党内から抵抗が出る。"
+    },
+    {
+      "id": "digital_admin_unification",
+      "name": "行政システム統一・効率化法案",
+      "field": "地方・行政",
+      "ideology": {
+        "governance": 1.5,
+        "fiscal": 1.5
+      },
+      "work": 3,
+      "on_pass": 2,
+      "description": "財政規律・安定派が賛成。地方の裁量縮小に改革派や野党が反発しやすい。"
     }
   ]
 }

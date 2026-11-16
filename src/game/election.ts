@@ -8,6 +8,7 @@ import type { Ruling } from "./cabinet.js";
 import { PR_SEATS, SMD_SEATS, dhondt, prefStrength, prefWeight } from "./districts.js";
 import type { PrefCode } from "./districts.js";
 import { TABLES } from "./tables.js";
+import { skillVote } from "./skills.js";
 
 const E = rulesRaw.election;
 /** 選挙協力をする小さい連立相手（全国の支持が小さく、現職の県だけで候補を立てる） */
@@ -119,6 +120,7 @@ function personalVote(m: Member, incumbent: boolean, rand: () => number): number
     (m.abilities.知名度 - 50) * E.personal_fame +
     (m.abilities.組織 - 50) * E.personal_org +
     (incumbent ? E.incumbency : 0) +
+    skillVote(m.skills) +
     (rand() - 0.5) * 2 * E.personal_noise
   );
 }

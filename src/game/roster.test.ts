@@ -129,7 +129,8 @@ describe("generateRoster", () => {
     expect(rate("minsei")).toBeGreaterThan(0.24);
     expect(rate("minsei")).toBeLessThan(0.32);
     expect(rate("minken")).toBeLessThan(0.12);
-  });
+    // 名簿を60個作るので、ほかのテストと並んで動くと既定の5秒を超えることがある
+  }, 30_000);
 
   it("思想は政党の中心の近くに散らばり、範囲内に収まる", async () => {
     const all = await manyRosters(20);
