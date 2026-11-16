@@ -1,0 +1,296 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<title>議員人生モード 想定図</title>
+<style>
+:root {
+  --font: "Yu Gothic UI", "BIZ UDPGothic", "Meiryo", sans-serif;
+  --bg-1: #e6f7fd; --bg-2: #a7e2f7; --bg-3: #5ac3ec;
+  --navy: #0a2244; --navy-glass: rgba(10, 34, 68, 0.88); --cyan: #3dc7ff;
+  --focus-bd: #e61919;
+  --focus: linear-gradient(180deg, #fff07a 0%, #ffb700 49%, #ff9100 51%, #ffd447 100%);
+  --btn: linear-gradient(180deg, #ffffff 0%, #eaf6fd 49%, #d7edf9 51%, #f3fafe 100%);
+  --minsei: #2e7d32; --minken: #1f5fa8;
+}
+* { box-sizing: border-box; }
+body { margin: 0; padding: 26px 30px; background: #131b26; font-family: var(--font); color: #fff; width: 1770px; }
+.row { display: flex; gap: 40px; align-items: flex-start; }
+.cap { font-size: 18px; font-weight: 800; color: #9fdcff; margin: 0 0 10px; }
+.cap small { color: #7f93ab; font-weight: 600; margin-left: 10px; font-size: 13px; }
+
+/* ===== 共通部品 ===== */
+.bg {
+  background:
+    linear-gradient(125deg, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0) 42%),
+    linear-gradient(235deg, rgba(35,175,235,0.22) 0%, rgba(35,175,235,0) 50%),
+    linear-gradient(135deg, var(--bg-1) 0%, var(--bg-2) 52%, var(--bg-3) 100%);
+}
+.stroke { text-shadow: -1.5px -1.5px 0 #0b2447, 1.5px -1.5px 0 #0b2447, -1.5px 1.5px 0 #0b2447, 1.5px 1.5px 0 #0b2447, 0 2.5px 0 rgba(0,0,0,.45); }
+.face {
+  display: grid; place-items: center; border-radius: 14px; color: #fff; font-weight: 900;
+  background: linear-gradient(180deg, #4caf50 0%, var(--minsei) 100%);
+  border: 4px solid #fff; box-shadow: 0 0 0 3px #0b2447, 0 8px 18px rgba(0,0,0,.3);
+}
+.panel-dark { background: rgba(11, 34, 68, 0.86); border: 2px solid #48c3ff; border-radius: 12px; }
+.exp-row { display: flex; align-items: center; gap: 8px; background: rgba(20,62,117,.85); border: 1.5px solid #4299d9; border-radius: 999px; padding: 3px 12px; height: 32px; }
+.exp-name { font-size: 14px; font-weight: 800; color: #a7e3ff; width: 44px; }
+.exp-val { font-size: 18px; font-weight: 900; width: 46px; text-align: right; }
+.exp-add { font-size: 16px; font-weight: 900; color: #ffe548; }
+.exp-bonus { margin-left: auto; background: linear-gradient(180deg,#fff5a8,#ffaa00); border: 2px solid #fff; color: #8a2800; font-size: 12px; font-weight: 900; border-radius: 999px; padding: 0 8px; }
+.mate { display: flex; align-items: center; gap: 8px; background: rgba(12,32,62,.88); border: 2px solid #5ac8fa; border-radius: 8px; padding: 4px 8px; }
+.mate-face { width: 30px; height: 30px; border-radius: 6px; display: grid; place-items: center; font-weight: 900; font-size: 16px; color: #fff; border: 2px solid #fff; flex-shrink: 0; }
+.mate-info { flex: 1; display: grid; gap: 3px; }
+.mate-top { display: flex; justify-content: space-between; font-size: 13px; font-weight: 900; }
+.mate-role { font-size: 11px; color: #9fdcff; font-weight: 700; }
+.gauge { height: 7px; background: #1e2838; border-radius: 999px; overflow: hidden; border: 1px solid #fff; }
+.gauge i { display: block; height: 100%; background: linear-gradient(90deg, #ff7eb3, #ffe45e); }
+.mood { width: 26px; height: 26px; border-radius: 50%; border: 2px solid #0e2340; display: inline-grid; place-items: center; font-size: 14px; background: #ff9922; }
+.hp-outer { height: 18px; background: #1a2433; border: 2px solid #fff; border-radius: 6px; position: relative; overflow: hidden; }
+.hp-fill { height: 100%; background: linear-gradient(90deg, #ffea33 0%, #52e038 55%, #1ebd45 100%); }
+.hp-val { position: absolute; right: 8px; top: -1px; font-size: 12px; font-weight: 900; text-shadow: 0 1px 2px #000; }
+.money { background: rgba(0,16,40,.65); border: 2px solid #ffd23f; border-radius: 999px; padding: 4px 16px; font-size: 16px; font-weight: 900; color: #ffe766; white-space: nowrap; }
+.pill-party { background: linear-gradient(180deg,#fff,#cde7fa); border: 2px solid #0e2e5c; border-radius: 8px; padding: 3px 12px; color: #0b2c59; font-size: 14px; font-weight: 900; display: flex; align-items: center; gap: 8px; white-space: nowrap; }
+.chip { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
+.date { background: linear-gradient(180deg,#e02e4d,#990f28); border: 2px solid #fff; border-radius: 10px; padding: 3px 14px; display: flex; align-items: baseline; gap: 8px; white-space: nowrap; }
+.date b { font-size: 19px; color: #ffe855; }
+.date span { font-size: 13px; font-weight: 900; }
+.race { display: flex; align-items: center; gap: 10px; background: rgba(255,255,255,.93); color: #10315a; border: 2.5px solid #2b6fb3; border-radius: 10px; padding: 6px 12px; font-weight: 800; font-size: 13px; }
+.race .vs { font-size: 12px; color: #5482a8; }
+.race-bar { flex: 1; height: 14px; border-radius: 7px; overflow: hidden; display: flex; border: 2px solid #0e2e5c; }
+.race-bar i { display: block; height: 100%; }
+.tag-warn { background: #fff; color: #d61a1a; border: 2px solid #d61a1a; border-radius: 6px; font-size: 11px; font-weight: 900; padding: 0 6px; }
+
+/* ===== PC 横（1280×720） ===== */
+.pc { width: 1280px; height: 720px; position: relative; border-radius: 10px; overflow: hidden; box-shadow: 0 18px 50px rgba(0,0,0,.65); display: flex; flex-direction: column; }
+.topbar { height: 54px; display: flex; align-items: center; justify-content: space-between; padding-right: 20px; }
+.crumb { height: 54px; background: rgba(255,255,255,.9); padding: 0 46px 0 18px; clip-path: polygon(0 0, 100% 0, 93% 100%, 0 100%); display: flex; align-items: center; gap: 12px; }
+.diamond { width: 24px; height: 24px; background: linear-gradient(135deg, #ff477e, #3dc7ff); transform: rotate(45deg); border: 2.5px solid #0e2c59; border-radius: 4px; }
+.crumb-sub { font-size: 11px; font-weight: 800; color: #e62e5c; }
+.crumb-main { font-size: 20px; font-weight: 900; color: #0d2b57; }
+.tabs { display: flex; gap: 4px; }
+.tab { background: rgba(12,22,42,.75); border: 1.5px solid rgba(255,255,255,.45); border-radius: 8px; padding: 5px 14px; font-size: 13px; font-weight: 800; color: #cfe6ff; display: flex; gap: 6px; align-items: center; }
+.tab.on { background: var(--focus); border: 2.5px solid var(--focus-bd); color: #fff; text-shadow: 0 1.5px 0 #7a2800; }
+.tab kbd { font-family: inherit; font-size: 10px; border: 1px solid currentColor; border-radius: 3px; padding: 0 3px; opacity: .8; }
+.arena { flex: 1; position: relative; padding: 10px 20px 8px; display: flex; flex-direction: column; justify-content: space-between;
+  background: linear-gradient(180deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0) 60%, rgba(10,60,110,.12) 100%); }
+.arena-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; }
+.exp-panel { width: 300px; padding: 8px 10px; display: grid; gap: 5px; }
+.exp-title, .mate-title { font-size: 12px; font-weight: 900; color: #ffe84d; letter-spacing: .1em; padding-left: 4px; }
+.center { position: absolute; left: 50%; top: 40%; transform: translate(-50%, -50%); display: flex; flex-direction: column; align-items: center; }
+.fx { font-size: 46px; font-weight: 900; color: #2bc4ff; transform: skewX(-15deg) rotate(-6deg); margin-bottom: -10px;
+  text-shadow: -3px -3px 0 #fff, 3px -3px 0 #fff, -3px 3px 0 #fff, 3px 3px 0 #fff, 4px 6px 0 #0a244a; z-index: 2; }
+.msg { background: rgba(255,255,255,.95); border: 2px solid #2b6fb3; border-radius: 8px; padding: 6px 22px; font-size: 15px; font-weight: 800; color: #112e57; margin-top: 10px; box-shadow: 0 4px 10px rgba(0,0,0,.2); text-align: center; }
+.msg small { display: block; color: #e0660f; font-size: 13px; }
+.mates { width: 260px; display: grid; gap: 6px; }
+.race-wrap { position: absolute; left: 340px; right: 300px; top: 8px; }
+.cards { display: flex; justify-content: center; gap: 14px; }
+.card { width: 132px; height: 116px; background: linear-gradient(180deg,#fff 0%,#e0f3ff 100%); border: 3px solid #247bd6; border-radius: 10px; transform: skewX(-6deg); position: relative; box-shadow: 0 5px 12px rgba(0,0,0,.28); }
+.card-in { transform: skewX(6deg); display: flex; flex-direction: column; align-items: center; padding-top: 10px; height: 100%; }
+.card .ic { font-size: 36px; line-height: 1.1; }
+.card .lb { font-size: 16px; font-weight: 900; color: #0e2e5e; margin-top: 4px; }
+.card .lv { position: absolute; right: 8px; bottom: 6px; background: #102a4d; color: #fff; font-size: 11px; font-weight: 900; padding: 1px 6px; border-radius: 4px; }
+.card .cost { position: absolute; left: 10px; bottom: 6px; font-size: 11px; font-weight: 900; color: #1b86c7; }
+.card.on { transform: skewX(-6deg) translateY(-10px) scale(1.06); border: 4px solid #e61c1c; background: linear-gradient(180deg,#fff5cc 0%,#ffd24d 100%); box-shadow: 0 12px 22px rgba(230,30,30,.35); }
+.card .sp { position: absolute; top: -14px; left: -6px; background: linear-gradient(90deg,#ff2a5f,#ff9900); color: #fff; border: 2px solid #fff; border-radius: 6px; font-size: 11px; font-weight: 900; padding: 1px 6px; transform: skewX(6deg); }
+.status { height: 62px; background: linear-gradient(180deg,#1b4f8c 0%,#0b2244 100%); border-top: 3px solid #63d0ff; display: flex; align-items: center; padding: 0 18px; gap: 16px; }
+.hp-block { flex: 1; display: grid; gap: 3px; }
+.hp-meta { display: flex; justify-content: space-between; font-size: 12px; font-weight: 800; color: #aee6ff; }
+.hp-meta b { color: #ffe248; }
+
+/* ===== スマホ縦（390×844） ===== */
+.phone { width: 390px; height: 844px; border: 6px solid #1e2838; border-radius: 30px; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 20px 50px rgba(0,0,0,.6), 0 0 0 2px #587299; }
+.p-top { background: linear-gradient(180deg,#14366b,#0a1f42); border-bottom: 2px solid #59c6ff; padding: 8px 10px; display: flex; gap: 8px; align-items: center; }
+.turn { width: 52px; height: 52px; border-radius: 50%; background: radial-gradient(circle,#fff 60%,#d4ebff 100%); border: 3px solid #2b83e0; color: #0e2e5c; display: flex; flex-direction: column; align-items: center; justify-content: center; font-weight: 900; line-height: 1; flex-shrink: 0; }
+.turn small { font-size: 9px; color: #2b6fb3; }
+.turn b { font-size: 20px; }
+.p-top-main { flex: 1; display: grid; gap: 5px; }
+.p-top-row { display: flex; justify-content: space-between; align-items: center; font-size: 12px; font-weight: 900; }
+.p-money { font-size: 12px; color: #ffe766; }
+.p-race { margin: 8px 10px 0; }
+.p-race .race { font-size: 12px; padding: 5px 8px; gap: 6px; }
+.p-mid { flex: 1; position: relative; padding: 10px; display: flex; justify-content: space-between; align-items: flex-start; }
+.p-exp { width: 130px; padding: 6px; display: grid; gap: 4px; }
+.p-exp .row2 { display: flex; justify-content: space-between; background: #103263; border-radius: 6px; padding: 3px 7px; font-size: 13px; font-weight: 900; }
+.p-mates { width: 140px; display: grid; gap: 6px; }
+.p-mates .mate { padding: 3px 6px; gap: 6px; }
+.p-mates .mate-face { width: 24px; height: 24px; font-size: 13px; }
+.p-mates .mate-top { font-size: 12px; }
+.p-center { position: absolute; left: 50%; top: 58%; transform: translate(-50%, -50%); display: flex; flex-direction: column; align-items: center; }
+.p-center .fx { font-size: 30px; }
+.p-center .msg { font-size: 12px; padding: 5px 10px; width: 300px; }
+.dock { background: linear-gradient(180deg, rgba(11,38,82,.94) 0%, #071b3d 100%); border-top: 3px solid #ffe24a; padding: 10px 10px 12px; display: grid; gap: 10px; }
+.dock-info { display: flex; justify-content: space-between; align-items: center; font-size: 13px; font-weight: 900; }
+.dock-info .hint { background: #fff; color: #0b2447; border-radius: 999px; padding: 1px 10px; font-size: 11px; }
+.circles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px 8px; justify-items: center; }
+.cbtn { width: 66px; height: 66px; border-radius: 50%; border: 3px solid #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 24px; position: relative; box-shadow: 0 4px 8px rgba(0,0,0,.4); }
+.cbtn span { font-size: 11px; font-weight: 900; margin-top: 1px; text-shadow: 0 1px 2px rgba(0,0,0,.6); }
+.cbtn.on { transform: scale(1.12) translateY(-4px); border-color: #ffe600; box-shadow: 0 0 14px #ffe600; }
+.nav { height: 58px; background: #0b1629; display: grid; grid-template-columns: repeat(5,1fr); border-top: 2px solid #2b65ad; }
+.nav div { display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 11px; font-weight: 800; color: #96bce6; border-right: 1px solid #1d3559; gap: 2px; }
+.nav div b { font-size: 18px; }
+.nav .on { background: linear-gradient(180deg,#1b5ea8,#0e3566); color: #ffe655; }
+/* アイコン：紺の背景では輪郭が消えるので白い縁取りを付ける */
+svg[role="img"] { flex-shrink: 0; vertical-align: middle; }
+.exp-row svg, .p-exp svg, .status svg, .p-top svg, .dock-info svg { filter: drop-shadow(0 0 1px #fff) drop-shadow(0 0 1px #fff); }
+.tab, .nav div { gap: 5px; }
+.hp-label { display: inline-flex; align-items: center; gap: 4px; }
+.date, .money, .p-money { display: flex; align-items: center; gap: 6px; }
+.p-exp .row2 span:first-child { display: inline-flex; align-items: center; gap: 4px; }
+.cbtn svg { filter: drop-shadow(0 1px 0 rgba(255,255,255,.7)); }
+.notes { margin-top: 14px; width: 1280px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.note { background: rgba(255,255,255,.06); border: 1px solid rgba(110,200,255,.3); border-radius: 10px; padding: 10px 14px; font-size: 13px; line-height: 1.6; color: #d6ecff; }
+.note b { color: #ffe159; }
+</style>
+</head>
+<body>
+<div class="row">
+  <!-- ==================== PC 横 ==================== -->
+  <div>
+    <p class="cap">PC・タブレット横（幅が広いとき）<small>家庭用ゲーム機風の並び</small></p>
+    <div class="pc bg">
+      <div class="topbar">
+        <div class="crumb">
+          <div class="diamond"></div>
+          <div style="display:flex;flex-direction:column;line-height:1.1">
+            <span class="crumb-sub">議員人生 ― 新人候補・1年目</span>
+            <span class="crumb-main">今月の活動</span>
+          </div>
+        </div>
+        <div class="tabs">
+          <div class="tab on">{{tab-activity:18}}活動<kbd>1</kbd></div>
+          <div class="tab">{{tab-map:18}}地図<kbd>2</kbd></div>
+          <div class="tab">{{tab-party:18}}党内<kbd>3</kbd></div>
+          <div class="tab">{{tab-cabinet:18}}内閣<kbd>4</kbd></div>
+          <div class="tab">{{tab-self:18}}自分<kbd>5</kbd></div>
+        </div>
+      </div>
+
+      <div class="arena">
+        <div class="arena-top">
+          <div class="panel-dark exp-panel">
+            <div class="exp-title">経験点</div>
+            <div class="exp-row">{{exp-election:24}}<span class="exp-name">選挙</span><span class="exp-val">128</span><span class="exp-add">+24</span><span class="exp-bonus">後援会 +7</span></div>
+            <div class="exp-row">{{exp-policy:24}}<span class="exp-name">政策</span><span class="exp-val">96</span><span class="exp-add"></span></div>
+            <div class="exp-row">{{exp-network:24}}<span class="exp-name">人脈</span><span class="exp-val">210</span><span class="exp-add">+12</span></div>
+            <div class="exp-row">{{exp-media:24}}<span class="exp-name">発信</span><span class="exp-val">74</span><span class="exp-add"></span></div>
+            <div class="exp-row">{{exp-money:24}}<span class="exp-name">資金</span><span class="exp-val">55</span><span class="exp-add"></span></div>
+          </div>
+
+          <div class="race-wrap">
+            <div class="race">
+              {{st-daruma:26}}<span>新潟選挙区</span>
+              <div class="race-bar"><i style="width:42%;background:var(--minsei)"></i><i style="width:46%;background:var(--minken)"></i><i style="width:12%;background:#c62828"></i></div>
+              <span>情勢 <b style="color:#d61a1a">やや劣勢</b></span>
+            </div>
+            <div class="race" style="margin-top:6px;font-size:12px">
+              {{st-jiban:18}}<span class="vs">対立候補</span><b>長谷川 和也</b><span class="vs">民権党・現職4回・地盤3</span>
+              <span style="margin-left:auto" class="vs">総選挙まで 最長 <b style="color:#10315a">31</b> か月</span>
+            </div>
+          </div>
+
+          <div class="mates">
+            <div class="mate-title">関係</div>
+            <div class="mate"><div class="mate-face" style="background:#e0559a">美</div><div class="mate-info"><div class="mate-top"><span>岡田 美咲</span><span class="mate-role">秘書</span></div><div class="gauge"><i style="width:88%"></i></div></div></div>
+            <div class="mate"><div class="mate-face" style="background:var(--minsei)">森</div><div class="mate-info"><div class="mate-top"><span>森田 一道</span><span class="mate-role">幹事長</span></div><div class="gauge"><i style="width:46%"></i></div></div></div>
+            <div class="mate"><div class="mate-face" style="background:#8d6e63">佐</div><div class="mate-info"><div class="mate-top"><span>佐々木 健三</span><span class="mate-role">後援会長</span></div><div class="gauge"><i style="width:72%"></i></div></div></div>
+            <div class="mate"><div class="mate-face" style="background:#607d8b">記</div><div class="mate-info"><div class="mate-top"><span>地元紙の記者</span><span class="mate-role">報道</span></div><div class="gauge"><i style="width:30%"></i></div></div></div>
+          </div>
+        </div>
+
+        <div class="center">
+          <div class="fx">ガシッ!!</div>
+          <div class="face" style="width:150px;height:150px;font-size:86px">桜</div>
+          <div class="msg">地元回り：商店街と町内会を一軒ずつ回ります<small>選挙 +24　人脈 +12　体力 −15　地盤が上がりやすい（後援会の評価 72）</small></div>
+        </div>
+
+        <div class="cards">
+          <div class="card on"><span class="sp">地盤UP</span><div class="card-in"><div class="ic">{{act-local:44}}</div><div class="lb">地元回り</div></div><span class="cost">体力−15</span><span class="lv">Lv.3</span></div>
+          <div class="card"><div class="card-in"><div class="ic">{{act-speech:44}}</div><div class="lb">街頭演説</div></div><span class="cost">体力−10</span><span class="lv">Lv.2</span></div>
+          <div class="card"><div class="card-in"><div class="ic">{{act-study:44}}</div><div class="lb">政策勉強会</div></div><span class="cost">体力−5</span><span class="lv">Lv.1</span></div>
+          <div class="card"><div class="card-in"><div class="ic">{{act-fund:44}}</div><div class="lb">資金集め</div></div><span class="cost">体力−10</span><span class="lv">Lv.1</span></div>
+          <div class="card"><div class="card-in"><div class="ic">{{act-party:44}}</div><div class="lb">党務</div></div><span class="cost">体力−5</span><span class="lv">Lv.2</span></div>
+          <div class="card"><div class="card-in"><div class="ic">{{act-rest:44}}</div><div class="lb">休養</div></div><span class="cost" style="color:#16a33a">体力+30</span><span class="lv">―</span></div>
+        </div>
+      </div>
+
+      <div class="status">
+        <div class="pill-party"><span class="chip" style="background:var(--minsei)"></span>自由民政党・新人候補{{st-mood-4:28}}</div>
+        <div class="date">{{st-calendar:22}}<span>2026年</span><b>3月</b></div>
+        <div class="hp-block">
+          <div class="hp-meta"><span>内閣支持率 <b>31%</b>（与党に逆風）　次の国会：通常国会 会期中</span><span class="hp-label">{{st-stamina:16}}体力</span></div>
+          <div class="hp-outer"><div class="hp-fill" style="width:72%"></div><span class="hp-val">72 / 100</span></div>
+        </div>
+        <div class="money">{{ab-fund:22}}資金 420万円</div>
+      </div>
+    </div>
+
+    <div class="notes">
+      <div class="note"><b>経験点（左上）</b>　活動でたまり、能力の上昇に使う。選挙・政策・人脈・発信・資金の5種類。</div>
+      <div class="note"><b>選挙区の情勢（上中央）</b>　次の総選挙での予想得票と、対立する現職。地元回りで地盤を上げて追い上げる。</div>
+      <div class="note"><b>関係（右上）</b>　秘書・党の幹部・後援会長・記者との関係。高いと出来事で助けてもらえる。</div>
+    </div>
+  </div>
+
+  <!-- ==================== スマホ縦 ==================== -->
+  <div>
+    <p class="cap">スマホ縦<small>アプリ風の並び</small></p>
+    <div class="phone bg">
+      <div class="p-top">
+        <div class="turn"><small>総選挙まで</small><b>31</b><small>か月</small></div>
+        <div class="p-top-main">
+          <div class="p-top-row"><span>2026年3月・新人候補</span><span class="p-money">{{ab-fund:16}}420万円</span>{{st-mood-4:22}}</div>
+          <div class="hp-outer" style="height:14px"><div class="hp-fill" style="width:72%"></div><span class="hp-val" style="font-size:10px">体力 72</span></div>
+        </div>
+      </div>
+      <div class="p-race">
+        <div class="race">
+          {{st-daruma:20}}<span>新潟</span>
+          <div class="race-bar"><i style="width:42%;background:var(--minsei)"></i><i style="width:46%;background:var(--minken)"></i><i style="width:12%;background:#c62828"></i></div>
+          <b style="color:#d61a1a">やや劣勢</b>
+        </div>
+      </div>
+      <div class="p-mid">
+        <div class="panel-dark p-exp">
+          <div class="exp-title">経験点</div>
+          <div class="row2"><span style="color:#ff9e9e">{{exp-election:16}}選挙</span><span>128 <b style="color:#ffe248">+24</b></span></div>
+          <div class="row2"><span style="color:#8fd0ff">{{exp-policy:16}}政策</span><span>96</span></div>
+          <div class="row2"><span style="color:#8aff9e">{{exp-network:16}}人脈</span><span>210 <b style="color:#ffe248">+12</b></span></div>
+          <div class="row2"><span style="color:#ffcf70">{{exp-media:16}}発信</span><span>74</span></div>
+          <div class="row2"><span style="color:#e0e0e0">{{exp-money:16}}資金</span><span>55</span></div>
+        </div>
+        <div class="p-mates">
+          <div class="mate-title">関係</div>
+          <div class="mate"><div class="mate-face" style="background:#e0559a">美</div><div class="mate-info"><div class="mate-top"><span>岡田</span><span class="mate-role">秘書</span></div><div class="gauge"><i style="width:88%"></i></div></div></div>
+          <div class="mate"><div class="mate-face" style="background:var(--minsei)">森</div><div class="mate-info"><div class="mate-top"><span>森田</span><span class="mate-role">幹事長</span></div><div class="gauge"><i style="width:46%"></i></div></div></div>
+          <div class="mate"><div class="mate-face" style="background:#8d6e63">佐</div><div class="mate-info"><div class="mate-top"><span>佐々木</span><span class="mate-role">後援会</span></div><div class="gauge"><i style="width:72%"></i></div></div></div>
+        </div>
+        <div class="p-center">
+          <div class="fx">ガシッ!!</div>
+          <div class="face" style="width:96px;height:96px;font-size:56px">桜</div>
+          <div class="msg">地元回り：選挙+24　人脈+12　体力−15<small>もう一度押すと実行</small></div>
+        </div>
+      </div>
+      <div class="dock">
+        <div class="dock-info"><span class="hint">地盤が上がりやすい</span><span style="color:#ffe248">地元回り Lv.3</span></div>
+        <div class="circles">
+          <div class="cbtn on" style="background:radial-gradient(#ffe666,#e68a00)">{{act-local:34}}<span>地元回り</span></div>
+          <div class="cbtn" style="background:radial-gradient(#ff99aa,#d92b4c)">{{act-speech:34}}<span>演説</span></div>
+          <div class="cbtn" style="background:radial-gradient(#70d6ff,#1976d2)">{{act-study:34}}<span>勉強会</span></div>
+          <div class="cbtn" style="background:radial-gradient(#8cff8c,#2e9e3b)">{{act-fund:34}}<span>資金</span></div>
+          <div class="cbtn" style="background:radial-gradient(#c299ff,#6b36cc)">{{act-party:34}}<span>党務</span></div>
+          <div class="cbtn" style="background:radial-gradient(#b0bec5,#546e7a)">{{act-rest:34}}<span>休養</span></div>
+        </div>
+      </div>
+      <div class="nav">
+        <div class="on">{{tab-activity:22}}活動</div>
+        <div>{{tab-map:22}}地図</div>
+        <div>{{tab-party:22}}党内</div>
+        <div>{{tab-cabinet:22}}内閣</div>
+        <div>{{tab-self:22}}自分</div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>
