@@ -138,6 +138,35 @@ svg[role="img"] { flex-shrink: 0; vertical-align: middle; }
 .date, .money, .p-money { display: flex; align-items: center; gap: 6px; }
 .p-exp .row2 span:first-child { display: inline-flex; align-items: center; gap: 4px; }
 .cbtn svg { filter: drop-shadow(0 1px 0 rgba(255,255,255,.7)); }
+/* ===== 角の決まり =====
+   ボタン・顔の札・名札は丸角のまま。文字を読ませる枠（パネル、情勢、吹き出し、情報の帯）は
+   左上と右下の角を斜めに切り落とした角ばった形にする。枠線は ::before、中身の色は ::after で描く */
+.cut, .panel-dark, .exp-row, .race, .mate, .msg, .note, .date, .money, .row2, .hp-outer, .dock-info .hint {
+  --c: 12px; --bw: 2px;
+  position: relative; isolation: isolate; border: none !important; border-radius: 0 !important;
+  background: transparent !important; box-shadow: none !important;
+}
+.panel-dark::before, .exp-row::before, .race::before, .mate::before, .msg::before, .note::before, .date::before, .money::before, .row2::before, .hp-outer::before, .dock-info .hint::before,
+.panel-dark::after, .exp-row::after, .race::after, .mate::after, .msg::after, .note::after, .date::after, .money::after, .row2::after, .hp-outer::after, .dock-info .hint::after {
+  content: ""; position: absolute; z-index: -2;
+  clip-path: polygon(var(--c) 0, 100% 0, 100% calc(100% - var(--c)), calc(100% - var(--c)) 100%, 0 100%, 0 var(--c));
+}
+.panel-dark::before, .exp-row::before, .race::before, .mate::before, .msg::before, .note::before, .date::before, .money::before, .row2::before, .hp-outer::before, .dock-info .hint::before { inset: 0; background: var(--bd); }
+.panel-dark::after, .exp-row::after, .race::after, .mate::after, .msg::after, .note::after, .date::after, .money::after, .row2::after, .hp-outer::after, .dock-info .hint::after { inset: var(--bw); background: var(--bg); z-index: -1; }
+.panel-dark { --bd: #48c3ff; --bg: rgba(11, 34, 68, 0.9); --c: 16px; }
+.exp-row { --bd: #4299d9; --bg: rgba(20, 62, 117, 0.92); --c: 8px; --bw: 1.5px; }
+.race { --bd: #2b6fb3; --bg: rgba(255, 255, 255, 0.95); --bw: 2.5px; }
+.mate { --bd: #5ac8fa; --bg: rgba(12, 32, 62, 0.92); --c: 9px; }
+.msg { --bd: #2b6fb3; --bg: rgba(255, 255, 255, 0.96); --c: 14px; }
+.note { --bd: rgba(110, 200, 255, 0.35); --bg: #1a2433; --bw: 1px; }
+.date { --bd: #ffffff; --bg: linear-gradient(180deg, #e02e4d, #990f28); --c: 10px; }
+.money { --bd: #ffd23f; --bg: #0b1d38; --c: 10px; }
+.row2 { --bd: #2b6fb3; --bg: #103263; --c: 6px; --bw: 1px; }
+.hp-outer { --bd: #ffffff; --bg: #1a2433; --c: 6px; overflow: visible !important; }
+.hp-outer .hp-fill { position: absolute; left: 2px; top: 2px; bottom: 2px; max-width: calc(100% - 4px); clip-path: polygon(4px 0, 100% 0, 100% 100%, 0 100%, 0 4px); }
+.dock-info .hint { --bd: #ffffff; --bg: #ffffff; --c: 6px; }
+.money, .date { padding: 5px 16px !important; }
+
 .notes { margin-top: 14px; width: 1280px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
 .note { background: rgba(255,255,255,.06); border: 1px solid rgba(110,200,255,.3); border-radius: 10px; padding: 10px 14px; font-size: 13px; line-height: 1.6; color: #d6ecff; }
 .note b { color: #ffe159; }

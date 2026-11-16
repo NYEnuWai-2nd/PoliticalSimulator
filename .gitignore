@@ -3,3 +3,4 @@ data/private/
 node_modules/
 dist/
 .DS_Store
+cli/seiji.mjs

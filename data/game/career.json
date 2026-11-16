@@ -1,0 +1,342 @@
+{
+  "note": "議員人生モードの数値（試作用の仮の値）。設計は docs/design.md の5節。1ターン＝1か月に活動を1つ選ぶ。経験点を使って能力を上げる。",
+  "origins": [
+    {
+      "id": "newcomer",
+      "name": "新人",
+      "difficulty": "難しい",
+      "description": "後援会も地盤もない一般家庭の出身。他党の現職に挑む。",
+      "lineage": "none",
+      "jiban": 1,
+      "money": 300,
+      "bonus": {},
+      "relations": {
+        "secretary": 50,
+        "party": 30,
+        "supporters": 20,
+        "press": 30,
+        "kengi": 20
+      }
+    },
+    {
+      "id": "hereditary",
+      "name": "世襲",
+      "difficulty": "ふつう",
+      "description": "引退する親の選挙区と後援会を継ぐ。地盤は固いが、世襲批判もある。",
+      "lineage": "hereditary",
+      "jiban": 3,
+      "money": 800,
+      "bonus": {
+        "組織": 10,
+        "資金": 8,
+        "知名度": 4
+      },
+      "relations": {
+        "secretary": 60,
+        "party": 50,
+        "supporters": 60,
+        "press": 30,
+        "kengi": 50
+      }
+    },
+    {
+      "id": "dynasty",
+      "name": "名門",
+      "difficulty": "やさしい",
+      "description": "閣僚を出してきた一族の跡取り。地盤も資金も知名度も申し分ないが、党の期待も大きい。",
+      "lineage": "dynasty",
+      "jiban": 4,
+      "money": 1500,
+      "bonus": {
+        "組織": 10,
+        "資金": 13,
+        "知名度": 10
+      },
+      "relations": {
+        "secretary": 60,
+        "party": 60,
+        "supporters": 70,
+        "press": 40,
+        "kengi": 60
+      }
+    }
+  ],
+  "exp_types": [
+    {
+      "id": "election",
+      "name": "選挙",
+      "icon": "exp-election"
+    },
+    {
+      "id": "policy",
+      "name": "政策",
+      "icon": "exp-policy"
+    },
+    {
+      "id": "network",
+      "name": "人脈",
+      "icon": "exp-network"
+    },
+    {
+      "id": "media",
+      "name": "発信",
+      "icon": "exp-media"
+    },
+    {
+      "id": "money",
+      "name": "資金",
+      "icon": "exp-money"
+    }
+  ],
+  "relations": [
+    {
+      "id": "secretary",
+      "name": "秘書"
+    },
+    {
+      "id": "party",
+      "name": "党の幹部"
+    },
+    {
+      "id": "supporters",
+      "name": "後援会"
+    },
+    {
+      "id": "press",
+      "name": "地元紙"
+    },
+    {
+      "id": "kengi",
+      "name": "県議団"
+    }
+  ],
+  "activities": [
+    {
+      "id": "local",
+      "name": "地元回り",
+      "icon": "act-local",
+      "description": "商店街や町内会を一軒ずつ回る。地盤が上がりやすい。",
+      "stamina": -15,
+      "exp": {
+        "election": 22,
+        "network": 8
+      },
+      "jiban_progress": 14,
+      "relations": {
+        "supporters": 4
+      }
+    },
+    {
+      "id": "speech",
+      "name": "街頭演説",
+      "icon": "act-speech",
+      "description": "駅前で政策を訴える。知名度と弁舌につながる。",
+      "stamina": -10,
+      "exp": {
+        "media": 20,
+        "election": 8
+      },
+      "jiban_progress": 4,
+      "relations": {
+        "press": 3
+      }
+    },
+    {
+      "id": "study",
+      "name": "政策勉強会",
+      "icon": "act-study",
+      "description": "専門家を招いて政策を学ぶ。体力をあまり使わない。",
+      "stamina": -5,
+      "exp": {
+        "policy": 22,
+        "network": 5
+      },
+      "relations": {}
+    },
+    {
+      "id": "fund",
+      "name": "資金集め",
+      "icon": "act-fund",
+      "description": "支援者の会合を回って献金を集める。資金の能力が高いほど多く集まる。",
+      "stamina": -10,
+      "exp": {
+        "money": 18,
+        "network": 4
+      },
+      "money_per_ability": 4,
+      "relations": {
+        "supporters": 1
+      }
+    },
+    {
+      "id": "party",
+      "name": "党務",
+      "icon": "act-party",
+      "description": "党本部の仕事を手伝い、幹部に顔を売る。",
+      "stamina": -5,
+      "exp": {
+        "network": 16,
+        "policy": 4
+      },
+      "relations": {
+        "party": 5
+      }
+    },
+    {
+      "id": "kengi",
+      "name": "県議と連携",
+      "icon": "exp-network",
+      "description": "県議会議員と地元の会合を回る。県議団との関係が深まると、地元の票を固めてくれる。",
+      "stamina": -8,
+      "exp": {
+        "network": 12,
+        "election": 8
+      },
+      "jiban_progress": 6,
+      "relations": {
+        "kengi": 6
+      }
+    },
+    {
+      "id": "festival",
+      "name": "地域行事",
+      "icon": "st-calendar",
+      "description": "祭りや運動会、清掃活動に顔を出す。地道だが後援会と地盤に効く。",
+      "stamina": -8,
+      "exp": {
+        "election": 10
+      },
+      "jiban_progress": 9,
+      "relations": {
+        "supporters": 5
+      }
+    },
+    {
+      "id": "training",
+      "name": "体力づくり",
+      "icon": "st-stamina",
+      "description": "走り込みで体を鍛える。体力の上限が少し上がる。",
+      "stamina": -5,
+      "exp": {},
+      "max_stamina": 3,
+      "relations": {}
+    },
+    {
+      "id": "hobby",
+      "name": "趣味の時間",
+      "icon": "st-mood-4",
+      "description": "好きなことをして気分を変える。やる気が上がりやすい。",
+      "stamina": 10,
+      "exp": {},
+      "mood_up_chance": 0.75,
+      "relations": {}
+    },
+    {
+      "id": "rest",
+      "name": "休養",
+      "icon": "act-rest",
+      "description": "体を休める。体力が戻り、やる気が上がることがある。",
+      "stamina": 30,
+      "exp": {},
+      "mood_up_chance": 0.5,
+      "relations": {
+        "secretary": 2
+      }
+    }
+  ],
+  "mood_multiplier": [
+    0.7,
+    0.85,
+    1,
+    1.15,
+    1.3
+  ],
+  "low_stamina": {
+    "threshold": 20,
+    "breakdown_chance": 0.35
+  },
+  "monthly_expense": 30,
+  "relation_decay": 2,
+  "jiban_step": [
+    0,
+    70,
+    130,
+    200
+  ],
+  "upgrade": {
+    "note": "能力を1上げるのに使う経験点。cost の各経験点を、今の能力値に応じた倍率（1 + (値 − 40) / 40、最低0.6）でかける。",
+    "cost": {
+      "弁舌": {
+        "media": 2,
+        "election": 1
+      },
+      "政策": {
+        "policy": 3
+      },
+      "調整": {
+        "network": 2,
+        "policy": 1
+      },
+      "知名度": {
+        "media": 3
+      },
+      "組織": {
+        "election": 2,
+        "network": 1
+      },
+      "資金": {
+        "money": 3
+      }
+    }
+  },
+  "ai_dissolution": {
+    "min_turn": 12,
+    "approval": 42,
+    "chance": 0.3
+  },
+  "jiban_decay": 3,
+  "election_bonus": {
+    "note": "選挙での本人の票への上乗せ。funds は選挙資金（2000万円で最大）、supporters は後援会の評価（50を基準）。origin_penalty は世襲批判と、名門への期待の重さ。",
+    "funds": 0.04,
+    "supporters": 0.04,
+    "origin_penalty": {
+      "newcomer": 0,
+      "hereditary": 0.06,
+      "dynasty": 0.08
+    }
+  },
+  "max_stamina": {
+    "start": 100,
+    "limit": 130
+  },
+  "kengi": {
+    "note": "県議団との関係が threshold 以上なら、毎月地盤の進み具合が passive_jiban 増え、選挙で本人の票に (関係−50)/50 × election_weight が上乗せされる。",
+    "threshold": 60,
+    "passive_jiban": 3,
+    "election_weight": 0.03
+  },
+  "routes": {
+    "note": "出馬の道。smd は小選挙区で他党の現職に挑む、successor は引退する自党の現職の後継（新人のみ。現職が retire_age 歳以上の県）、pr は比例名簿（順位は党の幹部との関係で決まる）。世襲・名門は親の地盤を継ぐ小選挙区。 successor_penalty は、後継の新顔がまだ知られていないことによる、最初の総選挙での票の差し引き。",
+    "successor_min_age": 65,
+    "successor_relations": {
+      "supporters": 35
+    },
+    "pr_rank_step": 12,
+    "successor_penalty": 0.07
+  },
+  "career_end": {
+    "max_years": 30,
+    "retire_age": 75
+  },
+  "secretary_names": [
+    "岡田",
+    "中山",
+    "小島",
+    "吉村",
+    "片山",
+    "西川",
+    "杉本",
+    "平野"
+  ],
+  "jiban_neglect_months": 6
+}

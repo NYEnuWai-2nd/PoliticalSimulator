@@ -8,9 +8,12 @@
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "test": "vitest run",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "build:cli": "vite build --config vite.cli.config.ts",
+    "cli": "node cli/seiji.mjs"
   },
   "devDependencies": {
+    "@types/node": "^26.6.6",
     "typescript": "^7.0.2",
     "vite": "^8.3.8",
     "vitest": "^5.1.0"

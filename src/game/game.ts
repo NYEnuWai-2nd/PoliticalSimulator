@@ -69,6 +69,8 @@ export interface GameState {
   pressThisMonth: number;
   /** 乱数を使った回数（保存しても同じ続きになるように状態に持つ） */
   rngCounter: number;
+  /** 衆議院の任期が満了する年月 */
+  termEnd: { year: number; month: number };
   /** ゲームが終わったときの理由 */
   over?: string;
 }
@@ -102,8 +104,20 @@ function pushScene(state: GameState, ctx: GameContext, key: string, vars: SceneV
   state.scenes.push(buildScene(key, ctx, { year: state.year, approval: state.approval, ...vars }, rand(state)));
 }
 
+export interface GameStartOptions {
+  /** 始まる年月（既定は rules.json の start） */
+  year?: number;
+  month?: number;
+  /** 任期満了の年月（既定は rules.json の term_end） */
+  termEnd?: { year: number; month: number };
+  /** 内閣発足の記録を残さない（総選挙後に政権を組み直すときなど） */
+  quiet?: boolean;
+}
+
 /** ctx を渡すと、内閣発足の場面を積んだ状態で始まる */
-export function createGame(seed: number, ctx?: GameContext): GameState {
+export function createGame(seed: number, ctx?: GameContext, opts: GameStartOptions = {}): GameState {
+  const startYear = opts.year ?? R.start.year;
+  const startMonth = opts.month ?? R.start.month;
   const bills: Record<string, BillState> = {};
   for (const b of BILLS) bills[b.id] = { status: "未着手", progress: 0 };
   const cooperation: Record<string, number> = {};
@@ -115,22 +129,27 @@ export function createGame(seed: number, ctx?: GameContext): GameState {
   const state: GameState = {
     seed,
     turn: 1,
-    year: R.start.year,
-    month: R.start.month,
+    year: startYear,
+    month: startMonth,
     actionPoints: R.action_points_per_turn,
     approval: R.approval.initial,
     approvalHistory: [R.approval.initial],
     cohesion: R.cohesion.initial,
     cooperation,
     bills,
-    budgetYear: R.start.year,
+    budgetYear: startYear,
+    termEnd: opts.termEnd ?? { ...R.term_end },
     log: [],
     scenes: [],
     pressThisMonth: 0,
     rngCounter: 0,
   };
-  log(state, "通知", `石橋内閣が発足した。少数与党のため、法案を通すには野党の協力が必要になる。${state.budgetYear}年度予算は3月末までに成立させなければならない。`);
-  if (ctx) pushScene(state, ctx, "start");
+  // 予算の期限（3月）を過ぎてから始まる年は、その年度の予算は成立済みとして扱う
+  if (startMonth > R.budget.deadline_month) state.bills[R.budget.bill] = { status: "成立", progress: 0 };
+  if (!opts.quiet) {
+    log(state, "通知", `石橋内閣が発足した。少数与党のため、法案を通すには野党の協力が必要になる。${state.budgetYear}年度予算は3月末までに成立させなければならない。`);
+    if (ctx) pushScene(state, ctx, "start");
+  }
   return state;
 }
 
@@ -352,7 +371,7 @@ export function endTurn(state: GameState, ctx: GameContext): void {
   }
   if (state.month === R.session_months.find((m) => m > 6)) log(state, "通知", "臨時国会が始まった。");
   if (state.month === 7) log(state, "通知", "通常国会が閉会した。秋の臨時国会まで法案は出せない。");
-  if (state.year > R.term_end.year || (state.year === R.term_end.year && state.month > R.term_end.month)) {
+  if (state.year > state.termEnd.year || (state.year === state.termEnd.year && state.month > state.termEnd.month)) {
     state.over = "任期満了。総選挙は次の段階で実装します。";
     log(state, "通知", "衆議院議員の任期が満了した。");
     pushScene(state, ctx, "term_end");

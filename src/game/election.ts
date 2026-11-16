@@ -50,6 +50,12 @@ export interface ElectionInput {
   /** 内閣支持率（%）。基準からのずれが全国の風になる */
   approval: number;
   factory: MemberFactory;
+  /** 決まった候補者（プレイヤーなど）。その県のその党の候補として必ず立てる */
+  forced?: { pref: PrefCode; party: string; member: Member; bonus?: number }[];
+  /** 比例名簿に決まった順位で載せる候補（プレイヤーなど）。rank は0から */
+  forcedPr?: { party: string; member: Member; rank: number }[];
+  /** 今回の選挙で引退させる議員（プレイヤーに地盤を譲る親など） */
+  retireIds?: number[];
 }
 
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
@@ -128,13 +134,16 @@ export async function runElection(input: ElectionInput): Promise<ElectionResult>
   const support = nationalSupport(input.approval, rand);
 
   // 引退：高齢の議員は立候補しない（首相などの固定キャラクターは引退させない）
-  const retired = input.roster.filter((m) => !m.fixedRole && ageAt(m, year) >= E.retire_age);
+  const forcedRetire = new Set(input.retireIds ?? []);
+  const retired = input.roster.filter((m) => forcedRetire.has(m.id) || (!m.fixedRole && ageAt(m, year) >= E.retire_age));
   const retiredIds = new Set(retired.map((m) => m.id));
   const sitting = input.roster.filter((m) => !retiredIds.has(m.id));
   const used = new Set<number>();
   const ronin = [...input.ronin];
 
-  async function candidateFor(party: string, pref: PrefCode): Promise<{ member: Member; incumbent: boolean }> {
+  async function candidateFor(party: string, pref: PrefCode): Promise<{ member: Member; incumbent: boolean; bonus?: number }> {
+    const forced = input.forced?.find((f) => f.pref === pref && f.party === party);
+    if (forced) return { member: forced.member, incumbent: forced.member.seat === "小選挙区" && forced.member.district === pref, bonus: forced.bonus };
     const inc = sitting.find((m) => m.seat === "小選挙区" && m.district === pref && m.party === party);
     if (inc) return { member: inc, incumbent: true };
     // 地元の浪人のうち、当選回数の多い人を優先する
@@ -148,6 +157,8 @@ export async function runElection(input: ElectionInput): Promise<ElectionResult>
   for (const pref of PREFS) {
     const incumbent = sitting.find((m) => m.seat === "小選挙区" && m.district === pref);
     const running = partiesRunning(pref, incumbent?.party);
+    // 決まった候補者の党は、その県で必ず候補を立てる
+    for (const f of input.forced ?? []) if (f.pref === pref && !running.includes(f.party)) running.push(f.party);
     const local: Record<string, number> = {};
     for (const p of running) local[p] = (support[p] ?? 0) * (E.regional_base + E.regional_strength * prefStrength(pref, p));
     // 選挙協力：与党第一党が立てない県では、その票の一部が連立相手に流れる
@@ -157,9 +168,9 @@ export async function runElection(input: ElectionInput): Promise<ElectionResult>
     const localTotal = Object.values(local).reduce((a, b) => a + b, 0) || 1;
     const entries: { member: Member; raw: number }[] = [];
     for (const p of running) {
-      const { member, incumbent: isInc } = await candidateFor(p, pref);
+      const { member, incumbent: isInc, bonus } = await candidateFor(p, pref);
       used.add(member.id);
-      entries.push({ member, raw: Math.max(0.01, local[p] / localTotal + personalVote(member, isInc, rand)) });
+      entries.push({ member, raw: Math.max(0.01, local[p] / localTotal + personalVote(member, isInc, rand) + (bonus ?? 0)) });
     }
     // 無所属の現職は党の票を持たず、本人の票だけで戦う
     if (incumbent && partyById(incumbent.party).is_independent) {
@@ -178,10 +189,12 @@ export async function runElection(input: ElectionInput): Promise<ElectionResult>
     const n = prSeats.get(p.id) ?? 0;
     if (!n) continue;
     // 名簿の順：比例の現職（当選回数の多い順）→ 小選挙区に出なかった浪人 → 新人
+    const forcedPrIds = new Set((input.forcedPr ?? []).map((f) => f.member.id));
     const list = [
-      ...sitting.filter((m) => m.party === p.id && m.seat === "比例").sort((a, b) => b.terms - a.terms || b.abilities.知名度 - a.abilities.知名度),
-      ...ronin.filter((m) => m.party === p.id && !used.has(m.id)).sort((a, b) => b.terms - a.terms),
+      ...sitting.filter((m) => m.party === p.id && m.seat === "比例" && !forcedPrIds.has(m.id)).sort((a, b) => b.terms - a.terms || b.abilities.知名度 - a.abilities.知名度),
+      ...ronin.filter((m) => m.party === p.id && !used.has(m.id) && !forcedPrIds.has(m.id)).sort((a, b) => b.terms - a.terms),
     ];
+    for (const f of (input.forcedPr ?? []).filter((x) => x.party === p.id)) list.splice(Math.min(f.rank, list.length), 0, f.member);
     const elected: Member[] = [];
     for (const m of list) {
       if (elected.length >= n) break;
@@ -233,4 +246,26 @@ export function seatSummary(roster: Member[]): { party: string; smd: number; pr:
     const smd = ms.filter((m) => m.seat === "小選挙区").length;
     return { party: p.id, smd, pr: ms.length - smd, total: ms.length };
   }).filter((x) => x.total > 0);
+}
+
+/**
+ * 選挙区の情勢の見込み（揺らぎを除いた得票率）。画面の「情勢」に使う。
+ * entries は立候補する党と候補者（いなければ平均的な新人として扱う）。
+ */
+export function estimateDistrict(
+  pref: PrefCode,
+  approval: number,
+  entries: { party: string; member?: Member; incumbent: boolean; bonus?: number }[],
+): { party: string; member?: Member; share: number }[] {
+  const support = nationalSupport(approval, () => 0.5);
+  const running = entries.map((e) => e.party);
+  const local: Record<string, number> = {};
+  for (const p of running) local[p] = (support[p] ?? 0) * (E.regional_base + E.regional_strength * prefStrength(pref, p));
+  for (const partner of COALITION_PARTNERS)
+    if (running.includes(partner) && !running.includes(RULING_PARTY))
+      local[partner] += (support[RULING_PARTY] ?? 0) * (E.regional_base + E.regional_strength * prefStrength(pref, RULING_PARTY)) * E.partner_transfer;
+  const localTotal = Object.values(local).reduce((a, b) => a + b, 0) || 1;
+  const raw = entries.map((e) => Math.max(0.01, local[e.party] / localTotal + (e.member ? personalVote(e.member, e.incumbent, () => 0.5) : 0) + (e.bonus ?? 0)));
+  const sum = raw.reduce((a, b) => a + b, 0);
+  return entries.map((e, i) => ({ party: e.party, member: e.member, share: raw[i] / sum }));
 }

@@ -57,7 +57,12 @@ export function formInitialGovernment(roster: Member[]): Appointment[] {
     let member: Member | undefined;
     if (post.fixed_role) {
       member = roster.find((m) => m.fixedRole === post.fixed_role);
-      if (!member) throw new Error(`${post.name}に就ける固定キャラクター（${post.fixed_role}）が名簿にいません`);
+      // 固定キャラクターが落選・引退していれば、与党で当選回数と調整・知名度が最も高い議員が首相になる
+      if (!member) {
+        const score = (m: Member) => m.terms * 4 + m.abilities.調整 + m.abilities.知名度;
+        member = roster.filter((m) => m.party === RULING_PARTY && !taken.has(m.id)).reduce<Member | undefined>((b, m) => (!b || score(m) > score(b) ? m : b), undefined);
+      }
+      if (!member) throw new Error(`${post.name}に就ける議員がいません`);
     } else {
       const parties = post.party === "ruling_coalition_partner" ? COALITION_PARTNERS : [RULING_PARTY];
       const pool = roster.filter((m) => parties.includes(m.party) && !taken.has(m.id) && !m.fixedRole);
