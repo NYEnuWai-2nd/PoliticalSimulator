@@ -1,0 +1,557 @@
+/* 操作のしやすさのための追加：始め方の段階表示、ツールチップ、活動の横スクロールの手がかり、人物の詳しい情報、
+   スマホで縦スクロールなしに収める並び。app.css のあとに読み込む。 */
+
+/* ===== 始め方（1画面に1つずつ） ===== */
+
+.setup-head {
+  display: grid;
+  gap: 6px;
+}
+
+.steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.step-dot {
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.55);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.step-dot.is-done {
+  background: #cde7fa;
+  color: var(--ink);
+}
+
+.step-dot.is-active {
+  background: var(--focus);
+  color: #fff;
+  text-shadow: 0 1px 0 #7a2800;
+}
+
+.step-title {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.step-title h2 {
+  margin: 0;
+  text-align: center;
+}
+
+.options.cols-1 {
+  grid-template-columns: 1fr;
+}
+
+.options.cols-2 {
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+}
+
+.route-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.step-note {
+  margin: 6px 0 8px;
+  font-size: 13px;
+}
+
+.summary p {
+  margin: 4px 0;
+}
+
+.btn.big {
+  min-height: 56px;
+  padding: 8px 32px;
+  font-size: 18px;
+}
+
+/* ===== ツールチップ（マウスを乗せる／長押し） ===== */
+
+[data-tip] {
+  -webkit-touch-callout: none;
+}
+
+.tooltip {
+  position: fixed;
+  z-index: 300;
+  max-width: min(320px, calc(100vw - 16px));
+  display: none;
+  padding: 8px 12px;
+  background: rgba(8, 20, 40, 0.97);
+  color: #e8f4ff;
+  font-family: var(--font);
+  font-size: 13px;
+  line-height: 1.5;
+  pointer-events: none;
+  outline: 2px solid #ffe24a;
+  outline-offset: -2px;
+  clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+}
+
+.tooltip.is-open {
+  display: grid;
+}
+
+.tooltip b {
+  color: #ffe24a;
+}
+
+/* ===== 活動の列：横スクロールの手がかり ===== */
+
+.arena .cards-wrap {
+  grid-area: cards;
+  position: relative;
+  min-width: 0;
+}
+
+.cards-wrap .cards {
+  scroll-snap-type: x proximity;
+  scrollbar-width: none;
+}
+
+.cards-wrap .cards::-webkit-scrollbar {
+  display: none;
+}
+
+.cards-wrap .card {
+  scroll-snap-align: start;
+}
+
+.cards-wrap::before,
+.cards-wrap::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 56px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s;
+  z-index: 2;
+}
+
+.cards-wrap::before {
+  left: 0;
+  background: linear-gradient(90deg, rgba(10, 34, 68, 0.55), transparent);
+}
+
+.cards-wrap::after {
+  right: 0;
+  background: linear-gradient(270deg, rgba(10, 34, 68, 0.55), transparent);
+}
+
+.cards-wrap.can-left::before,
+.cards-wrap.can-right::after {
+  opacity: 1;
+}
+
+.scroll-hint {
+  position: absolute;
+  top: 50%;
+  z-index: 3;
+  display: none;
+  place-items: center;
+  width: 32px;
+  height: 44px;
+  margin-top: -18px;
+  border: 2px solid #fff;
+  border-radius: 10px;
+  background: var(--focus);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 900;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+  animation: hint-bounce 1.2s ease-in-out infinite;
+}
+
+.scroll-hint.left {
+  left: 2px;
+  animation-direction: reverse;
+}
+
+.scroll-hint.right {
+  right: 2px;
+}
+
+.cards-wrap.can-left .scroll-hint.left,
+.cards-wrap.can-right .scroll-hint.right {
+  display: grid;
+}
+
+@keyframes hint-bounce {
+  50% {
+    transform: translateX(3px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scroll-hint {
+    animation: none;
+  }
+}
+
+/* ===== 人物（押すと詳しい情報） ===== */
+
+.name-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 1px 10px;
+  min-height: 28px;
+  border: 2px solid #163763;
+  border-radius: 999px;
+  background: #fff;
+  color: var(--ink);
+  font-weight: 900;
+}
+
+.name-btn.big {
+  font-size: 18px;
+  min-height: 40px;
+}
+
+.hero-btn {
+  padding: 0;
+  border: none;
+  background: none;
+}
+
+.member-row {
+  width: 100%;
+  border: none;
+  background: none;
+  text-align: left;
+  font: inherit;
+}
+
+.race.sub {
+  font-size: 12px;
+}
+
+.push {
+  margin-left: auto;
+}
+
+.btn-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.dialog.light {
+  --bd: #2b7bc4;
+  --bg: linear-gradient(180deg, #f2faff 0%, #d4eeff 100%);
+  color: var(--ink);
+}
+
+.member-card .d-head {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 12px;
+  align-items: center;
+}
+
+.member-card h2 {
+  margin: 0;
+  color: var(--ink);
+}
+
+.member-card .d-head p {
+  margin: 2px 0 0;
+  font-size: 14px;
+}
+
+.face.big {
+  width: 64px;
+  height: 64px;
+  font-size: 36px;
+  border-width: 3px;
+}
+
+.d-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin: 8px 0 0;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.d-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.d-ab {
+  display: grid;
+  grid-template-columns: 3.5em 1.6em minmax(30px, 1fr) 2em;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.d-ab .stat-rank {
+  font-size: 18px;
+}
+
+.d-ab .num {
+  text-align: right;
+}
+
+.d-axis {
+  display: grid;
+  grid-template-columns: 2.5em minmax(40px, 1fr) 5.5em;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.axis-track {
+  position: relative;
+  height: 6px;
+  border-radius: 3px;
+  background: #c9dceb;
+}
+
+.axis-track::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: -3px;
+  bottom: -3px;
+  width: 1px;
+  background: #6b8aa8;
+}
+
+.axis-track i {
+  position: absolute;
+  top: 50%;
+  width: 12px;
+  height: 12px;
+  margin-left: -6px;
+  transform: translateY(-50%);
+  border-radius: 50%;
+  background: var(--ink);
+}
+
+.ups {
+  display: flex;
+  gap: 4px;
+}
+
+/* ===== スマホ縦：縦スクロールなしで収める ===== */
+
+@media (max-width: 760px) {
+  .shell {
+    height: 100dvh;
+    min-height: 0;
+    grid-template-rows: auto minmax(0, 1fr);
+    overflow: hidden;
+  }
+
+  .view {
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  .status {
+    position: static;
+    gap: 4px 6px;
+    padding: 5px 8px;
+  }
+
+  .status .pill-party {
+    font-size: 11px;
+  }
+
+  .status .date {
+    padding: 3px 10px;
+  }
+
+  .status .money {
+    padding: 3px 10px;
+    font-size: 13px;
+  }
+
+  .status .hp-meta {
+    font-size: 10px;
+  }
+
+  .status .gauge {
+    height: 14px;
+  }
+
+  /* 活動の画面は縦に収める（中央の札が伸び縮みする） */
+  .view.is-act {
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    padding-bottom: 0;
+  }
+
+  .arena {
+    flex: 1;
+    min-height: 0;
+    grid-template-rows: auto auto minmax(0, 1fr) auto;
+  }
+
+  .race {
+    padding: 4px 8px;
+    font-size: 12px;
+  }
+
+  .race.sub {
+    font-size: 11px;
+  }
+
+  .rel {
+    padding: 3px 6px;
+  }
+
+  .rel-panel,
+  .exp-panel {
+    gap: 3px;
+  }
+
+  .rel-panel .panel-title {
+    display: none;
+  }
+
+  .exp-row {
+    min-height: 0;
+    padding: 2px 7px;
+  }
+
+  .center {
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .center .fx {
+    font-size: 22px;
+    margin-bottom: -6px;
+  }
+
+  .hero {
+    width: min(76px, 9dvh);
+    height: min(76px, 9dvh);
+    font-size: min(42px, 5dvh);
+  }
+
+  .msg {
+    margin-top: 6px;
+    padding: 4px 10px;
+    font-size: 12px;
+  }
+
+  .msg small {
+    font-size: 11px;
+  }
+
+  /* 活動は1列に並べて横にスクロールする */
+  .cards-wrap {
+    margin: 0 -10px;
+    background: linear-gradient(180deg, rgba(11, 38, 82, 0.94) 0%, #071b3d 100%);
+    border-top: 3px solid #ffe24a;
+  }
+
+  .cards-wrap .cards {
+    display: flex;
+    gap: 10px;
+    overflow-x: auto;
+    margin: 0;
+    padding: 10px 14px 8px;
+    background: none;
+    border-top: none;
+  }
+
+  .cards-wrap .card {
+    flex: 0 0 68px;
+    width: 68px;
+    height: 68px;
+    max-width: none;
+    aspect-ratio: auto;
+  }
+
+  .cards-wrap .card .lb {
+    font-size: 10px;
+    white-space: nowrap;
+  }
+
+  .cards-wrap .card-in svg {
+    width: 28px;
+    height: 28px;
+  }
+
+  .scroll-hint {
+    width: 26px;
+    height: 36px;
+    margin-top: -18px;
+    font-size: 12px;
+  }
+
+  /* 始め方 */
+  .setup {
+    gap: 8px;
+  }
+
+  .setup h1 {
+    margin: 4px 0 0;
+    font-size: 24px;
+  }
+
+  .step-dot {
+    font-size: 10px;
+    padding: 1px 7px;
+  }
+
+  .options.cols-2 {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .option {
+    min-height: 48px;
+    padding: 6px 10px;
+  }
+
+  .option small {
+    font-size: 11px;
+  }
+
+  .pref-list {
+    grid-template-columns: 1fr;
+    max-height: 52dvh;
+  }
+
+  .d-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* 背の低いスマホ：擬音を消して顔と説明を残す */
+@media (max-width: 760px) and (max-height: 700px) {
+  .center .fx {
+    display: none;
+  }
+
+  .center {
+    justify-content: flex-end;
+  }
+}

@@ -593,7 +593,10 @@ export function prRank(state: CareerState): number {
 }
 
 /** 総選挙が今あったときの、プレイヤーの選挙区の見込み（揺らぎを除いた得票率の高い順）。比例名簿の道なら空 */
-export function raceForecast(state: CareerState, world: CareerWorld): { name: string; party: string; share: number; isPlayer: boolean }[] {
+export function raceForecast(
+  state: CareerState,
+  world: CareerWorld,
+): { name: string; party: string; share: number; isPlayer: boolean; memberId?: number; incumbent: boolean }[] {
   if (state.setup.route === "pr") return [];
   const pref = state.setup.pref;
   const holder = smdHolder(world.roster, pref);
@@ -612,6 +615,8 @@ export function raceForecast(state: CareerState, world: CareerWorld): { name: st
       party: e.party,
       share: e.share,
       isPlayer: e.member?.id === world.player.id,
+      memberId: e.member?.id,
+      incumbent: !!e.member && e.member.seat === "小選挙区" && e.member.district === pref,
     }))
     .sort((a, b) => b.share - a.share);
 }

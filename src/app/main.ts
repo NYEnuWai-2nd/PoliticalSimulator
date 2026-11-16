@@ -1,6 +1,7 @@
 // 議員人生モードの画面の入口。状態を持ち、画面を描き直し、操作を計算（src/game/career.ts）に渡す。
 // URL に ?seed=7&start=newcomer,minsei,smd,15,local を付けると、その条件ですぐ始まる（確認や共有に使う）。
 import "./app.css";
+import "./app-ux.css";
 import { loadNameData } from "../data/nameData.js";
 import { createWorld } from "../game/roster.js";
 import type { Member, MemberFactory } from "../game/roster.js";
@@ -11,7 +12,7 @@ import type { CareerState, CareerWorld, OriginId, RouteId } from "../game/career
 import type { Ability } from "../game/tables.js";
 import { partyById } from "../game/parties.js";
 import { PREFECTURES, renderJapanMap } from "../map/japanMap.js";
-import { FX, activityIds, activityView, cabinetView, partyView, selfView, setupView, statusBar } from "./views.js";
+import { FX, activityIds, activityView, cabinetView, memberDetail, partyView, selfView, setupView, statusBar } from "./views.js";
 import type { SetupChoice } from "./views.js";
 import { chip, esc, icon, pct } from "./ui.js";
 
@@ -38,6 +39,10 @@ interface App {
   electionsShown: number;
   toast?: string;
   mapPref?: number;
+  /** 始め方の何番目の画面か（0から） */
+  setupStep: number;
+  /** 詳しい情報を出している人物 */
+  memberId?: number;
 }
 
 const params = new URLSearchParams(location.search);
@@ -47,6 +52,7 @@ const app: App = {
   tab: (params.get("tab") as Tab) || "act",
   busy: false,
   electionsShown: 0,
+  setupStep: 0,
 };
 const root = document.querySelector<HTMLDivElement>("#app")!;
 
@@ -56,7 +62,7 @@ function render(): void {
   const { state, world } = app;
   if (!state || !world) {
     root.innerHTML = `<div class="shell"><header class="topbar"><div class="crumb"><div class="diamond"></div><div><span class="crumb-sub">議員人生</span><span class="crumb-main">はじめる</span></div></div></header>
-      <main class="view">${app.base ? setupView(app.base.roster, app.setup) : `<p class="cut box">名前データを読み込んでいます…</p>`}</main></div>`;
+      <main class="view">${app.base ? setupView(app.base.roster, app.setup, app.setupStep) : `<p class="cut box">名前データを読み込んでいます…</p>`}</main></div>`;
     return;
   }
   const tab = TABS.find((t) => t.id === app.tab)!;
@@ -71,12 +77,13 @@ function render(): void {
       <div class="crumb"><div class="diamond"></div><div><span class="crumb-sub">議員人生 ― ${esc(world.player.name.displayName)}・当選${world.player.terms}回</span><span class="crumb-main">${tab.title}</span></div></div>
       <nav class="tabs" aria-label="画面の切り替え">${TABS.map((t, i) => `<button class="tab${t.id === app.tab ? " is-active" : ""}" data-tab="${t.id}">${icon(t.icon, 20, t.label)}${t.label}<kbd>${i + 1}</kbd></button>`).join("")}</nav>
     </header>
-    <main class="view">${body}</main>
+    <main class="view${app.tab === "act" ? " is-act" : ""}">${body}</main>
     <footer class="status">${statusBar(state, world)}</footer>
   </div>
   ${modalHtml()}
   ${app.toast ? `<div class="cut toast" role="status">${esc(app.toast)}</div>` : ""}`;
   if (app.tab === "map") mountMap();
+  if (app.tab === "act") setupCardScroll();
 }
 
 function mapViewShell(): string {
@@ -85,7 +92,7 @@ function mapViewShell(): string {
   const holder = w.roster.find((m) => m.seat === "小選挙区" && m.district === pref);
   const pr = w.roster.filter((m) => m.seat === "比例" && m.home === pref);
   const info = holder
-    ? `<b>${esc(PREFECTURES[pref - 1].name)}</b>：${chip(holder.party)} ${esc(holder.name.displayName)}（${esc(partyById(holder.party).short)}・当選${holder.terms}回・地盤${holder.jiban}）${pr.length ? `　比例：${pr.map((m) => esc(m.name.displayName)).join("、")}` : ""}`
+    ? `<b>${esc(PREFECTURES[pref - 1].name)}</b>：${chip(holder.party)} <button class="name-btn" data-member="${holder.id}">${esc(holder.name.displayName)}</button>（${esc(partyById(holder.party).short)}・当選${holder.terms}回・地盤${holder.jiban}）${pr.length ? `　比例：${pr.map((m) => `<button class="name-btn" data-member="${m.id}">${esc(m.name.displayName)}</button>`).join("、")}` : ""}`
     : "";
   return `<div class="page"><section class="cut box"><div id="map"></div><p style="margin:8px 0 0">${info}</p><p class="muted" style="margin:4px 0 0">県を押すと、その県の議員を表示します。枠の太い県が自分の地元です。</p></section></div>`;
 }
@@ -115,6 +122,7 @@ function mountMap(): void {
 function modalHtml(): string {
   const { state, world } = app;
   if (!state || !world) return "";
+  if (app.memberId !== undefined) return memberDetail(state, world, app.memberId);
   // 総選挙の結果
   if (state.elections.length > app.electionsShown) {
     const e = state.elections[state.elections.length - 1];
@@ -198,14 +206,39 @@ function selectActivity(id: string): void {
 }
 
 root.addEventListener("click", (ev) => {
-  const t = (ev.target as HTMLElement).closest<HTMLElement>("button, [data-tab]");
+  // 長押しでツールチップを出した直後のタップは、押したことにしない
+  if (suppressClick) {
+    suppressClick = false;
+    ev.preventDefault();
+    return;
+  }
+  const target = ev.target as HTMLElement;
+  // ポップアップの外側を押したら閉じる
+  if (target.classList.contains("overlay") && target.dataset.action === "close-member") {
+    app.memberId = undefined;
+    render();
+    return;
+  }
+  const t = target.closest<HTMLElement>("button, [data-tab], [data-member]");
   if (!t || app.busy) return;
   const d = t.dataset;
+  if (d.action === "close-member") {
+    app.memberId = undefined;
+    render();
+    return;
+  }
+  if (d.member !== undefined && !d.act) {
+    app.memberId = Number(d.member);
+    render();
+    return;
+  }
   if (d.setup) {
     const key = d.setup as keyof SetupChoice;
+    // 1つ選ぶと次の画面に進む（出馬の道の切り替えだけは同じ画面のまま）
     if (key === "pref") {
       app.setup.pref = Number(d.value);
       app.setup.route = d.route as RouteId;
+      app.setupStep = 3;
     } else if (key === "route") {
       app.setup.route = d.value as RouteId;
       app.setup.pref = undefined;
@@ -215,7 +248,12 @@ root.addEventListener("click", (ev) => {
         app.setup.route = undefined;
         app.setup.pref = undefined;
       }
+      app.setupStep = key === "origin" ? 1 : key === "party" ? 2 : 4;
     }
+    render();
+    window.scrollTo(0, 0);
+  } else if (d.action === "setup-back") {
+    app.setupStep = Math.max(0, app.setupStep - 1);
     render();
   } else if (d.action === "start") void start();
   else if (d.tab) {
@@ -246,6 +284,13 @@ root.addEventListener("click", (ev) => {
 // 数字キーで画面を切り替え、活動の画面では左右キーで選び Enter で実行する。出来事は数字キーで選ぶ
 window.addEventListener("keydown", (e) => {
   if (!app.state || !app.world || app.busy || e.altKey || e.ctrlKey || e.metaKey) return;
+  if (app.memberId !== undefined) {
+    if (e.key === "Escape" || e.key === "Enter") {
+      app.memberId = undefined;
+      render();
+    }
+    return;
+  }
   if (app.state.pendingEvent) {
     const n = Number(e.key);
     if (n >= 1 && n <= app.state.pendingEvent.choices.length) showToast(chooseEvent(app.state, app.world, n - 1).message);
@@ -274,6 +319,94 @@ window.addEventListener("keydown", (e) => {
   } else if (e.key === "Enter" && app.selected) void doActivity(app.selected);
 });
 
+// ---------- ツールチップ（マウスを乗せる／長押し） ----------
+
+const tipEl = document.createElement("div");
+tipEl.className = "tooltip";
+tipEl.setAttribute("role", "tooltip");
+document.body.appendChild(tipEl);
+let suppressClick = false;
+let pressTimer: number | undefined;
+
+function showTip(el: HTMLElement, x: number, y: number): void {
+  const text = el.dataset.tip;
+  if (!text) return;
+  tipEl.innerHTML = text
+    .split("\n")
+    .map((l, i) => (i === 0 ? `<b>${esc(l)}</b>` : `<span>${esc(l)}</span>`))
+    .join("");
+  tipEl.classList.add("is-open");
+  const r = tipEl.getBoundingClientRect();
+  const left = Math.min(Math.max(8, x + 14), window.innerWidth - r.width - 8);
+  const top = y + 18 + r.height > window.innerHeight ? y - r.height - 14 : y + 18;
+  tipEl.style.left = `${left}px`;
+  tipEl.style.top = `${Math.max(8, top)}px`;
+}
+
+function hideTip(): void {
+  tipEl.classList.remove("is-open");
+}
+
+root.addEventListener("pointermove", (e) => {
+  if (e.pointerType !== "mouse") {
+    window.clearTimeout(pressTimer);
+    return;
+  }
+  const el = (e.target as HTMLElement).closest<HTMLElement>("[data-tip]");
+  if (el) showTip(el, e.clientX, e.clientY);
+  else hideTip();
+});
+root.addEventListener("pointerleave", hideTip);
+root.addEventListener("pointerdown", (e) => {
+  if (e.pointerType === "mouse") return;
+  hideTip();
+  const el = (e.target as HTMLElement).closest<HTMLElement>("[data-tip]");
+  if (!el) return;
+  const { clientX, clientY } = e;
+  // 長押し（0.45秒）でツールチップを出す
+  pressTimer = window.setTimeout(() => {
+    suppressClick = true;
+    showTip(el, clientX, clientY);
+  }, 450);
+});
+root.addEventListener("pointerup", () => window.clearTimeout(pressTimer));
+root.addEventListener("pointercancel", () => window.clearTimeout(pressTimer));
+document.addEventListener("pointerdown", (e) => {
+  if (e.pointerType !== "mouse" && !(e.target as HTMLElement).closest("[data-tip]")) hideTip();
+});
+root.addEventListener("contextmenu", (e) => {
+  if ((e.target as HTMLElement).closest("[data-tip]")) e.preventDefault();
+});
+
+/** 活動のカードの列が横に続いていることを、左右の矢印と端の影で示す */
+let cardScroll = 0;
+function setupCardScroll(): void {
+  const wrap = document.querySelector<HTMLElement>(".cards-wrap");
+  const cards = wrap?.querySelector<HTMLElement>(".cards");
+  if (!wrap || !cards) return;
+  const update = () => {
+    wrap.classList.toggle("can-left", cards.scrollLeft > 4);
+    wrap.classList.toggle("can-right", cards.scrollLeft + cards.clientWidth < cards.scrollWidth - 4);
+  };
+  cards.scrollLeft = cardScroll;
+  cards.addEventListener("scroll", () => {
+    cardScroll = cards.scrollLeft;
+    update();
+  });
+  wrap.querySelectorAll<HTMLElement>(".scroll-hint").forEach((h) =>
+    h.addEventListener("click", () =>
+      cards.scrollBy({ left: (h.classList.contains("left") ? -1 : 1) * cards.clientWidth * 0.7, behavior: "smooth" }),
+    ),
+  );
+  const sel = cards.querySelector<HTMLElement>(".card.is-active");
+  if (sel) {
+    const l = sel.offsetLeft - cards.offsetLeft;
+    if (l < cards.scrollLeft || l + sel.offsetWidth > cards.scrollLeft + cards.clientWidth)
+      cards.scrollLeft = l - cards.clientWidth / 2 + sel.offsetWidth / 2;
+  }
+  update();
+}
+
 // ---------- 起動 ----------
 
 async function boot(): Promise<void> {
@@ -294,6 +427,17 @@ async function boot(): Promise<void> {
     }
     if (params.get("select")) app.selected = params.get("select")!;
     if (months) app.electionsShown = params.get("showElection") ? 0 : app.state?.elections.length ?? 0;
+    // 確認用：?member=rival で選挙区の相手、数字でその議員の詳しい情報を開く
+    const member = params.get("member");
+    if (member && app.state && app.world) {
+      const rival = app.world.roster.find((m) => m.seat === "小選挙区" && m.district === app.state!.setup.pref && m.id !== app.world!.player.id);
+      app.memberId = member === "rival" ? rival?.id : Number(member);
+    }
+  } else if (params.get("setup")) {
+    // 確認用：?setup=newcomer,minsei&step=2 で始め方の途中を開く
+    const [origin, party] = params.get("setup")!.split(",");
+    app.setup = { origin: origin as OriginId, party };
+    app.setupStep = Number(params.get("step") ?? 0);
   }
   render();
 }
