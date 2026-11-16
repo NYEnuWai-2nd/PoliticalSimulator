@@ -157,7 +157,7 @@ export async function runElection(input: ElectionInput): Promise<ElectionResult>
 
   // 引退：高齢の議員は立候補しない（首相などの固定キャラクターは引退させない）
   const forcedRetire = new Set(input.retireIds ?? []);
-  const retired = input.roster.filter((m) => forcedRetire.has(m.id) || (!m.fixedRole && ageAt(m, year) >= E.retire_age));
+  const retired = input.roster.filter((m) => forcedRetire.has(m.id) || ((!m.fixedRole || m.fixedRole === "党首") && ageAt(m, year) >= E.retire_age));
   const retiredIds = new Set(retired.map((m) => m.id));
   const sitting = input.roster.filter((m) => !retiredIds.has(m.id));
   const used = new Set<number>();

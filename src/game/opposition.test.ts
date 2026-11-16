@@ -5,7 +5,7 @@ import exclusion from "../../data/names/exclude_real_politicians.json";
 import type { NameData } from "../data/nameData.js";
 import { createWorld } from "./roster.js";
 import { formInitialGovernment } from "./cabinet.js";
-import { chooseEvent, isOppositionLeader, oppAction, oppositionLineup, raceForecast, startCareer, startOptions, takeTurn } from "./career.js";
+import { chooseEvent, isOppositionLeader, oppAction, oppositionLineup, raceForecast, shadowCabinet, startCareer, startOptions, takeTurn } from "./career.js";
 import { applyPacts, countNoConfidence, initialCooperation, pactTransfer } from "./opposition.js";
 
 const data = { surnames, givenNames, exclusion } as unknown as NameData;
@@ -113,4 +113,50 @@ describe("野党の役職", () => {
     expect(state.oppPost).toBeDefined();
     expect(state.post).toContain("民権党の");
   }, 60_000);
+});
+
+describe("開始時点の党首（固定キャラクター）", () => {
+  it("議席のある各党の党首が手作りのキャラクターで、比例の党首も名簿にいる", async () => {
+    const { state, world } = await minkenLeader(6);
+    // minkenLeader は自分を民権党の党首にするので、ほかの党で確かめる
+    const names = (p: string) => world.roster.find((m) => m.id === state.leaders[p])?.name.displayName;
+    expect(names("minsei")).toBe("石橋 茂樹");
+    expect(names("sasshin")).toBe("吉井 洋平");
+    expect(names("kyowa")).toBe("玉井 雄二郎");
+    expect(names("kosei")).toBe("斉木 鉄夫");
+    expect(names("reimei")).toBe("山元 二郎");
+    expect(names("shusan")).toBe("田代 雅子");
+    expect(names("sankaku")).toBe("神山 宗一");
+    const yamana = world.roster.find((m) => m.name.displayName === "山元 二郎")!;
+    expect(yamana.seat).toBe("比例");
+    expect(world.roster.filter((m) => m.party === "reimei").length).toBe(2);
+  });
+
+  it("固定キャラクターの名前は、実在の議員と漢字・読みが一致しない", async () => {
+    const { createHash } = await import("node:crypto");
+    const scenario = (await import("../../data/game/scenario.json")).default as unknown as { fixed_members: { name: { surname: string; givenName: string; surnameKana: string; givenNameKana: string } }[] };
+    const ex = exclusion as unknown as { kanji_sha256: string[]; reading_sha256: string[]; normalize_kanji_variants: Record<string, string> };
+    const K = new Set(ex.kanji_sha256);
+    const R = new Set(ex.reading_sha256);
+    const h = (s: string) => createHash("sha256").update(s).digest("hex");
+    const norm = (s: string) => [...s].map((c) => ex.normalize_kanji_variants[c] ?? c).join("");
+    for (const f of scenario.fixed_members) {
+      expect(K.has(h(norm(f.name.surname + f.name.givenName))), f.name.surname + f.name.givenName).toBe(false);
+      expect(R.has(h(f.name.surnameKana + f.name.givenNameKana)), f.name.surnameKana).toBe(false);
+    }
+  });
+});
+
+describe("影の内閣", () => {
+  it("分野ごとに影の大臣がいて、党首や4役職の人とは重ならない", async () => {
+    const { state, world } = await minkenLeader();
+    const cab = shadowCabinet(state, world);
+    expect(cab.length).toBeGreaterThan(5);
+    const lineup = new Set(oppositionLineup(state, world).map((x) => x.member.id));
+    for (const x of cab) {
+      expect(lineup.has(x.member.id)).toBe(false);
+      expect(x.member.id).not.toBe(state.leaders.minken);
+    }
+    expect(new Set(cab.map((x) => x.member.id)).size).toBe(cab.length);
+  });
 });

@@ -2,11 +2,11 @@
 // HTML を返すだけで、操作は main.ts が受け取る。
 // data-tip を付けた要素は、マウスを乗せるか長押しするとツールチップが出る（main.ts）。
 // data-member を付けた要素は、押すとその人物の詳しい情報が出る。
-import { ACTIVITIES, EXP_TYPES, OPP_ACTIONS, electionComments, isOppositionLeader, oppositionLineup, ORIGINS, RELATIONS, ROUTE_NAMES, canLearnSkill, canRunForLeader, canUpgrade, careerSummary, govBills, isPrimeMinister, moneyOutlook, postCategory, prRank, raceForecast, startOptions, upgradeCost } from "../game/career.js";
+import { ACTIVITIES, EXP_TYPES, OPP_ACTIONS, electionComments, isOppositionLeader, oppositionLineup, shadowCabinet, ORIGINS, RELATIONS, ROUTE_NAMES, canLearnSkill, canRunForLeader, canUpgrade, careerSummary, govBills, isPrimeMinister, moneyOutlook, postCategory, prRank, raceForecast, startOptions, upgradeCost } from "../game/career.js";
 import type { Party } from "../game/parties.js";
 import { COLOR_NAMES, SKILLS, conditionProgress, learnCost, sortSkills } from "../game/skills.js";
 import { adviseMonth, filterAdvice, recommendedActivity } from "../game/advice.js";
-import { OPP, isOppositionParty, otherOppositionParties, pactTransfer } from "../game/opposition.js";
+import { OPP, isOppositionParty, newOppositionState, otherOppositionParties, pactTransfer } from "../game/opposition.js";
 import { inSession } from "../game/game.js";
 import type { AdviceLevel } from "../game/advice.js";
 
@@ -61,7 +61,7 @@ export function setupView(roster: Member[], c: SetupChoice, step: number, saved?
   let body = "";
   if (step === 0) {
     title = "出自（難易度）を選ぶ";
-    body = `<div class="cut box resume">${saved ? `<button class="btn primary" data-action="continue">続きから</button><span class="muted">${esc(saved)}</span>` : `<span class="muted">はじめから遊ぶ</span>`}<button class="btn small push" data-action="import">ファイルから読み込む</button></div><div class="cut box resume mode-box"><b>画面のモード</b>${modeSwitch(mode, adviceLevel)}</div><div class="options cols-1">${ORIGINS.map(
+    body = `<div class="cut box resume">${saved ? `<button class="btn primary" data-action="continue">続きから</button><span class="muted">${esc(saved)}</span><button class="btn small" data-action="delete-save">セーブを消す</button>` : `<span class="muted">はじめから遊ぶ</span>`}<button class="btn small push" data-action="import">ファイルから読み込む</button></div><div class="cut box resume mode-box"><b>画面のモード</b>${modeSwitch(mode, adviceLevel)}</div><div class="options cols-1">${ORIGINS.map(
       (o) => `<button class="option${c.origin === o.id ? " is-active" : ""}" data-setup="origin" data-value="${o.id}"><b>${o.name}（${o.difficulty}）</b><small>${esc(o.description)}</small></button>`,
     ).join("")}</div>`;
   } else if (step === 1) {
@@ -447,11 +447,15 @@ function memberRow(m: Member, extra: string, isPlayer: boolean): string {
 function oppositionSection(state: CareerState, world: CareerWorld): string {
   const party = world.player.party;
   if (!isOppositionParty(party, state.gov.ruling)) return "";
-  const opp = state.opp;
+  const opp = state.opp ?? newOppositionState(party);
   const lineup = oppositionLineup(state, world)
     .map((x) => `<span class="lineup-item"><small class="muted">${esc(x.post)}</small><button class="name-btn" data-member="${x.member.id}">${esc(x.member.name.displayName)}${x.member.id === world.player.id ? "（自分）" : ""}</button></span>`)
     .join("");
   const shadow = state.oppPost?.id === "opp_shadow" ? `<p class="muted" style="margin:6px 0 0">自分は${esc(state.oppPost.name)}。政権を取ったら、この分野の大臣に就きやすい。</p>` : "";
+  const cabinet = shadowCabinet(state, world)
+    .map((x) => `<span class="lineup-item"><small class="muted">${esc(x.field)}</small><button class="name-btn" data-member="${x.member.id}">${esc(x.member.name.displayName)}${x.member.id === world.player.id ? "（自分）" : ""}</button></span>`)
+    .join("");
+  const shadowList = cabinet ? `<details class="shadow-cabinet"${state.oppPost?.id === "opp_shadow" ? " open" : ""}><summary>影の内閣（分野ごとの影の大臣）</summary><div class="lineup">${cabinet}</div></details>` : "";
   const others = otherOppositionParties(world.roster, party, state.gov.ruling);
   const leader = isOppositionLeader(state, world);
   const points = opp?.actionPoints ?? 0;
@@ -476,8 +480,8 @@ function oppositionSection(state: CareerState, world: CareerWorld): string {
         .join("")}</div><p class="muted" style="margin:6px 0 0;font-size:12px">会談と選挙協力は、下の各党の行から選ぶ。行動を選び終えたら、活動の画面で今月の活動を選ぶと月末になる。</p>`
     : `<p class="muted" style="margin:6px 0 0;font-size:12px">党首になると、ほかの野党との会談、党首討論、追及、対案、選挙協力、不信任案を自分で動かせる。</p>`;
   return `<section class="cut box"><h2>野党として（与党 ${esc(partyById(state.gov.ruling.party).short)}${state.gov.ruling.partners.length ? "・" + state.gov.ruling.partners.map((x) => esc(partyById(x).short)).join("・") : ""}）</h2>
-    <div class="lineup">${lineup}</div>${shadow}${status}${actions}
-    <h3 class="sub-h">ほかの野党</h3><div class="rows">${rows || "<p class='muted'>ほかに野党はない</p>"}</div></section>`;
+    <div class="lineup">${lineup}</div>${shadow}${shadowList}${status}${actions}
+    <h3 class="sub-h">ほかの野党 <small class="muted">（数字は自分の党との協力度。${OPP.actions.pact.min_cooperation}以上で選挙協力を結べる）</small></h3><div class="rows">${rows || "<p class='muted'>ほかに野党はない</p>"}</div></section>`;
 }
 
 export function partyView(state: CareerState, world: CareerWorld): string {

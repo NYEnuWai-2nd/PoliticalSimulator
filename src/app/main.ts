@@ -62,6 +62,21 @@ interface App {
   adviceLevel: AdviceLevel;
   /** 見せた山場の場面の数 */
   highlightsShown: number;
+  /** 画面の中の確認（「はい」で run を実行する）。ブラウザ標準の確認は自動操作で必ず「いいえ」になる環境があるため使わない */
+  confirm?: { text: string; ok: string; run: () => void | Promise<void> };
+}
+
+/** 確認のポップアップを出す */
+function ask(text: string, ok: string, run: () => void | Promise<void>): void {
+  app.confirm = { text, ok, run };
+  render();
+}
+
+function confirmHtml(): string {
+  const c = app.confirm;
+  if (!c) return "";
+  return `<div class="overlay confirm-overlay"><div class="cut dialog light confirm" role="alertdialog" aria-modal="true"><p>${esc(c.text).replaceAll("\n", "<br>")}</p>
+    <p class="btn-row" style="justify-content:flex-end;margin:12px 0 0"><button class="btn" data-action="confirm-cancel">やめる</button><button class="btn primary" data-action="confirm-ok">${esc(c.ok)}</button></p></div></div>`;
 }
 
 const ADVICE_KEY = "seiji.adviceLevel";
@@ -96,6 +111,14 @@ function saveMode(mode: UiMode): void {
 // ---------- セーブ ----------
 
 const SAVE_KEY = "seiji.career.autosave";
+
+function removeAutosave(): void {
+  try {
+    localStorage.removeItem(SAVE_KEY);
+  } catch {
+    /* 保存できない環境 */
+  }
+}
 
 function readAutosave(): string | undefined {
   try {
@@ -184,8 +207,9 @@ function importSave(): void {
   input.addEventListener("change", async () => {
     const file = input.files?.[0];
     if (!file) return;
-    if (app.state && !app.state.over && !window.confirm("今のゲームを終えて、ファイルのデータを読み込みますか？")) return;
-    await loadSave(await file.text());
+    const text = await file.text();
+    if (app.state && !app.state.over) ask("今のゲームを終えて、ファイルのデータを読み込みますか？", "読み込む", () => loadSave(text));
+    else await loadSave(text);
   });
   input.click();
 }
@@ -213,7 +237,7 @@ function render(): void {
   if (state && world && !app.busy) autosave();
   if (!state || !world) {
     root.innerHTML = `<div class="shell"><header class="topbar"><div class="crumb"><div class="diamond"></div><div><span class="crumb-sub">議員人生</span><span class="crumb-main">はじめる</span></div></div></header>
-      <main class="view">${app.base ? setupView(app.base.roster, app.setup, app.setupStep, autosaveLabel(), app.mode, app.adviceLevel) : `<p class="cut box">名前データを読み込んでいます…</p>`}</main></div>`;
+      <main class="view">${app.base ? setupView(app.base.roster, app.setup, app.setupStep, autosaveLabel(), app.mode, app.adviceLevel) : `<p class="cut box">名前データを読み込んでいます…</p>`}</main></div>${confirmHtml()}`;
     return;
   }
   const tab = TABS.find((t) => t.id === app.tab)!;
@@ -281,6 +305,7 @@ function mountMap(): void {
 function modalHtml(): string {
   const { state, world } = app;
   if (!state || !world) return "";
+  if (app.confirm) return confirmHtml();
   if (app.memberId !== undefined) return memberDetail(state, world, app.memberId);
   if (app.overlay === "log") return logView(state, app.logFilter);
   if (app.overlay === "help") return helpView();
@@ -327,7 +352,16 @@ async function start(): Promise<void> {
   if (!app.base || !c.origin || !c.party || !c.route || !c.pref || !c.archetype) return;
   // 続きのデータがあれば、消えることを確かめる（確認用の ?start= では聞かない）
   const saved = params.has("start") ? undefined : autosaveLabel();
-  if (saved && !window.confirm(`このブラウザに保存している続き（${saved}）は消えます。新しく始めますか？\n残すときは、先に「続きから」で開いて「自分」の画面からファイルに書き出してください。`)) return;
+  if (saved) {
+    ask(`このブラウザに保存している続き（${saved}）は消えます。新しく始めますか？\n残すときは、先に「続きから」で開いて「自分」の画面からファイルに書き出してください。`, "新しく始める", () => beginCareer());
+    return;
+  }
+  await beginCareer();
+}
+
+async function beginCareer(): Promise<void> {
+  const c = app.setup;
+  if (!app.base || !c.origin || !c.party || !c.route || !c.pref || !c.archetype) return;
   app.busy = true;
   try {
     const { state, world } = await startCareer(app.base, { origin: c.origin, party: c.party, route: c.route, pref: c.pref, archetype: c.archetype }, app.seed);
@@ -503,13 +537,13 @@ root.addEventListener("click", (ev) => {
     app.state!.runForLeader = !app.state!.runForLeader;
     render();
   } else if (d.gov) {
-    if (d.gov === "dissolve" && !window.confirm("衆議院を解散して、月末に総選挙を行いますか？")) return;
-    const r = govAction(app.state!, app.world!, d.gov, d.arg);
-    showToast(r.message);
+    const go = () => showToast(govAction(app.state!, app.world!, d.gov!, d.arg).message);
+    if (d.gov === "dissolve") ask("衆議院を解散して、月末に総選挙を行いますか？", "解散する", go);
+    else go();
   } else if (d.opp) {
-    if (d.opp === "noconfidence" && !window.confirm("内閣不信任案を提出しますか？　否決されると、党への追い風が弱まり、反対した党との協力度が下がります。")) return;
-    const r = oppAction(app.state!, app.world!, d.opp as OppActionId, d.arg);
-    showToast(r.message);
+    const go = () => showToast(oppAction(app.state!, app.world!, d.opp as OppActionId, d.arg).message);
+    if (d.opp === "noconfidence") ask("内閣不信任案を提出しますか？\n否決されると、党への追い風が弱まり、反対した党との協力度が下がります。", "提出する", go);
+    else go();
   } else if (d.action === "close-highlight") {
     app.highlightsShown++;
     render();
@@ -534,18 +568,38 @@ root.addEventListener("click", (ev) => {
   } else if (d.action === "import") importSave();
   else if (d.action === "export") exportSave();
   else if (d.action === "restart" || d.action === "restart-same") {
-    if (app.state && !app.state.over && !window.confirm("今のゲームの続きは消えます。最初から始めますか？（残すときは先にファイルに書き出してください）")) return;
-    try {
-      localStorage.removeItem(SAVE_KEY);
-    } catch {
-      /* 保存できない環境 */
-    }
-    location.href = d.action === "restart-same" ? `${location.pathname}?seed=${app.seed}` : location.pathname;
+    const go = () => {
+      removeAutosave();
+      location.href = d.action === "restart-same" ? `${location.pathname}?seed=${app.seed}` : location.pathname;
+    };
+    if (app.state && !app.state.over) ask("今のゲームの続きは消えます。最初から始めますか？\n残すときは、先にファイルに書き出してください。", "最初から始める", go);
+    else go();
+  } else if (d.action === "delete-save") {
+    const label = autosaveLabel();
+    ask(`このブラウザに保存している続き（${label ?? "セーブデータ"}）を消しますか？\n消すと元に戻せません。`, "消す", () => {
+      removeAutosave();
+      showToast("セーブデータを消しました");
+    });
+  } else if (d.action === "confirm-ok") {
+    const c = app.confirm;
+    app.confirm = undefined;
+    render();
+    if (c) void c.run();
+  } else if (d.action === "confirm-cancel") {
+    app.confirm = undefined;
+    render();
   }
 });
 
 // 数字キーで画面を切り替え、活動の画面では左右キーで選び Enter で実行する。出来事は数字キーで選ぶ
 window.addEventListener("keydown", (e) => {
+  if (app.confirm) {
+    if (e.key === "Escape") {
+      app.confirm = undefined;
+      render();
+    }
+    return;
+  }
   if (!app.state || !app.world || app.busy || e.altKey || e.ctrlKey || e.metaKey) return;
   if (app.memberId !== undefined || app.overlay || app.result) {
     if (e.key === "Escape" || e.key === "Enter") {

@@ -26,8 +26,11 @@ async function play(state: CareerState, world: CareerWorld, from: number, months
   }
 }
 
+/** キーの順番によらずに比べる（値が undefined のキーは JSON に出ないので、追加の順で並びが変わることがある） */
+const stable = (v: unknown): unknown =>
+  Array.isArray(v) ? v.map(stable) : v && typeof v === "object" ? Object.fromEntries(Object.keys(v).sort().map((k) => [k, stable((v as Record<string, unknown>)[k])])) : v;
 const snapshot = (state: CareerState, world: CareerWorld) =>
-  JSON.stringify({ state, roster: world.roster, ronin: world.ronin, player: world.player, gov: world.government.map((a) => [a.post.id, a.member.id]) });
+  JSON.stringify(stable(JSON.parse(JSON.stringify({ state, roster: world.roster, ronin: world.ronin, player: world.player, gov: world.government.map((a) => [a.post.id, a.member.id]) }))));
 
 describe("セーブデータ", () => {
   it("途中で保存して読み込んでも、そのまま続けた場合と同じ展開になる（総選挙をまたぐ）", async () => {

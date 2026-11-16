@@ -323,7 +323,7 @@ function initialLeaders(roster: Member[], government: Appointment[]): Record<str
   const pm = government.find((a) => a.post.id === "pm")?.member;
   for (const party of new Set(roster.map((m) => m.party))) {
     if (partyById(party).is_independent) continue;
-    const l = pm && pm.party === party ? pm : pickLeader(roster, party);
+    const l = pm && pm.party === party ? pm : (roster.find((m) => m.party === party && m.fixedRole === "党首") ?? pickLeader(roster, party));
     if (l) out[party] = l.id;
   }
   return out;
@@ -394,7 +394,7 @@ function assignOppPost(state: CareerState, world: CareerWorld): void {
   const p = world.player;
   const party = p.party;
   if (state.status !== "議員" || !isOppositionParty(party, state.gov.ruling) || state.leaders[party] === p.id) {
-    state.oppPost = undefined;
+    delete state.oppPost;
     return;
   }
   const R = C.relation_effects;
@@ -407,7 +407,7 @@ function assignOppPost(state: CareerState, world: CareerWorld): void {
   if (mine) state.oppPost = { id: mine, name: OPP_POSTS.find((x) => x.id === mine)!.name };
   else if (p.terms >= S.min_terms && state.relations.party >= S.min_party_relation && p.specialties[0])
     state.oppPost = { id: "opp_shadow", name: `影の大臣（${p.specialties[0]}）`, field: p.specialties[0] };
-  else state.oppPost = undefined;
+  else delete state.oppPost;
 }
 
 /** 野党の党の役職に就いている人（自分の党。党首を除く。画面で見せる） */
@@ -636,6 +636,37 @@ export const OPP_ACTIONS: { id: OppActionId; name: string; needsParty?: boolean;
   { id: "noconfidence", name: "内閣不信任案の提出", description: "野党の票と与党の造反で過半数を取れば可決。支持率が高ければ解散、低ければ総辞職になる。" },
 ];
 
+/** 党首の行動の結果の文（data/game/opposition.json の texts から一つ選ぶ） */
+function oppText(state: CareerState, key: string, pm: Member | undefined): string {
+  const list = (OPP as unknown as { texts: Record<string, string[]> }).texts[key] ?? [""];
+  return list[Math.floor(rand(state) * list.length)].replaceAll("{pm}", pm?.name.displayName ?? "");
+}
+
+/** 影の内閣：分野ごとの影の大臣（自分の党が野党のとき。党首と4役職の人を除く） */
+export function shadowCabinet(state: CareerState, world: CareerWorld): { field: string; member: Member }[] {
+  const party = world.player.party;
+  if (!isOppositionParty(party, state.gov.ruling)) return [];
+  const taken = new Set<number>([state.leaders[party] ?? -1, ...oppositionLineup(state, world).map((x) => x.member.id)]);
+  const out: { field: string; member: Member }[] = [];
+  for (const field of TABLES.specialties) {
+    // 自分がその分野の影の大臣なら自分
+    if (state.oppPost?.field === field) {
+      out.push({ field, member: world.player });
+      taken.add(world.player.id);
+      continue;
+    }
+    const pool = world.roster.filter((m) => m.party === party && m.id !== world.player.id && !taken.has(m.id) && m.terms >= OPP.posts.shadow.min_terms);
+    const pick = pool
+      .map((m) => ({ m, s: (m.specialties.includes(field) ? 40 : 0) + m.abilities.政策 + m.terms * 2 }))
+      .sort((a, b) => b.s - a.s || a.m.id - b.m.id)[0]?.m;
+    if (pick) {
+      out.push({ field, member: pick });
+      taken.add(pick.id);
+    }
+  }
+  return out;
+}
+
 /** 野党の党首の行動を1つ使う */
 export function oppAction(state: CareerState, world: CareerWorld, action: OppActionId, arg?: string): TurnResult {
   if (!isOppositionLeader(state, world)) return { ok: false, message: "野党の党首のときだけ使えます。" };
@@ -677,17 +708,17 @@ export function oppAction(state: CareerState, world: CareerWorld, action: OppAct
       if (rand(state) < chance) {
         applyEffects(state, world, { approval: D.win_approval, relations: { press: D.win_press } });
         opp.momentum = Math.min(OPP.momentum.max, opp.momentum + D.win_momentum);
-        message = `党首討論で${pm?.name.displayName ?? "首相"}首相を追い込んだ（内閣支持率${D.win_approval}、自党に追い風）。`;
+        message = `${oppText(state, "debate_win", pm)}（内閣支持率${D.win_approval}、自党に追い風）`;
       } else {
         applyEffects(state, world, { approval: D.lose_approval });
         opp.momentum = Math.max(-OPP.momentum.max, opp.momentum + D.lose_momentum);
-        message = `党首討論で「批判ばかりで対案がない」と切り返された（内閣支持率+${D.lose_approval}）。`;
+        message = `${oppText(state, opp.proposals < A.proposal.cost ? "debate_lose_unprepared" : "debate_lose", pm)}（内閣支持率+${D.lose_approval}）`;
       }
       break;
     }
     case "pursue": {
       const P = A.pursue;
-      if (state.money < -P.money) return { ok: false, message: `調査の費用（${-P.money}万円）が足りません。` };
+      if (P.money && state.money < -P.money) return { ok: false, message: `調査の費用（${-P.money}万円）が足りません。` };
       // 直近2か月に政権の不祥事や失言があれば通りやすい
       const recent = g.log.some((l) => l.kind === "出来事" && /疑惑|失言|辞任|便宜/.test(l.text) && g.turn - l.turn <= 2);
       const chance = P.base_chance + (g.fatigue ?? 0) * P.per_fatigue + (p.abilities.政策 - 50) * P.per_ability + (recent ? P.recent_scandal : 0);
@@ -696,11 +727,11 @@ export function oppAction(state: CareerState, world: CareerWorld, action: OppAct
         applyEffects(state, world, { approval: P.win_approval });
         g.cohesion = Math.max(0, Math.round((g.cohesion + P.win_cohesion) * 100) / 100);
         opp.momentum = Math.min(OPP.momentum.max, opp.momentum + P.win_momentum);
-        message = `政権の失政を追及し、世論が動いた（内閣支持率${P.win_approval}、与党の結束${Math.round(g.cohesion * 100)}%）。`;
+        message = `${oppText(state, "pursue_win", pm)}（内閣支持率${P.win_approval}、与党の結束${Math.round(g.cohesion * 100)}%）`;
       } else {
         applyEffects(state, world, { relations: { press: P.lose_press } });
         opp.momentum = Math.max(-OPP.momentum.max, opp.momentum + P.lose_momentum);
-        message = "追及は空振りに終わり、「根拠が薄い」と逆に批判された。";
+        message = oppText(state, "pursue_lose", pm);
       }
       break;
     }

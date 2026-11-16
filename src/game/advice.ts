@@ -51,7 +51,14 @@ export function adviseMonth(state: CareerState, world: CareerWorld, max = 3): Ad
 
   // 体力
   if (state.stamina < 30)
-    add({ text: `先生、顔色が悪いですよ（体力${state.stamina}）。体力を使う活動をすると${Math.round(breakdownChance(state.stamina) * 100)}%の確率で倒れます。今月は休養にしましょう。`, act: "rest", priority: 100 });
+    add({
+      text:
+        breakdownChance(state.stamina) > 0
+          ? `先生、顔色が悪いですよ（体力${state.stamina}）。体力を使う活動をすると${Math.round(breakdownChance(state.stamina) * 100)}%の確率で倒れます。今月は休養にしましょう。`
+          : `先生、疲れがたまっています（体力${state.stamina}）。20を切ると、体力を使う活動の途中で倒れることがあります。そろそろ休養を。`,
+      act: "rest",
+      priority: 100,
+    });
   else if (state.stamina < 45) add({ text: `体力が${state.stamina}まで減っています。重い活動の前に、休養か趣味の時間を挟むと安心です。`, act: "rest", priority: 45 });
 
   // 資金

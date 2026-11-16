@@ -1419,3 +1419,34 @@
     justify-content: flex-end;
   }
 }
+
+.shadow-cabinet {
+  margin-top: 8px;
+}
+
+.shadow-cabinet summary {
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--ink);
+}
+
+.shadow-cabinet .lineup {
+  margin-top: 6px;
+}
+
+/* ===== 画面の中の確認 ===== */
+
+.confirm-overlay {
+  z-index: 250;
+}
+
+.dialog.confirm {
+  width: min(460px, calc(100vw - 24px));
+}
+
+.dialog.confirm p {
+  margin: 0;
+  line-height: 1.6;
+  font-weight: 700;
+}

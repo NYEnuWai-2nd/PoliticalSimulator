@@ -102,7 +102,11 @@ export function formGovernment(roster: Member[], opts: GovernmentOptions = {}): 
     } else {
       const partnerPool = ruling.partners.filter((p) => roster.some((m) => m.party === p));
       const parties = post.party === "ruling_coalition_partner" && partnerPool.length ? partnerPool : [ruling.party];
-      const pool = roster.filter((m) => parties.includes(m.party) && !taken.has(m.id) && !m.fixedRole && (adjust?.(m, post) ?? 0) !== null);
+      // 固定キャラクターのうち、首相の役の人はほかの役職に就けない（各党の党首の役の人は大臣にもなれる）
+      const open = (m: Member, ps: string[]) => ps.includes(m.party) && !taken.has(m.id) && m.fixedRole !== "首相" && (adjust?.(m, post) ?? 0) !== null;
+      let pool = roster.filter((m) => open(m, parties));
+      // 連立相手に就ける人がいなければ、与党から選ぶ
+      if (!pool.length && parties[0] !== ruling.party) pool = roster.filter((m) => open(m, [ruling.party]));
       const score = (m: Member) => postScore(post, m) + (adjust?.(m, post) ?? 0);
       // 当選回数の条件を満たす人がいなければ、条件を外して選ぶ
       const eligible = pool.filter((m) => m.terms >= (post.min_terms ?? 1));

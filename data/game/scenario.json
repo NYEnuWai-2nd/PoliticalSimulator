@@ -1,5 +1,5 @@
 {
-  "note": "開始時点の設定のうち、2024年衆院選の集計から機械的に決めず、手で決めたもの。",
+  "note": "開始時点の設定のうち、2024年衆院選の集計から機械的に決めず、手で決めたもの。 fixed_members のうち role が「党首」の人は、開始時点の各党の党首（手作り。実在の議員と漢字・読みが一致しない名前にしてある）。seat が「比例」の人は比例の議員で、home が地元の県。",
   "smd_overrides": {
     "47": {
       "party": "shusan",
@@ -58,6 +58,373 @@
         "ronpa_ou",
         "anpo_jitsumu",
         "ippiki_ookami"
+      ]
+    },
+    {
+      "role": "党首",
+      "note": "立憲民権党の代表。モデルは開始時期の野党第一党の党首だが、経歴は写さず、評判（駅前の辻立ちで知られる演説上手、財政規律寄りの穏健派、党内のまとめ役）だけを反映した。",
+      "party": "minken",
+      "district": 12,
+      "name": {
+        "surname": "野田",
+        "givenName": "佳浩",
+        "surnameKana": "のだ",
+        "givenNameKana": "よしひろ",
+        "romaji": "Yoshihiro Noda",
+        "displayName": "野田 佳浩",
+        "nameStyle": "昭和後期型"
+      },
+      "gender": "男",
+      "birthYear": 1957,
+      "archetype": "地方議員からの叩き上げ",
+      "lineage": "なし",
+      "terms": 10,
+      "tier": "重鎮",
+      "abilities": {
+        "弁舌": 80,
+        "政策": 72,
+        "調整": 70,
+        "知名度": 82,
+        "組織": 62,
+        "資金": 50
+      },
+      "jiban": 4,
+      "specialties": [
+        "財政・税制",
+        "外交"
+      ],
+      "traits": [
+        "誠実",
+        "慎重",
+        "温厚"
+      ],
+      "ideology": {
+        "economy": 0.5,
+        "fiscal": 1.5,
+        "security": -0.5,
+        "social": 0.5,
+        "governance": 1
+      },
+      "conviction": 4,
+      "loyalty": 4,
+      "skills": [
+        "tsuji_seppou",
+        "dobuita"
+      ]
+    },
+    {
+      "role": "党首",
+      "note": "日本刷新の会の代表。モデルは開始時期の同党の顔だが、経歴は写さず、評判（首長出身の発信力、改革と地方分権の旗振り役）だけを反映した。",
+      "party": "sasshin",
+      "district": 27,
+      "name": {
+        "surname": "吉井",
+        "givenName": "洋平",
+        "surnameKana": "よしい",
+        "givenNameKana": "ようへい",
+        "romaji": "Yohei Yoshii",
+        "displayName": "吉井 洋平",
+        "nameStyle": "昭和後期型"
+      },
+      "gender": "男",
+      "birthYear": 1975,
+      "archetype": "首長経験の行政型",
+      "lineage": "なし",
+      "terms": 4,
+      "tier": "中堅",
+      "abilities": {
+        "弁舌": 78,
+        "政策": 68,
+        "調整": 55,
+        "知名度": 88,
+        "組織": 58,
+        "資金": 55
+      },
+      "jiban": 3,
+      "specialties": [
+        "地方・行政",
+        "経済・産業"
+      ],
+      "traits": [
+        "大胆",
+        "社交的",
+        "誠実"
+      ],
+      "ideology": {
+        "economy": -1.5,
+        "fiscal": 0.5,
+        "security": -1,
+        "social": 0.5,
+        "governance": -2.5
+      },
+      "conviction": 3,
+      "loyalty": 4,
+      "skills": [
+        "gyosei_shuwan",
+        "hasshinryoku"
+      ]
+    },
+    {
+      "role": "党首",
+      "note": "国民協和党の代表。モデルは開始時期の同党の党首だが、経歴は写さず、評判（官僚出身の政策通、積極財政と手取りの増加を訴える発信力）だけを反映した。",
+      "party": "kyowa",
+      "district": 37,
+      "name": {
+        "surname": "玉井",
+        "givenName": "雄二郎",
+        "surnameKana": "たまい",
+        "givenNameKana": "ゆうじろう",
+        "romaji": "Yujiro Tamai",
+        "displayName": "玉井 雄二郎",
+        "nameStyle": "昭和後期型"
+      },
+      "gender": "男",
+      "birthYear": 1969,
+      "archetype": "官僚出身の政策通",
+      "lineage": "なし",
+      "terms": 6,
+      "tier": "ベテラン",
+      "abilities": {
+        "弁舌": 72,
+        "政策": 80,
+        "調整": 62,
+        "知名度": 78,
+        "組織": 50,
+        "資金": 52
+      },
+      "jiban": 3,
+      "specialties": [
+        "財政・税制",
+        "経済・産業"
+      ],
+      "traits": [
+        "社交的",
+        "大胆",
+        "寛容"
+      ],
+      "ideology": {
+        "economy": 0,
+        "fiscal": -2,
+        "security": -1,
+        "social": 0,
+        "governance": -0.5
+      },
+      "conviction": 3,
+      "loyalty": 4,
+      "skills": [
+        "kasumigaseki",
+        "hasshinryoku"
+      ]
+    },
+    {
+      "role": "党首",
+      "note": "公正党の代表。モデルは開始時期の同党の党首だが、経歴は写さず、評判（技術者出身の実務家、支持団体の組織票、連立の調整役）だけを反映した。",
+      "party": "kosei",
+      "district": 28,
+      "name": {
+        "surname": "斉木",
+        "givenName": "鉄夫",
+        "surnameKana": "さいき",
+        "givenNameKana": "てつお",
+        "romaji": "Tetsuo Saiki",
+        "displayName": "斉木 鉄夫",
+        "nameStyle": "昭和前期型"
+      },
+      "gender": "男",
+      "birthYear": 1952,
+      "archetype": "専門職",
+      "lineage": "なし",
+      "terms": 11,
+      "tier": "重鎮",
+      "abilities": {
+        "弁舌": 58,
+        "政策": 70,
+        "調整": 76,
+        "知名度": 60,
+        "組織": 82,
+        "資金": 55
+      },
+      "jiban": 3,
+      "specialties": [
+        "国土・交通",
+        "厚生・労働"
+      ],
+      "traits": [
+        "温厚",
+        "慎重",
+        "誠実"
+      ],
+      "ideology": {
+        "economy": 1,
+        "fiscal": 0,
+        "security": 1,
+        "social": 0,
+        "governance": 1.5
+      },
+      "conviction": 3,
+      "loyalty": 5,
+      "skills": [
+        "soshikihyo",
+        "senmon_touben"
+      ]
+    },
+    {
+      "role": "党首",
+      "note": "れいめい新選組の代表。モデルは開始時期の同党の代表だが、経歴は写さず、評判（俳優出身の知名度と街頭演説、積極財政と反緊縮）だけを反映した。比例の議員。",
+      "party": "reimei",
+      "seat": "比例",
+      "home": 13,
+      "name": {
+        "surname": "山元",
+        "givenName": "二郎",
+        "surnameKana": "やまもと",
+        "givenNameKana": "じろう",
+        "romaji": "Jiro Yamamoto",
+        "displayName": "山元 二郎",
+        "nameStyle": "昭和後期型"
+      },
+      "gender": "男",
+      "birthYear": 1974,
+      "archetype": "知名度型",
+      "lineage": "なし",
+      "terms": 2,
+      "tier": "中堅",
+      "abilities": {
+        "弁舌": 86,
+        "政策": 55,
+        "調整": 40,
+        "知名度": 90,
+        "組織": 55,
+        "資金": 60
+      },
+      "jiban": 2,
+      "specialties": [
+        "厚生・労働",
+        "財政・税制"
+      ],
+      "traits": [
+        "大胆",
+        "短気",
+        "社交的"
+      ],
+      "ideology": {
+        "economy": 2.5,
+        "fiscal": -3,
+        "security": 2,
+        "social": 1.5,
+        "governance": -2
+      },
+      "conviction": 5,
+      "loyalty": 5,
+      "skills": [
+        "tsuji_seppou",
+        "gekijougata",
+        "mutouha"
+      ]
+    },
+    {
+      "role": "党首",
+      "note": "日本集産党の委員長。モデルは開始時期の同党の委員長だが、経歴は写さず、評判（論戦の鋭さ、党組織の固さ、福祉と平和の訴え）だけを反映した。比例の議員。",
+      "party": "shusan",
+      "seat": "比例",
+      "home": 20,
+      "name": {
+        "surname": "田代",
+        "givenName": "雅子",
+        "surnameKana": "たしろ",
+        "givenNameKana": "まさこ",
+        "romaji": "Masako Tashiro",
+        "displayName": "田代 雅子",
+        "nameStyle": "昭和後期型"
+      },
+      "gender": "女",
+      "birthYear": 1965,
+      "archetype": "現場の代弁者",
+      "lineage": "なし",
+      "terms": 3,
+      "tier": "中堅",
+      "abilities": {
+        "弁舌": 74,
+        "政策": 72,
+        "調整": 52,
+        "知名度": 62,
+        "組織": 70,
+        "資金": 45
+      },
+      "jiban": 2,
+      "specialties": [
+        "厚生・労働",
+        "法務・治安"
+      ],
+      "traits": [
+        "誠実",
+        "慎重",
+        "寛容"
+      ],
+      "ideology": {
+        "economy": 2.5,
+        "fiscal": -1,
+        "security": 2.5,
+        "social": 2,
+        "governance": -0.5
+      },
+      "conviction": 5,
+      "loyalty": 5,
+      "skills": [
+        "genba_no_koe"
+      ]
+    },
+    {
+      "role": "党首",
+      "note": "参画党の代表。モデルは開始時期の同党の代表だが、経歴は写さず、評判（地方議員出身、ネットと街頭での発信力、新興勢力の勢い）だけを反映した。比例の議員。",
+      "party": "sankaku",
+      "seat": "比例",
+      "home": 27,
+      "name": {
+        "surname": "神山",
+        "givenName": "宗一",
+        "surnameKana": "かみやま",
+        "givenNameKana": "そういち",
+        "romaji": "Soichi Kamiyama",
+        "displayName": "神山 宗一",
+        "nameStyle": "昭和後期型"
+      },
+      "gender": "男",
+      "birthYear": 1977,
+      "archetype": "地方議員からの叩き上げ",
+      "lineage": "なし",
+      "terms": 1,
+      "tier": "新人",
+      "abilities": {
+        "弁舌": 80,
+        "政策": 50,
+        "調整": 40,
+        "知名度": 70,
+        "組織": 60,
+        "資金": 58
+      },
+      "jiban": 2,
+      "specialties": [
+        "教育",
+        "安全保障"
+      ],
+      "traits": [
+        "大胆",
+        "野心家",
+        "社交的"
+      ],
+      "ideology": {
+        "economy": -0.5,
+        "fiscal": -2,
+        "security": -2.5,
+        "social": -2.5,
+        "governance": -1.5
+      },
+      "conviction": 5,
+      "loyalty": 4,
+      "skills": [
+        "hasshinryoku",
+        "enjou"
       ]
     }
   ]

@@ -7,29 +7,75 @@
         "id": "opp_secretary_general",
         "name": "幹事長",
         "min_terms": 3,
-        "weights": { "調整": 0.5, "組織": 0.3, "資金": 0.2 },
-        "duty": { "exp": { "network": 14, "money": 6 }, "relations": { "party": 3 }, "coop_top": 5 }
+        "weights": {
+          "調整": 0.5,
+          "組織": 0.3,
+          "資金": 0.2
+        },
+        "duty": {
+          "exp": {
+            "network": 14,
+            "money": 6
+          },
+          "relations": {
+            "party": 3
+          },
+          "coop_top": 5
+        }
       },
       {
         "id": "opp_policy_chief",
         "name": "政調会長",
         "min_terms": 2,
-        "weights": { "政策": 0.7, "弁舌": 0.3 },
-        "duty": { "exp": { "policy": 16 }, "relations": { "party": 2 }, "proposals": 25 }
+        "weights": {
+          "政策": 0.7,
+          "弁舌": 0.3
+        },
+        "duty": {
+          "exp": {
+            "policy": 16
+          },
+          "relations": {
+            "party": 2
+          },
+          "proposals": 25
+        }
       },
       {
         "id": "opp_diet_affairs",
         "name": "国対委員長",
         "min_terms": 2,
-        "weights": { "調整": 0.6, "弁舌": 0.4 },
-        "duty": { "exp": { "network": 10, "media": 4 }, "relations": { "party": 2 }, "diet": 10 }
+        "weights": {
+          "調整": 0.6,
+          "弁舌": 0.4
+        },
+        "duty": {
+          "exp": {
+            "network": 10,
+            "media": 4
+          },
+          "relations": {
+            "party": 2
+          },
+          "diet": 10
+        }
       },
       {
         "id": "opp_election_chief",
         "name": "選対委員長",
         "min_terms": 2,
-        "weights": { "組織": 0.6, "調整": 0.4 },
-        "duty": { "exp": { "election": 14, "network": 4 }, "coop_all": 2, "momentum": 0.2 }
+        "weights": {
+          "組織": 0.6,
+          "調整": 0.4
+        },
+        "duty": {
+          "exp": {
+            "election": 14,
+            "network": 4
+          },
+          "coop_all": 2,
+          "momentum": 0.2
+        }
       }
     ],
     "shadow": {
@@ -38,7 +84,15 @@
       "min_terms": 2,
       "min_party_relation": 40,
       "cabinet_bonus": 40,
-      "duty": { "exp": { "policy": 10, "media": 8 }, "relations": { "press": 2 } }
+      "duty": {
+        "exp": {
+          "policy": 10,
+          "media": 8
+        },
+        "relations": {
+          "press": 2
+        }
+      }
     },
     "reshuffle_month": 9
   },
@@ -58,12 +112,63 @@
     "note": "野党の党首が毎月使える行動。points_first は野党第一党、points_other はそれ以外の野党の、ひと月の回数。",
     "points_first": 3,
     "points_other": 2,
-    "summit": { "stamina": -6, "base_chance": 0.55, "per_ability": 0.006, "per_distance": 0.08, "gain": 8, "gain_per_closeness": 2, "fail_loss": 3 },
-    "debate": { "stamina": -10, "per_diff": 0.0125, "min_chance": 0.15, "max_chance": 0.85, "win_approval": -2.5, "win_momentum": 1.0, "win_press": 4, "lose_approval": 1.5, "lose_momentum": -0.8 },
-    "pursue": { "stamina": -8, "money": -20, "base_chance": 0.3, "per_fatigue": 0.03, "per_ability": 0.005, "recent_scandal": 0.2, "win_approval": -3.5, "win_cohesion": -0.05, "win_momentum": 0.6, "lose_momentum": -1.0, "lose_press": -6 },
-    "proposal": { "stamina": -6, "cost": 30, "momentum": 1.2, "high_approval": 45, "high_approval_factor": 0.5 },
-    "pact": { "min_cooperation": 60, "months_before": 18, "chance_per_cooperation": 0.025, "fail_loss": 5 },
-    "noconfidence": { "cooldown_months": 6, "party_yes_base": 0.55, "per_cooperation": 0.008, "cooperation_center": 40, "ruling_defect_per_loyalty": 0.05, "diet_per_point": 0.004, "win_momentum": 1.0, "lose_momentum": -0.5, "lose_cooperation": 3 }
+    "summit": {
+      "stamina": -6,
+      "base_chance": 0.55,
+      "per_ability": 0.006,
+      "per_distance": 0.08,
+      "gain": 8,
+      "gain_per_closeness": 2,
+      "fail_loss": 3
+    },
+    "debate": {
+      "stamina": -10,
+      "per_diff": 0.0125,
+      "min_chance": 0.15,
+      "max_chance": 0.85,
+      "win_approval": -2.5,
+      "win_momentum": 1,
+      "win_press": 4,
+      "lose_approval": 1.5,
+      "lose_momentum": -0.8
+    },
+    "pursue": {
+      "stamina": -8,
+      "money": 0,
+      "base_chance": 0.3,
+      "per_fatigue": 0.03,
+      "per_ability": 0.005,
+      "recent_scandal": 0.2,
+      "win_approval": -3.5,
+      "win_cohesion": -0.05,
+      "win_momentum": 0.6,
+      "lose_momentum": -1,
+      "lose_press": -6
+    },
+    "proposal": {
+      "stamina": -6,
+      "cost": 30,
+      "momentum": 1.2,
+      "high_approval": 45,
+      "high_approval_factor": 0.5
+    },
+    "pact": {
+      "min_cooperation": 60,
+      "months_before": 18,
+      "chance_per_cooperation": 0.025,
+      "fail_loss": 5
+    },
+    "noconfidence": {
+      "cooldown_months": 6,
+      "party_yes_base": 0.55,
+      "per_cooperation": 0.008,
+      "cooperation_center": 40,
+      "ruling_defect_per_loyalty": 0.05,
+      "diet_per_point": 0.004,
+      "win_momentum": 1,
+      "lose_momentum": -0.5,
+      "lose_cooperation": 3
+    }
   },
   "leader_proposals": {
     "note": "プレイヤーが党首のとき、党の政調会長（ほかの議員）が毎月準備してくれる対案の量",
@@ -74,5 +179,33 @@
     "transfer_base": 0.8,
     "transfer_per_distance": 0.12,
     "transfer_min": 0.3
+  },
+  "texts": {
+    "note": "党首の行動の結果の文。{pm} は首相の名前に置き換える。lose_unprepared は対案の準備が足りない（cost 未満の）ときの負け方。",
+    "debate_win": [
+      "党首討論で{pm}首相の答弁の食い違いを突き、会場がどよめいた。",
+      "党首討論で具体的な数字を示して迫り、{pm}首相は答えに詰まった。",
+      "党首討論で暮らしの実感を訴え、{pm}首相を守りに回らせた。"
+    ],
+    "debate_lose_unprepared": [
+      "党首討論で「批判ばかりで対案がない」と切り返された。",
+      "党首討論で「では、あなたの党ならどうするのか」と問われ、答えが続かなかった。",
+      "党首討論で財源を問われ、具体案を示せなかった。"
+    ],
+    "debate_lose": [
+      "党首討論で{pm}首相に実績を並べられ、押し返された。",
+      "党首討論は時間切れで、決め手を欠いたまま終わった。",
+      "党首討論で言葉尻を捉えられ、論点をずらされた。"
+    ],
+    "pursue_win": [
+      "政権の失政を追及し、世論が動いた。",
+      "委員会での追及が実り、政府が答弁を修正した。",
+      "新しい資料を示して追及し、与党内からも説明を求める声が出た。"
+    ],
+    "pursue_lose": [
+      "追及は空振りに終わり、「根拠が薄い」と逆に批判された。",
+      "追及した疑惑に自党の議員も関わっていたと報じられ、矛先が自分に向いた。",
+      "追及は報道されたものの、世論の関心は広がらなかった。"
+    ]
   }
 }

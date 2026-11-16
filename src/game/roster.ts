@@ -58,7 +58,11 @@ export interface Member {
 interface FixedMember {
   role: string;
   party: string;
-  district: PrefCode;
+  /** 小選挙区の議員の選挙区。比例の議員（seat が「比例」）にはない */
+  district?: PrefCode;
+  seat?: "比例";
+  /** 比例の議員の地元の県 */
+  home?: PrefCode;
   name: Omit<GeneratedName, "gender" | "birthYear">;
   gender: Gender;
   birthYear: number;
@@ -90,9 +94,9 @@ function fixedToMember(f: FixedMember, id: number): Member {
     terms: f.terms,
     tier: f.tier,
     abilities: { ...f.abilities },
-    seat: "小選挙区",
-    district: f.district,
-    home: f.district,
+    seat: f.seat === "比例" ? "比例" : "小選挙区",
+    district: f.seat === "比例" ? null : f.district!,
+    home: f.seat === "比例" ? f.home! : f.district!,
     jiban: f.jiban,
     specialties: [...f.specialties],
     traits: [...f.traits],
@@ -306,7 +310,7 @@ async function buildRoster(g: Generator): Promise<Member[]> {
   for (const f of FIXED_MEMBERS) g.names.reserve(f.name.surname + f.name.givenName, f.name.surnameKana + f.name.givenNameKana);
   const members: Member[] = [];
   for (const pref of PREF_CODES) {
-    const fixed = FIXED_MEMBERS.find((f) => f.district === pref);
+    const fixed = FIXED_MEMBERS.find((f) => f.seat !== "比例" && f.district === pref);
     if (fixed) {
       if (plan.smd.get(pref) !== fixed.party) throw new Error(`${fixed.role}の選挙区（${pref}）が${fixed.party}の議席になっていません`);
       members.push(fixedToMember(fixed, ++g.nextId));
@@ -315,7 +319,10 @@ async function buildRoster(g: Generator): Promise<Member[]> {
     members.push(await generateMember(g, partyById(plan.smd.get(pref)!), { seat: "小選挙区", district: pref }));
   }
   for (const party of PARTIES) {
-    for (let i = 0; i < (plan.pr.get(party.id) ?? 0); i++) {
+    // 比例の固定キャラクター（小さな党の党首など）は、その党の比例の枠を1つ使う
+    const fixedPr = FIXED_MEMBERS.filter((f) => f.seat === "比例" && f.party === party.id);
+    for (const f of fixedPr) members.push(fixedToMember(f, ++g.nextId));
+    for (let i = fixedPr.length; i < (plan.pr.get(party.id) ?? 0); i++) {
       const home = pick(PREF_CODES, prefWeight, g.rand);
       members.push(await generateMember(g, party, { seat: "比例", home }));
     }
