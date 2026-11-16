@@ -31,9 +31,9 @@ export interface Member {
   terms: number;
   tier: string;
   abilities: Abilities;
-  /** 当選した区分 */
-  seat: "小選挙区" | "比例";
-  /** 小選挙区の議員はその県。比例の議員は null */
+  /** 当選した区分。議員でない候補者や浪人中の元議員は「なし」 */
+  seat: "小選挙区" | "比例" | "なし";
+  /** 小選挙区の議員はその県。比例の議員と議員でない人は null */
   district: PrefCode | null;
   /** 地元の県。小選挙区の議員は選挙区と同じ。比例の議員は次に小選挙区から出るときの候補地 */
   home: PrefCode;
@@ -140,10 +140,13 @@ function rollAbilities(arch: Archetype, tier: TermTier, lineage: Lineage, rand: 
 /**
  * 地盤。小選挙区で勝っている議員は2以上、比例単独の議員は2以下にする
  * （比例単独は地元の地盤が弱いから比例に回っている、という扱い）。
+ * 議員でない新人候補は2以下だが、世襲・名門は親の地盤を継いでいるので下限（3）を守る。
  */
 function rollJiban(tier: TermTier, lineage: Lineage, seat: Member["seat"], rand: Rand): number {
   const v = Math.round(tier.jiban_base + (lineage.jiban_bonus ?? 0) + centered(rand) * TABLES.jiban_variation);
-  return seat === "小選挙区" ? clamp(v, Math.max(2, lineage.jiban_min ?? 1), 4) : clamp(v, 1, 2);
+  if (seat === "小選挙区") return clamp(v, Math.max(2, lineage.jiban_min ?? 1), 4);
+  if (seat === "なし") return clamp(v, lineage.jiban_min ?? 1, Math.max(2, lineage.jiban_min ?? 2));
+  return clamp(v, 1, 2);
 }
 
 function rollSpecialties(arch: Archetype, rand: Rand): string[] {
@@ -187,7 +190,8 @@ function rollIdeology(party: Party, rand: Rand): Ideology {
   return out;
 }
 
-type SeatAssignment = { seat: "小選挙区"; district: PrefCode } | { seat: "比例"; home: PrefCode };
+/** 生成する人の立場。「なし」は議員でない新人候補（当選0回） */
+export type SeatAssignment = { seat: "小選挙区"; district: PrefCode } | { seat: "比例"; home: PrefCode } | { seat: "なし"; home: PrefCode };
 
 interface Generator {
   rand: Rand;
@@ -200,11 +204,13 @@ async function generateMember(g: Generator, party: Party, assignment: SeatAssign
   const lineageWeights = TABLES.lineage_profiles[party.lineage_profile];
   const archWeight = (a: Archetype) => (party.archetype_weights ? (party.archetype_weights[a.id] ?? 0) : a.weight_shugiin);
   const arch = pick(TABLES.archetypes, archWeight, rand);
-  const tier = pick(TABLES.term_tiers, (x) => x.weight_shugiin, rand);
+  const newcomer = assignment.seat === "なし";
+  // 新人候補は「新人」の区分で、当選回数は0。年齢は初当選の年齢の少し前
+  const tier = newcomer ? TABLES.term_tiers[0] : pick(TABLES.term_tiers, (x) => x.weight_shugiin, rand);
   const lineage = pick(TABLES.lineages, (x) => lineageWeights[x.id], rand);
-  const terms = intBetween(tier.terms, rand);
+  const terms = newcomer ? 0 : intBetween(tier.terms, rand);
   const firstAge = intBetween(lineage.first_elected_age ?? arch.first_elected_age, rand);
-  const age = clamp(Math.round(firstAge + (terms - 1) * TABLES.years_per_term + centered(rand) * 2), TABLES.min_age, MAX_AGE);
+  const age = clamp(Math.round(firstAge + (Math.max(terms, 1) - 1) * TABLES.years_per_term + centered(rand) * 2) - (newcomer ? 1 : 0), TABLES.min_age, MAX_AGE);
   const birthYear = START_YEAR - age;
   const gender: Gender = rand() < FEMALE_RATE ? "女" : "男";
   const name = await g.names.generate({ gender, birthYear });
@@ -222,7 +228,7 @@ async function generateMember(g: Generator, party: Party, assignment: SeatAssign
     archetype: arch.name,
     lineage: lineage.name,
     terms,
-    tier: tier.name,
+    tier: newcomer ? "候補" : tier.name,
     abilities,
     seat: assignment.seat,
     district: assignment.seat === "小選挙区" ? assignment.district : null,
@@ -238,13 +244,36 @@ async function generateMember(g: Generator, party: Party, assignment: SeatAssign
 
 const PREF_CODES: PrefCode[] = Array.from({ length: SMD_SEATS }, (_, i) => i + 1);
 
+/** 議員や候補者を作り続ける道具。名前の重複を避けるため、ゲームを通して一つを使い続ける */
+export interface MemberFactory {
+  create(party: Party, assignment: SeatAssignment): Promise<Member>;
+  /** 0以上1未満の乱数（生成と同じ系列） */
+  rand: Rand;
+}
+
+function factoryOf(g: Generator): MemberFactory {
+  return { create: (party, assignment) => generateMember(g, party, assignment), rand: g.rand };
+}
+
+/**
+ * 開始時点の衆議院（定数76）の名簿と、その後の候補者を作るための道具を返す。
+ */
+export async function createWorld(data: NameData, seed: number): Promise<{ roster: Member[]; factory: MemberFactory }> {
+  const g: Generator = { rand: mulberry32(seed ^ 0x9e3779b9), names: await createNameGenerator({ ...data, seed }), nextId: 0 };
+  const roster = await buildRoster(g);
+  return { roster, factory: factoryOf(g) };
+}
+
 /**
  * 開始時点の衆議院（定数76）の名簿を作る。小選挙区47の当選者と比例29の当選者を、
  * initialSeatPlan() の割り当てに従って生成する。比例の議員の地元は、県の大きさ（2024年の小選挙区の数）の比で選ぶ。
  */
 export async function generateRoster(data: NameData, seed: number): Promise<Member[]> {
-  // 名前用と属性用で乱数の系列を分け、片方の仕様を変えてももう片方の並びが変わらないようにする
-  const g: Generator = { rand: mulberry32(seed ^ 0x9e3779b9), names: await createNameGenerator({ ...data, seed }), nextId: 0 };
+  return (await createWorld(data, seed)).roster;
+}
+
+async function buildRoster(g: Generator): Promise<Member[]> {
+  // 名前用と属性用で乱数の系列を分け、片方の仕様を変えてももう片方の並びが変わらないようにする（g を作るときに分けてある）
   const plan = initialSeatPlan();
   // 固定キャラクターの名前を先に登録し、生成する議員と同姓同名にならないようにする
   for (const f of FIXED_MEMBERS) g.names.reserve(f.name.surname + f.name.givenName, f.name.surnameKana + f.name.givenNameKana);

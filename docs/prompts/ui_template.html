@@ -1,0 +1,2617 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>パワプロ／パワポケ風 UIテンプレートキット</title>
+<style>
+/* ==========================================================================
+   1. DESIGN TOKENS（カラー・フォント・角丸・光沢の定義）
+   ========================================================================== */
+:root {
+  --font-main: "Hiragino Maru Gothic ProN", "Yu Gothic UI", "BIZ UDPGothic", "Meiryo", sans-serif;
+
+  /* 2026系 シアン幾何学ベース */
+  --bg-cyan-light: #e6f7fd;
+  --bg-cyan-mid: #a7e2f7;
+  --bg-cyan-deep: #5ac3ec;
+
+  /* システムネイビー・枠線 */
+  --navy-dark: #0a2244;
+  --navy-mid: #143a70;
+  --navy-glass: rgba(10, 34, 68, 0.88);
+  --cyan-border: #3dc7ff;
+  --panel-border: #6ba5cc;
+
+  /* 絶対フォーカス（選択中カーソル） */
+  --focus-border: #e61919;
+  --focus-grad: linear-gradient(180deg, #fff07a 0%, #ffb700 49%, #ff9100 51%, #ffd447 100%);
+  --btn-normal-grad: linear-gradient(180deg, #ffffff 0%, #eaf6fd 49%, #d7edf9 51%, #f3fafe 100%);
+
+  /* 能力ランク S〜G */
+  --rank-s: #ff47b6;
+  --rank-a: #e61c7a;
+  --rank-b: #e02020;
+  --rank-c: #f26400;
+  --rank-d: #d99f00;
+  --rank-e: #16a33a;
+  --rank-f: #1c78e8;
+  --rank-g: #7c8594;
+
+  /* ポジションカラー */
+  --pos-p: #ff8ea8;
+  --pos-c: #6de0ff;
+  --pos-i: #ffe259;
+  --pos-o: #7cf075;
+  --pos-m: #ffad5c;
+
+  /* 特殊能力チップ */
+  --chip-blue-bg: linear-gradient(180deg, #e8fbff 0%, #99ebff 48%, #7ae0fa 52%, #bdf3ff 100%);
+  --chip-blue-bd: #1b86c7;
+  --chip-blue-tx: #053875;
+
+  --chip-red-bg: linear-gradient(180deg, #ffebeb 0%, #ffa8a8 48%, #ff8a8a 52%, #ffc7c7 100%);
+  --chip-red-bd: #cc2929;
+  --chip-red-tx: #870000;
+
+  --chip-gold-bg: linear-gradient(180deg, #fffde0 0%, #ffdb57 48%, #ffc400 52%, #ffe885 100%);
+  --chip-gold-bd: #c47b00;
+  --chip-gold-tx: #693600;
+
+  --chip-green-bg: linear-gradient(180deg, #ebffef 0%, #8cf0a1 48%, #68de81 52%, #b0f7bf 100%);
+  --chip-green-bd: #1e9e3b;
+  --chip-green-tx: #075419;
+
+  --chip-mix-bg: linear-gradient(112deg, #91e7fc 0%, #91e7fc 48.5%, #ff9999 51.5%, #ff9999 100%);
+}
+
+* {
+  box-sizing: border-box;
+  user-select: none;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background: #131b26;
+  color: #fff;
+  font-family: var(--font-main);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 100vh;
+}
+
+/* ==========================================================================
+   PREVIEW TOOLBAR（テンプレート確認用の外枠バー）
+   ========================================================================== */
+.preview-bar {
+  width: 100%;
+  background: #0d131c;
+  border-bottom: 1px solid #2a3a52;
+  padding: 8px 16px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+}
+.preview-bar-title {
+  font-size: 12px;
+  color: #7cc9f0;
+  font-weight: 800;
+  margin-right: 8px;
+}
+.preview-tab {
+  background: #1d2a3d;
+  color: #c5d7ed;
+  border: 1px solid #354b6b;
+  border-radius: 6px;
+  padding: 5px 10px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: 0.15s;
+}
+.preview-tab:hover { background: #293b56; color: #fff; }
+.preview-tab.active {
+  background: #0088cc;
+  border-color: #55d0ff;
+  color: #fff;
+  box-shadow: 0 0 8px rgba(0, 170, 255, 0.4);
+}
+
+/* ==========================================================================
+   STAGE（1280×720 16:9 レスポンシブステージ）
+   ========================================================================== */
+.stage-wrapper {
+  width: 100%;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 14px;
+  overflow: hidden;
+}
+
+.game-stage {
+  width: 1280px;
+  height: 720px;
+  position: relative;
+  overflow: hidden;
+  border-radius: 10px;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.65);
+  background:
+    linear-gradient(125deg, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0) 42%),
+    linear-gradient(235deg, rgba(35,175,235,0.22) 0%, rgba(35,175,235,0) 50%),
+    linear-gradient(135deg, var(--bg-cyan-light) 0%, var(--bg-cyan-mid) 52%, var(--bg-cyan-deep) 100%);
+  transform-origin: center center;
+  flex-shrink: 0;
+}
+
+/* 背景のローポリ風三角形透かし */
+.game-stage::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(155deg, transparent 48%, rgba(255,255,255,0.26) 48.2%, rgba(255,255,255,0.05) 75%, transparent 75.2%),
+    linear-gradient(35deg, rgba(0,150,220,0.12) 0%, transparent 45%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.screen {
+  position: absolute;
+  inset: 0;
+  display: none;
+  flex-direction: column;
+  z-index: 1;
+}
+.screen.active { display: flex; }
+
+/* ==========================================================================
+   2. COMMON COMPONENTS（どの画面でも使い回すパーツ）
+   ========================================================================== */
+
+/* 縁取りテキストユーティリティ */
+.txt-stroke {
+  text-shadow:
+    -1.5px -1.5px 0 #0b2447, 1.5px -1.5px 0 #0b2447,
+    -1.5px  1.5px 0 #0b2447, 1.5px  1.5px 0 #0b2447,
+     0px    2.5px 0 rgba(0,0,0,0.45);
+}
+.txt-stroke-white {
+  text-shadow:
+    -2px -2px 0 #fff, 2px -2px 0 #fff,
+    -2px  2px 0 #fff, 2px  2px 0 #fff,
+     0px  3px 2px rgba(0,0,0,0.25);
+}
+
+/* 上部パンくずヘッダー & ボタンガイド */
+.pp-topbar {
+  height: 54px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 22px 0 0;
+  position: relative;
+  z-index: 10;
+}
+.pp-breadcrumb {
+  height: 54px;
+  background: rgba(255, 255, 255, 0.88);
+  padding: 0 42px 0 18px;
+  clip-path: polygon(0 0, 100% 0, 93% 100%, 0 100%);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  box-shadow: 0 3px 8px rgba(0, 60, 120, 0.15);
+}
+.pp-diamond-icon {
+  width: 26px;
+  height: 26px;
+  background: linear-gradient(135deg, #ff477e 0%, #3dc7ff 100%);
+  transform: rotate(45deg);
+  border: 2.5px solid #0e2c59;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.pp-diamond-icon::after {
+  content: "";
+  width: 10px;
+  height: 10px;
+  background: #fff;
+  border-radius: 2px;
+}
+.pp-breadcrumb-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.1;
+}
+.pp-breadcrumb-sub {
+  font-size: 11px;
+  font-weight: 800;
+  color: #e62e5c;
+  letter-spacing: 0.05em;
+}
+.pp-breadcrumb-main {
+  font-size: 20px;
+  font-weight: 900;
+  color: #0d2b57;
+}
+
+.pp-guide-pill {
+  background: rgba(12, 22, 42, 0.82);
+  border: 1.5px solid rgba(255,255,255,0.4);
+  border-radius: 999px;
+  padding: 5px 18px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #fff;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.25);
+}
+.pp-guide-item { display: flex; align-items: center; gap: 6px; }
+.pad-btn {
+  width: 20px; height: 20px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 900;
+  border: 1.5px solid #fff;
+  color: #fff;
+}
+.pad-o { background: #e62e4d; }
+.pad-x { background: #2678e6; }
+.pad-t { background: #1cb066; }
+.pad-s { background: #d948b5; }
+
+/* 下部ヘルプティッカー */
+.pp-footer-help {
+  height: 36px;
+  margin-top: auto;
+  background: linear-gradient(180deg, #163b70 0%, #0b2042 100%);
+  border-top: 2px solid #59c8ff;
+  display: flex;
+  align-items: center;
+  padding: 0 26px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #ffffff;
+  z-index: 10;
+}
+
+/* 汎用立体ボタン & 絶対フォーカス */
+.pp-btn {
+  background: var(--btn-normal-grad);
+  border: 2px solid #75a3c7;
+  border-radius: 8px;
+  color: #10315a;
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 900;
+  padding: 8px 16px;
+  cursor: pointer;
+  box-shadow: 0 2px 0 rgba(10, 45, 90, 0.22);
+  transition: transform 0.08s;
+  text-align: center;
+}
+.pp-btn:hover, .pp-btn.is-active {
+  background: var(--focus-grad);
+  border: 3px solid var(--focus-border);
+  color: #ffffff;
+  text-shadow: 0 1.5px 0 #7a2800, 0 0 4px rgba(0,0,0,0.45);
+  box-shadow: 0 0 12px rgba(255, 165, 0, 0.65), inset 0 1px 0 rgba(255,255,255,0.85);
+}
+.pp-btn:active { transform: scale(0.97); }
+
+/* 左MENUボックス */
+.pp-menu-box {
+  width: 210px;
+  background: rgba(255, 255, 255, 0.92);
+  border: 2.5px solid #4490cc;
+  border-radius: 12px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  box-shadow: 0 6px 18px rgba(0, 50, 100, 0.16);
+}
+.pp-menu-header {
+  background: linear-gradient(180deg, #1b82d6 0%, #0d4b94 100%);
+  color: #ffe84d;
+  font-size: 14px;
+  font-weight: 900;
+  letter-spacing: 0.15em;
+  text-align: center;
+  padding: 4px;
+  border-radius: 6px;
+  border: 1.5px solid #093266;
+}
+
+/* ランク文字カラー */
+.rk-S { color: var(--rank-s); }
+.rk-A { color: var(--rank-a); }
+.rk-B { color: var(--rank-b); }
+.rk-C { color: var(--rank-c); }
+.rk-D { color: var(--rank-d); }
+.rk-E { color: var(--rank-e); }
+.rk-F { color: var(--rank-f); }
+.rk-G { color: var(--rank-g); }
+
+/* ポジションプレート */
+.pos-badge {
+  border-radius: 6px;
+  border: 2px solid #163763;
+  font-weight: 900;
+  color: #0e2444;
+  text-shadow: -1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 1px 1px 0 #fff;
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 10px;
+  box-shadow: inset 0 2px 0 rgba(255,255,255,0.55);
+}
+.pos-p { background: linear-gradient(180deg, #ffc4d2 0%, var(--pos-p) 100%); }
+.pos-c { background: linear-gradient(180deg, #b8f1ff 0%, var(--pos-c) 100%); }
+.pos-i { background: linear-gradient(180deg, #fff1a8 0%, var(--pos-i) 100%); }
+.pos-o { background: linear-gradient(180deg, #baffb8 0%, var(--pos-o) 100%); }
+.pos-two { background: linear-gradient(110deg, var(--pos-p) 49%, var(--pos-o) 51%); }
+.pos-ci { background: linear-gradient(110deg, var(--pos-c) 33%, var(--pos-o) 34%, var(--pos-o) 66%, var(--pos-i) 67%); }
+
+/* 特殊能力チップ */
+.ab-chip {
+  height: 30px;
+  border-radius: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 900;
+  padding: 0 6px;
+  cursor: pointer;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.7), 0 1px 2px rgba(0,0,0,0.12);
+  transition: transform 0.1s;
+  white-space: nowrap;
+  overflow: hidden;
+}
+.ab-chip:hover { transform: translateY(-1px) scale(1.03); filter: brightness(1.04); }
+.ab-blue { background: var(--chip-blue-bg); border: 1.5px solid var(--chip-blue-bd); color: var(--chip-blue-tx); }
+.ab-red  { background: var(--chip-red-bg);  border: 1.5px solid var(--chip-red-bd);  color: var(--chip-red-tx); }
+.ab-gold { background: var(--chip-gold-bg); border: 1.5px solid var(--chip-gold-bd); color: var(--chip-gold-tx); }
+.ab-green{ background: var(--chip-green-bg);border: 1.5px solid var(--chip-green-bd);color: var(--chip-green-tx); }
+.ab-mix  { background: var(--chip-mix-bg);  border: 1.5px solid #5985b3; color: #1d2b44; }
+.ab-empty{ background: rgba(215, 240, 255, 0.45); border: 1.5px solid #a8d4ed; cursor: default; }
+.ab-empty:hover { transform: none; }
+
+/* ランク付き基礎特能 */
+.ab-rank-row {
+  height: 30px;
+  background: linear-gradient(180deg, #effaff 0%, #c8eeff 100%);
+  border: 1.5px solid #6dbbe0;
+  border-radius: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 4px 0 8px;
+  font-size: 12px;
+  font-weight: 800;
+  color: #16528e;
+}
+.ab-rank-row.is-good { background: linear-gradient(180deg, #d6f7ff 0%, #7de2ff 100%); border-color: #1b86c7; color: #053875; }
+.ab-rank-row.is-bad  { background: linear-gradient(180deg, #ffe0e0 0%, #ff9999 100%); border-color: #cc2929; color: #870000; }
+.ab-rank-row.is-gold { background: var(--chip-gold-bg); border-color: var(--chip-gold-bd); color: var(--chip-gold-tx); }
+.ab-rank-letter {
+  width: 22px; height: 22px;
+  background: rgba(255,255,255,0.85);
+  border-radius: 4px;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 900; font-size: 14px;
+}
+
+/* やる気顔アイコン */
+.mood-face {
+  width: 26px; height: 26px;
+  border-radius: 50%;
+  border: 2px solid #0e2340;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 900;
+  flex-shrink: 0;
+  box-shadow: inset 0 2px 3px rgba(255,255,255,0.6);
+}
+.mood-5 { background: #ff4dbe; color: #3a0024; } /* 絶好調 */
+.mood-4 { background: #ff9922; color: #3d1800; } /* 好調 */
+.mood-3 { background: #ffe033; color: #382c00; } /* 普通 */
+.mood-2 { background: #4aa8ff; color: #00234d; } /* 不調 */
+.mood-1 { background: #8f66ff; color: #19004d; } /* 絶不調 */
+
+/* 常時表示下部ステータスバー（サクセス・イベント共通） */
+.sc-status-bar {
+  height: 62px;
+  background: linear-gradient(180deg, #1b4f8c 0%, #0b2244 100%);
+  border-top: 3px solid #63d0ff;
+  display: flex;
+  align-items: center;
+  padding: 0 18px;
+  gap: 16px;
+  z-index: 15;
+}
+.sc-team-pill {
+  background: linear-gradient(180deg, #ffffff 0%, #cde7fa 100%);
+  border: 2px solid #0e2e5c;
+  border-radius: 8px;
+  padding: 3px 12px;
+  color: #0b2c59;
+  font-size: 14px;
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.sc-date-box {
+  background: linear-gradient(180deg, #e02e4d 0%, #990f28 100%);
+  border: 2px solid #ffffff;
+  border-radius: 10px;
+  padding: 3px 14px;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+}
+.sc-date-grade { font-size: 13px; font-weight: 900; color: #fff; }
+.sc-date-week  { font-size: 19px; font-weight: 900; color: #ffe855; }
+
+.sc-hp-block {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.sc-hp-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  font-weight: 800;
+  color: #aee6ff;
+}
+.sc-hp-bar-outer {
+  height: 18px;
+  background: #1a2433;
+  border: 2px solid #ffffff;
+  border-radius: 6px;
+  position: relative;
+  overflow: hidden;
+}
+.sc-hp-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #ffea33 0%, #52e038 55%, #1ebd45 100%);
+  transition: width 0.3s ease;
+}
+.sc-hp-val {
+  position: absolute;
+  right: 8px;
+  top: -1px;
+  font-size: 12px;
+  font-weight: 900;
+  color: #fff;
+  text-shadow: 0 1px 2px #000;
+}
+.sc-money-box {
+  background: rgba(0, 16, 40, 0.65);
+  border: 2px solid #ffd23f;
+  border-radius: 999px;
+  padding: 5px 18px;
+  font-size: 17px;
+  font-weight: 900;
+  color: #ffe766;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ==========================================================================
+   3. SCREEN 01: タイトル・メインメニュー（2026グリッド & パワポケR切替）
+   ========================================================================== */
+.menu-theme-switch {
+  position: absolute;
+  top: 14px;
+  right: 24px;
+  z-index: 20;
+  display: flex;
+  gap: 8px;
+}
+
+/* 2026 モダン4x4グリッド */
+.s01-modern {
+  flex: 1;
+  display: flex;
+  padding: 22px 24px 12px 36px;
+  gap: 24px;
+  position: relative;
+}
+.s01-left-hero {
+  width: 390px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding-bottom: 16px;
+}
+.s01-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255,255,255,0.85);
+  border-radius: 999px;
+  padding: 5px 14px;
+  color: #16447a;
+  font-size: 13px;
+  font-weight: 800;
+  width: fit-content;
+}
+.s01-mode-title {
+  font-size: 46px;
+  font-weight: 900;
+  color: #ffffff;
+  text-shadow: 0 4px 0 #0f5699, 0 8px 18px rgba(0, 60, 130, 0.35);
+  margin: 0;
+  line-height: 1.1;
+}
+.s01-mode-subtitle {
+  font-size: 14px;
+  font-weight: 800;
+  color: #124880;
+  margin-top: 6px;
+}
+.s01-grid-area {
+  flex: 1;
+  display: flex;
+  gap: 18px;
+  align-items: center;
+}
+.s01-tile-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 152px);
+  grid-template-rows: repeat(4, 128px);
+  gap: 14px;
+}
+.s01-tile {
+  border-radius: 20px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 900;
+  box-shadow: 0 6px 15px rgba(0, 60, 120, 0.18), inset 0 2px 0 rgba(255,255,255,0.45);
+  border: 3px solid transparent;
+  transition: transform 0.14s, box-shadow 0.14s;
+  position: relative;
+}
+.s01-tile:hover, .s01-tile.is-active {
+  transform: translateY(-4px) scale(1.05);
+  border-color: #ffffff;
+  box-shadow: 0 12px 24px rgba(0, 80, 180, 0.32), 0 0 0 3px #ff3366;
+}
+.s01-tile-icon { font-size: 44px; filter: drop-shadow(0 3px 3px rgba(0,0,0,0.2)); }
+
+.s01-side-rail {
+  width: 68px;
+  background: rgba(255, 255, 255, 0.52);
+  backdrop-filter: blur(6px);
+  border-radius: 18px;
+  padding: 14px 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-around;
+  height: 554px;
+}
+.s01-rail-btn {
+  width: 46px; height: 46px;
+  border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px; color: #1968ad;
+  cursor: pointer;
+  transition: 0.12s;
+}
+.s01-rail-btn:hover { background: #fff; transform: scale(1.1); }
+
+/* パワポケR風 レトロポップ6ボタン */
+.s01-poker {
+  flex: 1;
+  display: none;
+  background:
+    radial-gradient(circle at 25px 25px, rgba(255,255,255,0.65) 14px, transparent 15px) 0 0 / 64px 64px,
+    #d6f3ff;
+  border-left: 72px solid #163b7a;
+  border-right: 72px solid #163b7a;
+  padding: 36px 54px;
+  grid-template-columns: repeat(2, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  gap: 24px 36px;
+}
+.s01-poker.active { display: grid; }
+.poker-tab-btn {
+  border-radius: 18px;
+  border: 6px solid #fff6b3;
+  outline: 4px solid #13284d;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 28px;
+  cursor: pointer;
+  position: relative;
+  box-shadow: 0 8px 0 rgba(0,0,0,0.22);
+  transition: transform 0.1s;
+}
+.poker-tab-btn:hover, .poker-tab-btn.is-active {
+  transform: translateY(-3px);
+  outline: 5px solid #ffdd00;
+}
+.poker-tab-label {
+  font-size: 46px;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  text-shadow:
+    -3px -3px 0 #091d3d, 3px -3px 0 #091d3d,
+    -3px  3px 0 #091d3d, 3px  3px 0 #091d3d,
+     0px  5px 0 rgba(0,0,0,0.4);
+}
+.poker-cursor {
+  position: absolute;
+  left: -34px;
+  top: -18px;
+  font-size: 44px;
+  color: #ffe600;
+  filter: drop-shadow(0 0 2px #cc0000) drop-shadow(2px 3px 0 #cc0000);
+  display: none;
+}
+.poker-tab-btn.is-active .poker-cursor { display: block; }
+
+/* ==========================================================================
+   4. SCREEN 02: サクセス（メイン＆練習コマンド画面）
+   ========================================================================== */
+.s02-arena {
+  flex: 1;
+  position: relative;
+  background:
+    linear-gradient(180deg, #54b2f0 0%, #b5e4ff 52%, #3ca64a 52.5%, #2f8539 62%, #c9925c 63%, #9e6a3b 100%);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 12px 20px 10px;
+}
+.s02-top-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  z-index: 2;
+}
+.exp-panel {
+  width: 315px;
+  background: rgba(11, 34, 68, 0.85);
+  border: 2px solid #48c3ff;
+  border-radius: 12px;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.exp-row {
+  display: flex;
+  align-items: center;
+  background: rgba(20, 62, 117, 0.85);
+  border: 1.5px solid #4299d9;
+  border-radius: 999px;
+  padding: 3px 10px;
+  height: 30px;
+  gap: 8px;
+}
+.exp-name { font-size: 13px; font-weight: 800; color: #a7e3ff; width: 48px; }
+.exp-val  { font-size: 17px; font-weight: 900; color: #fff; width: 48px; text-align: right; }
+.exp-add  { font-size: 16px; font-weight: 900; color: #ffe548; margin-left: 4px; }
+.exp-bonus {
+  margin-left: auto;
+  background: linear-gradient(180deg, #fff5a8 0%, #ffaa00 100%);
+  border: 2px solid #fff;
+  color: #8a2800;
+  font-size: 13px;
+  font-weight: 900;
+  border-radius: 999px;
+  padding: 0 8px;
+}
+
+.mate-list {
+  width: 245px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.mate-card {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(12, 32, 62, 0.86);
+  border: 2px solid #5ac8fa;
+  border-radius: 8px;
+  padding: 3px 6px;
+  position: relative;
+}
+.mate-tag {
+  background: #ffe135;
+  color: #9e1b00;
+  border: 1.5px solid #fff;
+  border-radius: 50%;
+  width: 20px; height: 20px;
+  font-size: 12px; font-weight: 900;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.mate-info { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+.mate-name-plate {
+  font-size: 13px; font-weight: 900; color: #11223b;
+  padding: 1px 6px; border-radius: 4px;
+  display: flex; justify-content: space-between;
+}
+.mate-gauge {
+  height: 7px; background: #1e2838; border-radius: 999px; overflow: hidden; border: 1px solid #fff;
+}
+.mate-gauge-fill { height: 100%; background: linear-gradient(90deg, #ff7eb3, #ffe45e); }
+.mate-star { font-size: 11px; font-weight: 900; color: #ffe24a; }
+
+.s02-center-stage {
+  position: absolute;
+  left: 50%;
+  top: 42%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  pointer-events: none;
+}
+.s02-onomatopoeia {
+  font-size: 44px;
+  font-weight: 900;
+  color: #2bc4ff;
+  transform: skewX(-15deg) rotate(-6deg);
+  text-shadow: -3px -3px 0 #fff, 3px -3px 0 #fff, -3px 3px 0 #fff, 3px 3px 0 #fff, 4px 6px 0 #0a244a;
+  margin-bottom: -14px;
+}
+.s02-action-msg {
+  background: rgba(255,255,255,0.92);
+  border: 2px solid #2b6fb3;
+  border-radius: 8px;
+  padding: 6px 26px;
+  font-size: 15px;
+  font-weight: 800;
+  color: #112e57;
+  margin-top: 6px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+}
+
+.s02-cards-row {
+  display: flex;
+  justify-content: center;
+  gap: 14px;
+  z-index: 5;
+  padding-bottom: 4px;
+}
+.cmd-card {
+  width: 122px;
+  height: 112px;
+  background: linear-gradient(180deg, #ffffff 0%, #e0f3ff 100%);
+  border: 3px solid #247bd6;
+  border-radius: 10px;
+  transform: skewX(-6deg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 6px 6px;
+  cursor: pointer;
+  position: relative;
+  box-shadow: 0 5px 12px rgba(0,0,0,0.28);
+  transition: transform 0.14s, box-shadow 0.14s;
+}
+.cmd-card.is-active, .cmd-card:hover {
+  transform: skewX(-6deg) translateY(-10px) scale(1.06);
+  border: 4px solid #e61c1c;
+  background: linear-gradient(180deg, #fff5cc 0%, #ffd24d 100%);
+  box-shadow: 0 12px 22px rgba(230, 30, 30, 0.35);
+}
+.cmd-card-inner { transform: skewX(6deg); display: flex; flex-direction: column; align-items: center; width: 100%; }
+.cmd-icon { font-size: 36px; line-height: 1.1; }
+.cmd-label {
+  font-size: 16px; font-weight: 900; color: #0e2e5e; margin-top: 4px;
+}
+.cmd-lv {
+  align-self: flex-end;
+  background: #102a4d; color: #fff; font-size: 11px; font-weight: 900;
+  padding: 1px 6px; border-radius: 4px;
+}
+.cmd-tag-sp {
+  position: absolute; top: -15px; left: -6px;
+  background: linear-gradient(90deg, #ff2a5f, #ff9900);
+  color: #fff; border: 2px solid #fff; border-radius: 6px;
+  font-size: 11px; font-weight: 900; padding: 1px 6px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+}
+.cmd-tag-inj {
+  position: absolute; top: -15px; right: -4px;
+  background: #fff; color: #d61a1a; border: 2px solid #d61a1a;
+  border-radius: 6px; font-size: 11px; font-weight: 900; padding: 1px 6px;
+}
+
+/* ==========================================================================
+   5. SCREEN 03: 会話イベント＆選択肢（2026風 & パワポケ風切替）
+   ========================================================================== */
+.s03-stage {
+  flex: 1;
+  position: relative;
+  background: linear-gradient(180deg, #74c2f7 0%, #d4efff 55%, #84cc74 56%, #59a64b 70%, #c9a87a 71%, #b38e5d 100%);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  overflow: hidden;
+}
+.s03-dialogue-bubble {
+  position: absolute;
+  top: 48px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 960px;
+  min-height: 190px;
+  background: var(--navy-glass);
+  border: 3.5px solid var(--cyan-border);
+  border-radius: 24px;
+  padding: 26px 36px;
+  box-shadow: 0 10px 28px rgba(0, 20, 50, 0.35), inset 0 2px 0 rgba(255,255,255,0.25);
+  z-index: 6;
+}
+.s03-dialogue-bubble::after {
+  content: "";
+  position: absolute;
+  bottom: -24px;
+  right: 170px;
+  border-width: 24px 16px 0 16px;
+  border-style: solid;
+  border-color: var(--cyan-border) transparent transparent transparent;
+}
+.s03-speaker-plate {
+  position: absolute;
+  top: -18px;
+  left: 34px;
+  background: linear-gradient(180deg, #1b65b8 0%, #0d3a78 100%);
+  border: 2.5px solid #59d0ff;
+  border-radius: 999px;
+  padding: 3px 22px 3px 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 18px;
+  font-weight: 900;
+  color: #fff;
+}
+.s03-speaker-plate ruby rt { font-size: 10px; color: #9ee3ff; }
+.s03-speech-text {
+  font-size: 25px;
+  font-weight: 800;
+  line-height: 1.55;
+  color: #ffffff;
+}
+.s03-speech-em { color: #ffe248; }
+.s03-next-tri {
+  position: absolute;
+  right: 28px;
+  bottom: 18px;
+  color: #5ce639;
+  font-size: 20px;
+  animation: bounceTri 0.7s infinite alternate;
+}
+@keyframes bounceTri { from { transform: translateY(0); } to { transform: translateY(5px); } }
+
+.s03-choices {
+  position: absolute;
+  top: 262px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 480px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 8;
+}
+.s03-choice-btn {
+  background: rgba(16, 40, 74, 0.9);
+  border: 2.5px solid #75b4e6;
+  border-radius: 10px;
+  padding: 10px 18px;
+  color: #fff;
+  font-size: 18px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+}
+.s03-choice-btn.is-active, .s03-choice-btn:hover {
+  background: linear-gradient(90deg, #ff7b1c 0%, #ffad33 100%);
+  border-color: #ffffff;
+  box-shadow: 0 0 14px rgba(255, 136, 0, 0.7);
+}
+.s03-chars-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  padding: 0 100px;
+  z-index: 4;
+}
+
+/* パワポケクラシック会話テーマ */
+.s03-stage.is-pokepoke {
+  background: #c7f0c7;
+  justify-content: space-between;
+  padding: 16px 40px;
+}
+.pokepoke-hud {
+  display: none;
+  background: #42b5f5;
+  border: 4px solid #122d63;
+  border-radius: 8px;
+  padding: 8px 16px;
+  gap: 20px;
+  align-items: center;
+}
+.s03-stage.is-pokepoke .pokepoke-hud { display: flex; }
+.s03-stage.is-pokepoke .s03-dialogue-bubble {
+  position: relative; top: auto; left: auto; transform: none;
+  width: 100%; border-radius: 8px;
+  background: #0a205c; border: 5px solid #ffffff;
+  outline: 4px solid #132d63;
+}
+.s03-stage.is-pokepoke .s03-dialogue-bubble::after { display: none; }
+.s03-stage.is-pokepoke .s03-choices { top: 150px; }
+
+/* ==========================================================================
+   6. SCREEN 04: 選手能力・ステータス詳細カード
+   ========================================================================== */
+.s04-card-wrap {
+  flex: 1;
+  padding: 10px 36px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.s04-subnav {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+.s04-card {
+  flex: 1;
+  background: linear-gradient(180deg, #f2faff 0%, #d4eeff 100%);
+  border: 3px solid #2b7bc4;
+  border-radius: 14px;
+  padding: 14px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  box-shadow: 0 8px 24px rgba(0, 45, 95, 0.16);
+}
+.s04-header {
+  display: flex;
+  gap: 14px;
+  align-items: stretch;
+}
+.s04-player-id {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 310px;
+}
+.s04-name-row { display: flex; gap: 6px; align-items: center; }
+.s04-name-plate {
+  flex: 1;
+  height: 38px;
+  font-size: 22px;
+  letter-spacing: 0.18em;
+  justify-content: center;
+}
+.s04-team-box {
+  width: 48px; height: 38px;
+  background: #0a2040; border: 2px solid #fff; border-radius: 6px;
+  color: #ffd000; font-size: 16px; font-weight: 900;
+  display: flex; align-items: center; justify-content: center;
+}
+.s04-uniform-num {
+  width: 52px; height: 38px;
+  background: #fff; border: 2px solid #8eb8db; border-radius: 6px;
+  color: #10315a; font-size: 22px; font-weight: 900;
+  display: flex; align-items: center; justify-content: center;
+}
+.s04-apt-row {
+  display: flex; gap: 8px; align-items: center;
+}
+.s04-apt-box {
+  flex: 1; height: 34px;
+  background: #fff; border: 2px solid #96c4e8; border-radius: 6px;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 12px; font-size: 13px; font-weight: 800; color: #5482a8;
+}
+.s04-apt-val { font-size: 16px; font-weight: 900; color: #10315a; }
+.s04-star-box {
+  background: linear-gradient(180deg, #1a549e 0%, #0e3063 100%);
+  border: 2px solid #75c6ff; border-radius: 6px;
+  padding: 4px 12px; color: #ffe347; font-size: 18px; font-weight: 900;
+}
+
+.s04-face-box {
+  width: 82px; height: 82px;
+  background: linear-gradient(180deg, #d6f1ff 0%, #8ad1f7 100%);
+  border: 2.5px solid #4d91c7; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden;
+}
+.s04-records-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.s04-record-bar {
+  flex: 1;
+  background: #fff; border: 2px solid #96c4e8; border-radius: 8px;
+  display: flex; align-items: center; padding: 0 16px; gap: 18px;
+  color: #10315a; font-weight: 900; font-size: 19px;
+}
+.s04-record-label {
+  background: #d8edfc; color: #2b68a3; font-size: 13px;
+  padding: 2px 10px; border-radius: 999px;
+}
+
+.s04-body {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 350px 1fr;
+  gap: 16px;
+}
+.s04-base-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.stat-row {
+  flex: 1;
+  background: #fff;
+  border: 2px solid #8ebce0;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  padding: 0 16px 0 12px;
+  box-shadow: inset 0 2px 0 rgba(200,235,255,0.5);
+}
+.stat-label {
+  background: #d7edfa;
+  color: #1b528c;
+  font-size: 14px;
+  font-weight: 900;
+  padding: 3px 0;
+  width: 112px;
+  text-align: center;
+  border-radius: 999px;
+}
+.stat-rank {
+  font-size: 30px;
+  font-weight: 900;
+  width: 72px;
+  text-align: center;
+}
+.stat-num {
+  font-size: 28px;
+  font-weight: 900;
+  color: #0e3566;
+  margin-left: auto;
+}
+
+.s04-pitch-chart {
+  flex: 1;
+  background: #fff;
+  border: 2px solid #8ebce0;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.s04-abilities {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.s04-ab-ranks {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  background: rgba(162, 219, 250, 0.35);
+  padding: 6px;
+  border-radius: 8px;
+}
+.s04-ab-chips {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  grid-auto-rows: 32px;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.5);
+  padding: 8px;
+  border-radius: 8px;
+  border: 1.5px solid #9ecae8;
+}
+
+/* ==========================================================================
+   7. SCREEN 05: ペナント＆栄冠ナイン（左MENU ＋ 右高密度表／進行パネル）
+   ========================================================================== */
+.s05-layout {
+  flex: 1;
+  padding: 12px 26px 8px;
+  display: flex;
+  gap: 20px;
+}
+.s05-main-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.pp-l1r1-tabs {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #0d2b59;
+  padding: 6px 12px;
+  border-radius: 10px;
+  border: 2px solid #53bdf7;
+}
+.pp-tab-btn {
+  flex: 1;
+  background: #1a4785;
+  color: #9ecbff;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 900;
+  cursor: pointer;
+}
+.pp-tab-btn.is-active {
+  background: linear-gradient(180deg, #ffffff 0%, #c4ebff 100%);
+  color: #0d2b59;
+  box-shadow: 0 0 8px rgba(100, 220, 255, 0.6);
+}
+.lr-badge {
+  background: #081529; color: #fff; border: 1.5px solid #fff;
+  border-radius: 4px; padding: 2px 6px; font-size: 11px; font-weight: 900;
+}
+
+.s05-roster-grid {
+  flex: 1;
+  background: rgba(255,255,255,0.92);
+  border: 2.5px solid #3c8ad1;
+  border-radius: 12px;
+  padding: 12px 14px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+.roster-col {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.roster-col-head {
+  background: linear-gradient(180deg, #2b83e0 0%, #1553a1 100%);
+  color: #fff; font-size: 14px; font-weight: 900;
+  text-align: center; padding: 4px; border-radius: 6px;
+}
+.roster-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 36px;
+  background: #e9f5fc;
+  border: 1.5px solid #96c5e8;
+  border-radius: 6px;
+  padding: 2px 6px;
+}
+.roster-order-num {
+  width: 24px; text-align: center; font-size: 16px; font-weight: 900; color: #113a70;
+}
+.roster-player {
+  flex: 1; height: 28px; font-size: 15px; justify-content: center; letter-spacing: 0.1em;
+}
+.roster-pos-tag {
+  width: 28px; height: 26px; border-radius: 4px; border: 1.5px solid #0e284d;
+  font-size: 13px; font-weight: 900; color: #0e284d;
+  display: flex; align-items: center; justify-content: center;
+}
+
+/* 栄冠ナイン風 進行カレンダー＆指示カード */
+.eikan-view {
+  flex: 1;
+  display: none;
+  flex-direction: column;
+  justify-content: space-between;
+  background: linear-gradient(180deg, #5db3f0 0%, #b8e6ff 45%, #479e47 46%, #b88450 65%, #8f5d32 100%);
+  border: 3px solid #2b7bc4;
+  border-radius: 12px;
+  padding: 14px;
+  position: relative;
+}
+.eikan-view.active { display: flex; }
+.eikan-cal-strip {
+  display: grid;
+  grid-template-columns: repeat(9, 1fr);
+  gap: 6px;
+  background: rgba(15, 40, 80, 0.72);
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 2px solid #fff;
+}
+.eikan-day-cell {
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+}
+.eikan-weekday { font-size: 12px; font-weight: 900; color: #fff; }
+.eikan-tile {
+  width: 100%; height: 28px;
+  transform: skewX(-18deg);
+  border: 2.5px solid #fff;
+  border-radius: 4px;
+  box-shadow: 0 3px 0 rgba(0,0,0,0.3);
+}
+.et-blue { background: #26a8ff; }
+.et-red  { background: #ff4769; }
+.et-yel  { background: #ffd026; }
+.et-wht  { background: #eef6fc; }
+.et-grn  { background: #3dd158; }
+
+.eikan-cards-bar {
+  background: linear-gradient(180deg, #1b3830 0%, #0d211b 100%);
+  border: 3px solid #d4c477;
+  border-radius: 10px;
+  padding: 10px 14px;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+.eikan-card {
+  flex: 1; height: 112px;
+  background: linear-gradient(180deg, #ffffff 0%, #dcf7e6 100%);
+  border: 3px solid #2ea652;
+  border-radius: 8px;
+  padding: 6px;
+  display: flex; flex-direction: column; align-items: center; justify-content: space-between;
+  position: relative; cursor: pointer;
+}
+.eikan-card:hover { border-color: #ff9900; transform: translateY(-4px); }
+.eikan-num {
+  position: absolute; top: 3px; left: 6px;
+  font-size: 20px; font-weight: 900; color: #167a36;
+}
+
+/* ==========================================================================
+   8. SCREEN 06: ショップ・アイテム＆確認ダイアログ
+   ========================================================================== */
+.s06-layout {
+  flex: 1;
+  padding: 14px 28px 8px;
+  display: flex;
+  gap: 22px;
+  position: relative;
+}
+.s06-shop-box {
+  flex: 1;
+  background: rgba(255,255,255,0.94);
+  border: 2.5px solid #2f80c9;
+  border-radius: 12px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.s06-shop-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.s06-pp-wallet {
+  background: linear-gradient(180deg, #1a58a3 0%, #0c3163 100%);
+  border: 2px solid #63caff;
+  border-radius: 999px;
+  padding: 4px 18px;
+  font-size: 20px; font-weight: 900; color: #fff;
+  display: flex; align-items: center; gap: 8px;
+}
+.pp-coin {
+  background: #ffcc00; color: #8c4800; border: 2px solid #fff;
+  border-radius: 50%; width: 24px; height: 24px; font-size: 11px;
+  display: inline-flex; align-items: center; justify-content: center; font-weight: 900;
+}
+.s06-item-table {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.shop-head {
+  display: grid;
+  grid-template-columns: 1fr 80px 110px 110px;
+  padding: 0 12px;
+  font-size: 13px; font-weight: 900; color: #2b649c; text-align: center;
+}
+.shop-row {
+  display: grid;
+  grid-template-columns: 1fr 80px 110px 110px;
+  align-items: center;
+  background: #ffffff;
+  border: 2px solid #8ebfe6;
+  border-radius: 8px;
+  padding: 8px 12px;
+  color: #10315a;
+  font-weight: 900;
+  font-size: 17px;
+  cursor: pointer;
+}
+.shop-row.is-active, .shop-row:hover {
+  border: 3px solid #e86b00;
+  background: #fff9eb;
+}
+.qty-ctrl {
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+}
+.qty-btn {
+  width: 24px; height: 24px; border-radius: 4px; border: 1.5px solid #4484ba;
+  background: #e6f3fc; font-weight: 900; cursor: pointer; color: #0e3566;
+}
+
+/* パワプロ共通「青白確認モーダル」 */
+.pp-modal-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(6, 18, 38, 0.55);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+}
+.pp-modal-overlay.open { display: flex; }
+.pp-modal-box {
+  width: 600px;
+  background: linear-gradient(180deg, #1b59a3 0%, #0d3269 100%);
+  border: 4px solid #ffffff;
+  outline: 3px solid #2478cc;
+  border-radius: 14px;
+  padding: 26px 32px;
+  text-align: center;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.55);
+}
+.pp-modal-msg {
+  font-size: 21px; font-weight: 800; line-height: 1.5; color: #fff; margin-bottom: 24px;
+}
+.pp-modal-actions {
+  display: flex; justify-content: center; gap: 22px;
+}
+.pp-modal-actions .pp-btn { width: 150px; padding: 10px; font-size: 18px; }
+
+/* ==========================================================================
+   9. SCREEN 07: モバイル縦画面（パワプロアプリ風 9:16）
+   ========================================================================== */
+.s07-bg {
+  flex: 1;
+  background: radial-gradient(circle at center, #234b80 0%, #0b182e 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 40px;
+}
+.phone-frame {
+  width: 378px;
+  height: 668px;
+  background: linear-gradient(180deg, #4db3f5 0%, #bae8ff 46%, #4aa64d 47%, #c48d56 54%, #9e6b3d 100%);
+  border: 6px solid #1e2838;
+  border-radius: 26px;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.6), 0 0 0 2px #587299;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+.app-topbar {
+  background: linear-gradient(180deg, #14366b 0%, #0a1f42 100%);
+  border-bottom: 2px solid #59c6ff;
+  padding: 6px 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.app-turn-circle {
+  width: 48px; height: 48px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #ffffff 60%, #d4ebff 100%);
+  border: 3px solid #2b83e0;
+  color: #0e2e5c;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  font-weight: 900; line-height: 1; flex-shrink: 0;
+}
+.app-mid {
+  flex: 1;
+  padding: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+.app-exp-stack {
+  width: 122px;
+  background: rgba(255, 255, 255, 0.88);
+  border: 2px solid #2b7cd3;
+  border-radius: 10px;
+  padding: 5px;
+  display: flex; flex-direction: column; gap: 4px;
+}
+.app-exp-item {
+  background: #103263;
+  border-radius: 6px;
+  padding: 2px 6px;
+  display: flex; justify-content: space-between; align-items: center;
+  font-size: 12px; font-weight: 900;
+}
+.app-mate-stack {
+  width: 118px;
+  display: flex; flex-direction: column; gap: 6px;
+}
+.app-mate-row {
+  background: rgba(15, 38, 74, 0.88);
+  border: 1.5px solid #fff;
+  border-radius: 6px;
+  padding: 3px 5px;
+  font-size: 11px; font-weight: 800;
+}
+.app-cmd-dock {
+  background: linear-gradient(180deg, rgba(11, 38, 82, 0.92) 0%, #071b3d 100%);
+  border-top: 3px solid #ffe24a;
+  padding: 10px 8px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.app-circle-btns {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+}
+.app-circle-btn {
+  width: 58px; height: 58px;
+  border-radius: 50%;
+  border: 3px solid #ffffff;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  font-size: 20px; cursor: pointer; position: relative;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.4);
+}
+.app-circle-btn.is-active {
+  transform: scale(1.15) translateY(-6px);
+  border-color: #ffe600;
+  box-shadow: 0 0 14px #ffe600;
+}
+.app-lv-tag {
+  position: absolute; bottom: -8px;
+  background: #0d203d; color: #fff; border: 1px solid #fff;
+  border-radius: 4px; font-size: 10px; font-weight: 900; padding: 0 4px;
+}
+.app-bottom-nav {
+  height: 46px;
+  background: #0b1629;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  border-top: 2px solid #2b65ad;
+}
+.app-nav-tab {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  font-size: 10px; font-weight: 800; color: #96bce6; border-right: 1px solid #1d3559;
+  cursor: pointer;
+}
+.app-nav-tab.is-active { background: linear-gradient(180deg, #1b5ea8, #0e3566); color: #ffe655; }
+
+.s07-notes {
+  width: 340px;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(110, 200, 255, 0.35);
+  border-radius: 14px;
+  padding: 20px;
+  font-size: 13px;
+  line-height: 1.7;
+  color: #d6ecff;
+}
+.s07-notes h3 { margin: 0 0 10px; color: #ffe159; font-size: 16px; }
+</style>
+</head>
+<body>
+
+<!-- ==================== プレビュー用切り替えバー ==================== -->
+<div class="preview-bar">
+  <span class="preview-bar-title">UIテンプレート切替：</span>
+  <button class="preview-tab active" onclick="switchScreen('s01', this)">01 モード選択</button>
+  <button class="preview-tab" onclick="switchScreen('s02', this)">02 サクセス練習</button>
+  <button class="preview-tab" onclick="switchScreen('s03', this)">03 会話・選択肢</button>
+  <button class="preview-tab" onclick="switchScreen('s04', this)">04 選手能力・変化球</button>
+  <button class="preview-tab" onclick="switchScreen('s05', this)">05 ペナント／栄冠</button>
+  <button class="preview-tab" onclick="switchScreen('s06', this)">06 ショップ・ダイアログ</button>
+  <button class="preview-tab" onclick="switchScreen('s07', this)">07 スマホ縦画面UI</button>
+</div>
+
+<!-- ==================== 1280x720 ゲームUIステージ ==================== -->
+<div class="stage-wrapper" id="stageWrapper">
+  <div class="game-stage" id="gameStage">
+
+    <!-- ------------------------------------------------------------------
+         SCREEN 01: タイトル・メインメニュー
+         ------------------------------------------------------------------ -->
+    <section class="screen active" id="s01">
+      <div class="menu-theme-switch">
+        <button class="pp-btn is-active" id="btnTheme2026" onclick="setMenuStyle('modern')">2026 モダン風</button>
+        <button class="pp-btn" id="btnThemePokeR" onclick="setMenuStyle('poker')">パワポケR ポップ風</button>
+      </div>
+
+      <!-- 2026モダン 4x4グリッド -->
+      <div class="s01-modern" id="menuModern">
+        <div class="s01-left-hero">
+          <div class="s01-status-badge">
+            <span style="width:10px;height:10px;border-radius:50%;background:#18c958;"></span>
+            オンライン接続中 <kbd style="background:#1c3d6e;color:#fff;padding:1px 5px;border-radius:4px;">□</kbd> 切断
+          </div>
+
+          <!-- デフォルメ主人公SVG -->
+          <div style="display:flex;justify-content:center;align-items:center;height:310px;">
+            <svg width="240" height="260" viewBox="0 0 220 240">
+              <!-- 足 -->
+              <ellipse cx="75" cy="215" rx="34" ry="13" fill="#d91e2a" stroke="#1b1429" stroke-width="4"/>
+              <ellipse cx="145" cy="215" rx="34" ry="13" fill="#d91e2a" stroke="#1b1429" stroke-width="4"/>
+              <!-- 胴体 -->
+              <rect x="68" y="132" width="84" height="58" rx="22" fill="#ffffff" stroke="#1b1429" stroke-width="4"/>
+              <rect x="68" y="156" width="84" height="14" fill="#d91e2a"/>
+              <!-- 左手＆バット -->
+              <rect x="135" y="110" width="70" height="16" rx="7" transform="rotate(-22 135 110)" fill="#f2cf7e" stroke="#1b1429" stroke-width="3.5"/>
+              <circle cx="148" cy="145" r="22" fill="#f7be94" stroke="#1b1429" stroke-width="4"/>
+              <circle cx="66" cy="145" r="20" fill="#f7be94" stroke="#1b1429" stroke-width="4"/>
+              <!-- 顔 -->
+              <circle cx="110" cy="88" r="52" fill="#f7be94" stroke="#1b1429" stroke-width="4"/>
+              <!-- 目 -->
+              <rect x="85" y="74" width="16" height="32" rx="8" fill="#ffffff" stroke="#1b1429" stroke-width="3"/>
+              <rect x="114" y="74" width="16" height="32" rx="8" fill="#ffffff" stroke="#1b1429" stroke-width="3"/>
+              <rect x="90" y="78" width="9" height="24" rx="4" fill="#3a2885"/>
+              <rect x="117" y="78" width="9" height="24" rx="4" fill="#3a2885"/>
+              <!-- 帽子 -->
+              <path d="M56 68 C56 26, 164 26, 164 68 Z" fill="#ffffff" stroke="#1b1429" stroke-width="4"/>
+              <path d="M56 62 L175 68 C178 76, 150 82, 56 70 Z" fill="#d91e2a" stroke="#1b1429" stroke-width="4"/>
+              <text x="110" y="54" text-anchor="middle" font-size="24" font-weight="900" fill="#1859b8">P</text>
+            </svg>
+          </div>
+
+          <div>
+            <h1 class="s01-mode-title" id="heroModeTitle">サクセス</h1>
+            <div class="s01-mode-subtitle">PAWAFURU BASEBALL UI TEMPLATE</div>
+          </div>
+        </div>
+
+        <div class="s01-grid-area">
+          <div class="s01-tile-grid" id="modernGrid">
+            <!-- JSで16タイル生成 -->
+          </div>
+          <div class="s01-side-rail">
+            <div class="s01-rail-btn" title="ショップ" onclick="switchScreen('s06')">🛒</div>
+            <div class="s01-rail-btn" title="プロフィール">🪪</div>
+            <div class="s01-rail-btn" title="選手能力" onclick="switchScreen('s04')">📊</div>
+            <div class="s01-rail-btn" title="選手名鑑">📖</div>
+            <div class="s01-rail-btn" title="サウンド">🎵</div>
+            <div class="s01-rail-btn" title="システム設定">⚙️</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- パワポケR レトロポップ6ボタン -->
+      <div class="s01-poker" id="menuPoker">
+        <div class="poker-tab-btn is-active" style="background:linear-gradient(180deg,#1a6eff,#0030cc);" onclick="selectPokerTab(this,'サクセス','ストーリーを進めながらオリジナル選手を育成！')">
+          <span class="poker-cursor">➡</span>
+          <span class="poker-tab-label" style="color:#45b8ff;">サクセス</span>
+          <span style="font-size:62px;">⚾</span>
+        </div>
+        <div class="poker-tab-btn" style="background:linear-gradient(180deg,#ffaa1a,#e66000);" onclick="selectPokerTab(this,'パワポケポイント','貯めたポイントでアイテムやアルバムを開放！')">
+          <span class="poker-cursor">➡</span>
+          <span class="poker-tab-label" style="color:#ffe247;font-size:36px;">ポイント</span>
+          <span style="font-size:62px;">🪙</span>
+        </div>
+        <div class="poker-tab-btn" style="background:linear-gradient(180deg,#008072,#004a42);" onclick="selectPokerTab(this,'野球','育成した選手やプロ球団で対戦しよう！')">
+          <span class="poker-cursor">➡</span>
+          <span class="poker-tab-label" style="color:#45d9b8;">野球</span>
+          <span style="font-size:62px;">🏏</span>
+        </div>
+        <div class="poker-tab-btn" style="background:linear-gradient(180deg,#1ed91e,#009900);" onclick="selectPokerTab(this,'おまけ','ミニゲームや特別イベントを楽しもう！')">
+          <span class="poker-cursor">➡</span>
+          <span class="poker-tab-label" style="color:#a3ff8c;">おまけ</span>
+          <span style="font-size:62px;">🐶</span>
+        </div>
+        <div class="poker-tab-btn" style="background:linear-gradient(180deg,#d936ff,#9900cc);" onclick="selectPokerTab(this,'アレンジ','オリジナルチームを自由に編成できるぞ！')">
+          <span class="poker-cursor">➡</span>
+          <span class="poker-tab-label" style="color:#ffb3ff;">アレンジ</span>
+          <span style="font-size:62px;">🧢</span>
+        </div>
+        <div class="poker-tab-btn" style="background:linear-gradient(180deg,#ff401a,#cc1600);" onclick="selectPokerTab(this,'ずかん','登場キャラクターやプロフィールをチェック！')">
+          <span class="poker-cursor">➡</span>
+          <span class="poker-tab-label" style="color:#ff9933;">ずかん</span>
+          <span style="font-size:62px;">🎓</span>
+        </div>
+      </div>
+
+      <div class="pp-footer-help" id="s01Help">物語を進めながら、オリジナル選手を育成しよう！</div>
+    </section>
+
+
+    <!-- ------------------------------------------------------------------
+         SCREEN 02: サクセス（メイン＆練習コマンド）
+         ------------------------------------------------------------------ -->
+    <section class="screen" id="s02">
+      <div class="pp-topbar">
+        <div class="pp-breadcrumb">
+          <div class="pp-diamond-icon"></div>
+          <div class="pp-breadcrumb-text">
+            <span class="pp-breadcrumb-sub">サクセス</span>
+            <span class="pp-breadcrumb-main">練習メニュー</span>
+          </div>
+        </div>
+        <div class="pp-guide-pill">
+          <span class="pp-guide-item"><span class="pad-btn pad-x">×</span> 戻る</span>
+          <span class="pp-guide-item"><span class="pad-btn pad-o">○</span> 練習決定</span>
+        </div>
+      </div>
+
+      <div class="s02-arena">
+        <div class="s02-top-row">
+          <!-- 左上：経験点パネル -->
+          <div class="exp-panel" id="expPanel">
+            <div class="exp-row"><span>🏋️</span><span class="exp-name">筋力</span><span class="exp-val" id="expStr">169</span><span class="exp-add" id="addStr"></span><span class="exp-bonus" id="bonStr" style="display:none;"></span></div>
+            <div class="exp-row"><span>👟</span><span class="exp-name">敏捷</span><span class="exp-val" id="expAgi">349</span><span class="exp-add" id="addAgi"></span><span class="exp-bonus" id="bonAgi" style="display:none;"></span></div>
+            <div class="exp-row"><span>🏏</span><span class="exp-name">技術</span><span class="exp-val" id="expTec">154</span><span class="exp-add" id="addTec">+56</span><span class="exp-bonus" id="bonTec">+18</span></div>
+            <div class="exp-row"><span>⚾</span><span class="exp-name">変化球</span><span class="exp-val" id="expBrk">206</span><span class="exp-add" id="addBrk"></span><span class="exp-bonus" id="bonBrk" style="display:none;"></span></div>
+            <div class="exp-row"><span>💧</span><span class="exp-name">精神</span><span class="exp-val" id="expMnt">437</span><span class="exp-add" id="addMnt">+15</span><span class="exp-bonus" id="bonMnt" style="display:none;"></span></div>
+          </div>
+
+          <!-- 右上：練習仲間リスト -->
+          <div class="mate-list">
+            <div class="mate-card">
+              <div class="mate-tag">!</div>
+              <div class="mate-info">
+                <div class="mate-name-plate pos-p"><span>猪狩 守</span><span class="mate-star" style="color:#0b2447;">★456</span></div>
+                <div class="mate-gauge"><div class="mate-gauge-fill" style="width:92%;"></div></div>
+              </div>
+            </div>
+            <div class="mate-card">
+              <div class="mate-tag" style="background:#59d0ff;color:#052c5c;">タ</div>
+              <div class="mate-info">
+                <div class="mate-name-plate pos-o"><span>矢部 明雄</span><span class="mate-star" style="color:#0b2447;">★233</span></div>
+                <div class="mate-gauge"><div class="mate-gauge-fill" style="width:82%;"></div></div>
+              </div>
+            </div>
+            <div class="mate-card">
+              <div class="mate-info">
+                <div class="mate-name-plate pos-c"><span>六道 聖</span><span class="mate-star" style="color:#0b2447;">★328</span></div>
+                <div class="mate-gauge"><div class="mate-gauge-fill" style="width:65%;"></div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 中央イラスト＆擬音 -->
+        <div class="s02-center-stage">
+          <div class="s02-onomatopoeia" id="practiceFx">ズバッ!!</div>
+          <svg width="180" height="170" viewBox="0 0 180 170">
+            <circle cx="90" cy="60" r="40" fill="#f7be94" stroke="#182238" stroke-width="4"/>
+            <path d="M50 48 C50 16, 130 16, 130 48 Z" fill="#ffffff" stroke="#182238" stroke-width="4"/>
+            <path d="M48 44 L142 50 C142 56, 118 60, 48 52 Z" fill="#d91e2a" stroke="#182238" stroke-width="4"/>
+            <text x="90" y="38" text-anchor="middle" font-size="18" font-weight="900" fill="#1859b8">P</text>
+            <rect x="70" y="50" width="12" height="22" rx="6" fill="#fff" stroke="#182238" stroke-width="2.5"/>
+            <rect x="94" y="50" width="12" height="22" rx="6" fill="#fff" stroke="#182238" stroke-width="2.5"/>
+            <rect x="74" y="54" width="6" height="15" rx="3" fill="#3a2885"/>
+            <rect x="97" y="54" width="6" height="15" rx="3" fill="#3a2885"/>
+            <rect x="60" y="102" width="60" height="44" rx="16" fill="#fff" stroke="#182238" stroke-width="4"/>
+            <ellipse cx="52" cy="122" rx="16" ry="14" fill="#c97b38" stroke="#182238" stroke-width="3.5"/>
+            <circle cx="130" cy="115" r="14" fill="#f7be94" stroke="#182238" stroke-width="3.5"/>
+          </svg>
+          <div class="s02-action-msg" id="practiceDesc">コントロール練習を行います（クリックで練習実行）</div>
+        </div>
+
+        <!-- 下部：7枚の練習カード -->
+        <div class="s02-cards-row" id="practiceCards">
+          <div class="cmd-card" onclick="selectPractice(this, '球速', 'ドッ!!', 22, 0, 12, 0, 8, 8)">
+            <div class="cmd-card-inner"><div class="cmd-icon">🔥</div><div class="cmd-label">球速</div><div class="cmd-lv">Lv.3</div></div>
+          </div>
+          <div class="cmd-card is-active" onclick="selectPractice(this, 'コントロール', 'ズバッ!!', 0, 0, 56, 0, 15, 0)">
+            <span class="cmd-tag-sp">SPタッグ</span>
+            <span class="cmd-tag-inj">ケガ率 0%</span>
+            <div class="cmd-card-inner"><div class="cmd-icon">🎯</div><div class="cmd-label">コントロール</div><div class="cmd-lv">Lv.9</div></div>
+          </div>
+          <div class="cmd-card" onclick="selectPractice(this, 'スタミナ', 'ハァハァ', 18, 0, 0, 0, 22, 12)">
+            <div class="cmd-card-inner"><div class="cmd-icon">🛞</div><div class="cmd-label">スタミナ</div><div class="cmd-lv">Lv.4</div></div>
+          </div>
+          <div class="cmd-card" onclick="selectPractice(this, '変化球', 'ギュン!!', 0, 0, 14, 48, 10, 5)">
+            <span class="cmd-tag-inj">ケガ率 5%</span>
+            <div class="cmd-card-inner"><div class="cmd-icon">🌀</div><div class="cmd-label">変化球</div><div class="cmd-lv">Lv.5</div></div>
+          </div>
+          <div class="cmd-card" onclick="selectPractice(this, '守備', 'パシッ!!', 0, 20, 24, 0, 8, 0)">
+            <div class="cmd-card-inner"><div class="cmd-icon">🧤</div><div class="cmd-label">守備</div><div class="cmd-lv">Lv.2</div></div>
+          </div>
+          <div class="cmd-card" onclick="selectPractice(this, 'メンタル', 'キラーン', 0, 0, 10, 0, 32, -15)">
+            <div class="cmd-card-inner"><div class="cmd-icon">💭</div><div class="cmd-label">メンタル</div><div class="cmd-lv">Lv.3</div></div>
+          </div>
+          <div class="cmd-card" onclick="selectPractice(this, '総合練習', 'グググ!!', 15, 15, 15, 10, 15, 10)">
+            <div class="cmd-card-inner"><div class="cmd-icon">⚾</div><div class="cmd-label">総合練習</div><div class="cmd-lv">Lv.2</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 常時表示下部ステータスバー -->
+      <div class="sc-status-bar">
+        <div class="sc-team-pill">
+          <span>パワフル高校</span>
+          <span class="mood-face mood-5" title="絶好調">😄</span>
+        </div>
+        <div class="sc-date-box">
+          <span class="sc-date-grade">2年生</span>
+          <span class="sc-date-week">3月 1週</span>
+        </div>
+        <div class="sc-hp-block">
+          <div class="sc-hp-meta">
+            <span>ターン数：試合まで <b style="color:#ffe248;">2</b> 週 / クリアまで <b style="color:#ffe248;">24</b> 週</span>
+            <span>体力</span>
+          </div>
+          <div class="sc-hp-bar-outer">
+            <div class="sc-hp-bar-fill" id="scHpFill" style="width: 79%;"></div>
+            <span class="sc-hp-val" id="scHpText">83 / 105</span>
+          </div>
+        </div>
+        <div class="sc-money-box">👛 <span>7,850円</span></div>
+      </div>
+    </section>
+
+
+    <!-- ------------------------------------------------------------------
+         SCREEN 03: 会話イベント・選択肢（2026風 / パワポケ風切替）
+         ------------------------------------------------------------------ -->
+    <section class="screen" id="s03">
+      <div class="pp-topbar">
+        <div class="pp-breadcrumb">
+          <div class="pp-diamond-icon"></div>
+          <div class="pp-breadcrumb-text">
+            <span class="pp-breadcrumb-sub">イベント</span>
+            <span class="pp-breadcrumb-main">会話・選択肢テンプレート</span>
+          </div>
+        </div>
+        <div style="display:flex;gap:10px;align-items:center;">
+          <button class="pp-btn" style="padding:4px 12px;font-size:13px;" onclick="toggleDialogueTheme()">テーマ切替 (2026 ⇄ パワポケ風)</button>
+          <div class="pp-guide-pill">
+            <span class="pp-guide-item"><span class="pad-btn pad-t">△</span> スキップ</span>
+            <span class="pp-guide-item"><span class="pad-btn pad-o">○</span> 進む</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="s03-stage" id="s03Stage">
+        <!-- パワポケ風 上部情報帯（切替時に出現） -->
+        <div class="pokepoke-hud">
+          <div style="background:#fff;color:#0b2447;border:3px solid #0b2447;padding:2px 12px;font-weight:900;border-radius:6px;">
+            1年目 12月 2週
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;font-weight:900;color:#0b2447;">
+            やる気 <span class="mood-face mood-5">😄</span>
+          </div>
+          <div style="flex:1;display:flex;align-items:center;gap:10px;font-weight:900;color:#0b2447;">
+            <span>体力❤</span>
+            <div style="flex:1;height:14px;background:#1e2c42;border:2px solid #fff;"><div style="width:78%;height:100%;background:#ffde29;"></div></div>
+            <span>タフ🧢</span>
+            <div style="flex:1;height:14px;background:#1e2c42;border:2px solid #fff;"><div style="width:45%;height:100%;background:#26e659;"></div></div>
+          </div>
+        </div>
+
+        <!-- 大きな吹き出し -->
+        <div class="s03-dialogue-bubble">
+          <div class="s03-speaker-plate">
+            <span>⚾</span>
+            <span><ruby>矢部<rt>やべ</rt></ruby> <ruby>明雄<rt>あきお</rt></ruby></span>
+          </div>
+          <div class="s03-speech-text" id="dialogueText">
+            「じゃあ、オイラが特訓に付き合うでやんす！<br>
+            今日は <span class="s03-speech-em">どの練習メニュー</span> を重点的にやるでやんすか？」
+          </div>
+          <div class="s03-next-tri">▼</div>
+        </div>
+
+        <!-- 選択肢リスト -->
+        <div class="s03-choices" id="dialogueChoices">
+          <button class="s03-choice-btn is-active" onclick="pickChoice(this, '「おおっ、打撃センスが上がってきたでやんす！」（筋力+15 / 技術+15）')">
+            <span>🟧</span> バットを振り込む
+          </button>
+          <button class="s03-choice-btn" onclick="pickChoice(this, '「ナイスランニングでやんす！ 足が速くなった気がするでやんす！」（敏捷+25）')">
+            <span>🟦</span> ダッシュを繰り返す
+          </button>
+          <button class="s03-choice-btn" onclick="pickChoice(this, '「たまには休むのも大事でやんすね〜」（体力+30 / やる気UP）')">
+            <span>🟩</span> 今日は休んで英気を養う
+          </button>
+        </div>
+
+        <!-- キャラ立ち絵（SVG） -->
+        <div class="s03-chars-row">
+          <!-- 主人公 -->
+          <svg width="200" height="230" viewBox="0 0 200 230">
+            <rect x="60" y="135" width="80" height="95" rx="18" fill="#ffffff" stroke="#182238" stroke-width="4"/>
+            <rect x="60" y="155" width="80" height="16" fill="#d91e2a"/>
+            <circle cx="100" cy="85" r="52" fill="#f7be94" stroke="#182238" stroke-width="4"/>
+            <rect x="78" y="72" width="15" height="30" rx="7" fill="#fff" stroke="#182238" stroke-width="3"/>
+            <rect x="108" y="72" width="15" height="30" rx="7" fill="#fff" stroke="#182238" stroke-width="3"/>
+            <rect x="83" y="76" width="8" height="22" rx="4" fill="#3a2885"/>
+            <rect x="111" y="76" width="8" height="22" rx="4" fill="#3a2885"/>
+            <path d="M46 62 C46 18, 154 18, 154 62 Z" fill="#ffffff" stroke="#182238" stroke-width="4"/>
+            <path d="M46 58 L170 64 C166 72, 134 74, 46 66 Z" fill="#d91e2a" stroke="#182238" stroke-width="4"/>
+            <text x="100" y="48" text-anchor="middle" font-size="24" font-weight="900" fill="#1859b8">P</text>
+          </svg>
+          <!-- 矢部くん -->
+          <svg width="210" height="230" viewBox="0 0 210 230">
+            <rect x="65" y="138" width="80" height="92" rx="18" fill="#ffffff" stroke="#182238" stroke-width="4"/>
+            <rect x="65" y="158" width="80" height="16" fill="#d91e2a"/>
+            <circle cx="105" cy="88" r="50" fill="#f7be94" stroke="#182238" stroke-width="4"/>
+            <!-- 矢部メガネ -->
+            <circle cx="84" cy="84" r="19" fill="#ffffff" stroke="#182238" stroke-width="3.5"/>
+            <circle cx="118" cy="84" r="19" fill="#ffffff" stroke="#182238" stroke-width="3.5"/>
+            <line x1="137" y1="82" x2="154" y2="76" stroke="#182238" stroke-width="4"/>
+            <path d="M52 64 C52 20, 158 20, 158 64 Z" fill="#ffffff" stroke="#182238" stroke-width="4"/>
+            <path d="M36 64 L158 58 L158 66 C80 74, 40 72, 36 64 Z" fill="#d91e2a" stroke="#182238" stroke-width="4"/>
+            <text x="105" y="50" text-anchor="middle" font-size="24" font-weight="900" fill="#1859b8">P</text>
+          </svg>
+        </div>
+      </div>
+
+      <div class="sc-status-bar">
+        <div class="sc-team-pill"><span>パワフル高校</span><span class="mood-face mood-4">😊</span></div>
+        <div class="sc-date-box"><span class="sc-date-grade">2年生</span><span class="sc-date-week">7月 1週</span></div>
+        <div class="sc-hp-block">
+          <div class="sc-hp-meta"><span>試合まで <b style="color:#ffe248;">0</b> 週 / クリアまで <b style="color:#ffe248;">56</b> 週</span><span>体力</span></div>
+          <div class="sc-hp-bar-outer"><div class="sc-hp-bar-fill" style="width:92%;"></div><span class="sc-hp-val">96 / 100</span></div>
+        </div>
+        <div class="sc-money-box">👛 <span>1万9,000円</span></div>
+      </div>
+    </section>
+
+
+    <!-- ------------------------------------------------------------------
+         SCREEN 04: 選手能力・ステータス詳細（野手 ⇄ 投手切替）
+         ------------------------------------------------------------------ -->
+    <section class="screen" id="s04">
+      <div class="pp-topbar">
+        <div class="pp-breadcrumb">
+          <div class="pp-diamond-icon"></div>
+          <div class="pp-breadcrumb-text">
+            <span class="pp-breadcrumb-sub">選手データ</span>
+            <span class="pp-breadcrumb-main">選手能力詳細</span>
+          </div>
+        </div>
+        <div class="s04-subnav">
+          <button class="pp-btn is-active" id="btnViewBatter" onclick="switchPlayerType('batter')">野手サンプル（前田）</button>
+          <button class="pp-btn" id="btnViewPitcher" onclick="switchPlayerType('pitcher')">投手・変化球（山口）</button>
+          <div class="pp-guide-pill">
+            <span class="pp-guide-item"><span class="pad-btn pad-x">×</span> 戻る</span>
+            <span class="pp-guide-item"><span class="pad-btn pad-s">□</span> 成績切替</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="s04-card-wrap">
+        <div class="s04-card">
+          <!-- 上部プロフィール帯 -->
+          <div class="s04-header">
+            <div class="s04-player-id">
+              <div class="s04-name-row">
+                <div class="pos-badge pos-o s04-name-plate" id="pNamePlate">前　田</div>
+                <div class="s04-team-box" id="pTeamLogo">C</div>
+                <div class="s04-uniform-num" id="pUniNum">31</div>
+              </div>
+              <div class="s04-apt-row">
+                <div class="s04-apt-box">
+                  <span id="pAptLabel">守備位置</span>
+                  <span class="s04-apt-val" id="pAptVal">外</span>
+                </div>
+                <div class="s04-star-box" id="pStar">★457</div>
+              </div>
+            </div>
+
+            <div class="s04-face-box">
+              <svg width="68" height="68" viewBox="0 0 80 80">
+                <circle cx="40" cy="48" r="26" fill="#f7be94" stroke="#182238" stroke-width="3"/>
+                <path d="M12 42 C12 16, 68 16, 68 42 Z" fill="#c9182b" stroke="#182238" stroke-width="3"/>
+                <path d="M12 40 L68 40 L68 46 C46 50, 34 50, 12 46 Z" fill="#990d1b" stroke="#182238" stroke-width="2.5"/>
+                <text x="40" y="34" text-anchor="middle" font-size="16" font-weight="900" fill="#fff">C</text>
+                <circle cx="31" cy="52" r="3" fill="#182238"/><circle cx="49" cy="52" r="3" fill="#182238"/>
+                <line x1="25" y1="46" x2="36" y2="48" stroke="#182238" stroke-width="3"/>
+                <line x1="55" y1="46" x2="44" y2="48" stroke="#182238" stroke-width="3"/>
+              </svg>
+            </div>
+
+            <div class="s04-records-col">
+              <div class="s04-record-bar" id="pRecordBar">
+                <span class="s04-record-label">成績</span>
+                <span>率 .317</span><span>27本</span><span>70点</span><span>10盗</span>
+              </div>
+              <div class="s04-record-bar" style="font-size:16px;" id="pFormBar">
+                <span class="s04-record-label">フォーム</span>
+                <span>スタンダード 122</span>
+                <span class="s04-record-label" style="margin-left:auto;">投打</span>
+                <span>右投左打</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- メイン2カラム（左：基礎能力 / 右：特殊能力） -->
+          <div class="s04-body">
+            <!-- 左：野手7行（初期表示） -->
+            <div class="s04-base-stats" id="batterStatsCol">
+              <div class="stat-row"><span class="stat-label">弾　道</span><span class="stat-rank" style="color:#e62e2e;">↗</span><span class="stat-num">3</span></div>
+              <div class="stat-row"><span class="stat-label">ミート</span><span class="stat-rank rk-A">A</span><span class="stat-num">83</span></div>
+              <div class="stat-row"><span class="stat-label">パワー</span><span class="stat-rank rk-B">B</span><span class="stat-num">71</span></div>
+              <div class="stat-row"><span class="stat-label">走　力</span><span class="stat-rank rk-B">B</span><span class="stat-num">73</span></div>
+              <div class="stat-row"><span class="stat-label">肩　力</span><span class="stat-rank rk-B">B</span><span class="stat-num">74</span></div>
+              <div class="stat-row"><span class="stat-label">守備力</span><span class="stat-rank rk-A">A</span><span class="stat-num">80</span></div>
+              <div class="stat-row"><span class="stat-label">捕　球</span><span class="stat-rank rk-B">B</span><span class="stat-num">73</span></div>
+            </div>
+
+            <!-- 左：投手3行＋変化球チャート（切替時表示） -->
+            <div class="s04-base-stats" id="pitcherStatsCol" style="display:none;">
+              <div class="stat-row" style="flex:0 0 46px;"><span class="stat-label">球　速</span><span class="stat-num">152 <small style="font-size:15px;">km/h</small></span></div>
+              <div class="stat-row" style="flex:0 0 46px;"><span class="stat-label">コントロール</span><span class="stat-rank rk-A">A</span><span class="stat-num">82</span></div>
+              <div class="stat-row" style="flex:0 0 46px;"><span class="stat-label">スタミナ</span><span class="stat-rank rk-E">E</span><span class="stat-num">46</span></div>
+              <!-- SVG変化球レーダーチャート -->
+              <div class="s04-pitch-chart">
+                <svg width="310" height="220" viewBox="0 0 320 220">
+                  <text x="160" y="16" text-anchor="middle" font-size="12" font-weight="800" fill="#2b649c">ストレート</text>
+                  <text x="48" y="68" text-anchor="middle" font-size="12" font-weight="800" fill="#2b649c">スライダー</text>
+                  <text x="272" y="68" text-anchor="middle" font-size="12" font-weight="800" fill="#2b649c">シュート</text>
+                  <text x="160" y="212" text-anchor="middle" font-size="12" font-weight="800" fill="#2b649c">チェンジアップ</text>
+                  <!-- 上（ストレート） -->
+                  <rect x="152" y="26" width="16" height="10" rx="2" fill="#ffd000" stroke="#1878cc" stroke-width="1.5"/>
+                  <rect x="152" y="38" width="16" height="10" rx="2" fill="#82cfff" stroke="#1878cc" stroke-width="1.5"/>
+                  <!-- 左（スライダー 3） -->
+                  <g transform="translate(132, 82)">
+                    <rect x="-18" y="0" width="14" height="14" rx="2" fill="#ffd000" stroke="#1878cc" stroke-width="1.5"/>
+                    <rect x="-34" y="0" width="14" height="14" rx="2" fill="#ffd000" stroke="#1878cc" stroke-width="1.5"/>
+                    <rect x="-50" y="0" width="14" height="14" rx="2" fill="#ff8c00" stroke="#1878cc" stroke-width="1.5"/>
+                    <rect x="-66" y="0" width="14" height="14" rx="2" fill="#6bc4ff" stroke="#1878cc" stroke-width="1.5"/>
+                    <rect x="-82" y="0" width="14" height="14" rx="2" fill="#6bc4ff" stroke="#1878cc" stroke-width="1.5"/>
+                    <rect x="-98" y="0" width="14" height="14" rx="2" fill="#6bc4ff" stroke="#1878cc" stroke-width="1.5"/>
+                  </g>
+                  <!-- 右（シュート 3） -->
+                  <g transform="translate(188, 82)">
+                    <rect x="4"  y="0" width="14" height="14" rx="2" fill="#ffd000" stroke="#1878cc" stroke-width="1.5"/>
+                    <rect x="20" y="0" width="14" height="14" rx="2" fill="#ffd000" stroke="#1878cc" stroke-width="1.5"/>
+                    <rect x="36" y="0" width="14" height="14" rx="2" fill="#ff8c00" stroke="#1878cc" stroke-width="1.5"/>
+                    <rect x="52" y="0" width="14" height="14" rx="2" fill="#6bc4ff" stroke="#1878cc" stroke-width="1.5"/>
+                    <rect x="68" y="0" width="14" height="14" rx="2" fill="#6bc4ff" stroke="#1878cc" stroke-width="1.5"/>
+                    <rect x="84" y="0" width="14" height="14" rx="2" fill="#6bc4ff" stroke="#1878cc" stroke-width="1.5"/>
+                  </g>
+                  <!-- 下（チェンジアップ 4） -->
+                  <g transform="translate(153, 114)">
+                    <rect x="0" y="2"  width="14" height="12" rx="2" fill="#ff3b30" stroke="#1878cc" stroke-width="1.5"/>
+                    <rect x="0" y="16" width="14" height="12" rx="2" fill="#ff8c00" stroke="#1878cc" stroke-width="1.5"/>
+                    <rect x="0" y="30" width="14" height="12" rx="2" fill="#ffd000" stroke="#1878cc" stroke-width="1.5"/>
+                    <rect x="0" y="44" width="14" height="12" rx="2" fill="#ffd000" stroke="#1878cc" stroke-width="1.5"/>
+                    <rect x="0" y="58" width="14" height="12" rx="2" fill="#6bc4ff" stroke="#1878cc" stroke-width="1.5"/>
+                    <rect x="0" y="72" width="14" height="12" rx="2" fill="#6bc4ff" stroke="#1878cc" stroke-width="1.5"/>
+                  </g>
+                  <!-- 左下 & 右下ガイドバー -->
+                  <line x1="142" y1="106" x2="88" y2="164" stroke="#6bc4ff" stroke-width="11" stroke-linecap="round"/>
+                  <line x1="178" y1="106" x2="232" y2="164" stroke="#6bc4ff" stroke-width="11" stroke-linecap="round"/>
+                  <!-- 中央ボール -->
+                  <circle cx="160" cy="89" r="16" fill="#fff" stroke="#1878cc" stroke-width="2.5"/>
+                  <path d="M150 78 Q156 89 150 100 M170 78 Q164 89 170 100" fill="none" stroke="#e02424" stroke-width="2"/>
+                </svg>
+              </div>
+            </div>
+
+            <!-- 右：基礎特能8枠＋特殊能力チップ20枠 -->
+            <div class="s04-abilities">
+              <div class="s04-ab-ranks" id="abRanksGrid">
+                <!-- JSで動的描画 -->
+              </div>
+              <div class="s04-ab-chips" id="abChipsGrid">
+                <!-- JSで動的描画 -->
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="pp-footer-help" id="s04Help">特殊能力チップにカーソルを合わせると効果説明が表示されます。</div>
+    </section>
+
+
+    <!-- ------------------------------------------------------------------
+         SCREEN 05: ペナント・栄冠ナイン（MENU ＋ 高密度リスト／カレンダー）
+         ------------------------------------------------------------------ -->
+    <section class="screen" id="s05">
+      <div class="pp-topbar">
+        <div class="pp-breadcrumb">
+          <div class="pp-diamond-icon"></div>
+          <div class="pp-breadcrumb-text">
+            <span class="pp-breadcrumb-sub">ペナント / 栄冠ナイン</span>
+            <span class="pp-breadcrumb-main">采配・オーダー・日程進行</span>
+          </div>
+        </div>
+        <div class="pp-guide-pill">
+          <span class="pp-guide-item"><span class="pad-btn pad-t">△</span> 能力詳細</span>
+          <span class="pp-guide-item"><span class="pad-btn pad-x">×</span> 戻る</span>
+          <span class="pp-guide-item"><span class="pad-btn pad-o">○</span> 決定</span>
+        </div>
+      </div>
+
+      <div class="s05-layout">
+        <!-- 左メニューパネル -->
+        <div class="pp-menu-box">
+          <div class="pp-menu-header">MENU</div>
+          <button class="pp-btn is-active" onclick="focusMenuBtn(this)">O K</button>
+          <button class="pp-btn" onclick="focusMenuBtn(this)">変更する</button>
+          <button class="pp-btn" onclick="focusMenuBtn(this)">おまかせ</button>
+          <button class="pp-btn" onclick="focusMenuBtn(this)">DH切替</button>
+          <button class="pp-btn" onclick="focusMenuBtn(this)">チームデータ</button>
+          <button class="pp-btn" style="margin-top:auto;" onclick="focusMenuBtn(this)">キャンセル</button>
+        </div>
+
+        <!-- 右メインパネル -->
+        <div class="s05-main-panel">
+          <div class="pp-l1r1-tabs">
+            <span class="lr-badge">L1</span>
+            <button class="pp-tab-btn is-active" id="tabRoster" onclick="switchS05Sub('roster', this)">オーダー＆選手表（ペナント風）</button>
+            <button class="pp-tab-btn" id="tabEikan" onclick="switchS05Sub('eikan', this)">進行カレンダー＆指示カード（栄冠風）</button>
+            <span class="lr-badge">R1</span>
+          </div>
+
+          <!-- サブ1：高密度オーダー表 -->
+          <div class="s05-roster-grid" id="s05RosterView">
+            <div class="roster-col">
+              <div class="roster-col-head">スターティングオーダー</div>
+              <div class="roster-row"><span class="roster-order-num">1</span><div class="pos-badge pos-o roster-player">山　岸</div><span class="mood-face mood-4">😊</span><span class="roster-pos-tag pos-o">右</span></div>
+              <div class="roster-row"><span class="roster-order-num">2</span><div class="pos-badge pos-i roster-player">岩　井</div><span class="mood-face mood-3">😐</span><span class="roster-pos-tag pos-i">三</span></div>
+              <div class="roster-row"><span class="roster-order-num">3</span><div class="pos-badge pos-i roster-player">岸　川</div><span class="mood-face mood-5">😄</span><span class="roster-pos-tag pos-i">二</span></div>
+              <div class="roster-row"><span class="roster-order-num">4</span><div class="pos-badge pos-two roster-player">大　谷</div><span class="mood-face mood-5">😄</span><span class="roster-pos-tag" style="background:#d99bff;">DH</span></div>
+              <div class="roster-row"><span class="roster-order-num">5</span><div class="pos-badge pos-ci roster-player">西　岡</div><span class="mood-face mood-4">😊</span><span class="roster-pos-tag pos-i">一</span></div>
+              <div class="roster-row"><span class="roster-order-num">6</span><div class="pos-badge pos-i roster-player">大　岩</div><span class="mood-face mood-3">😐</span><span class="roster-pos-tag pos-i">遊</span></div>
+              <div class="roster-row"><span class="roster-order-num">7</span><div class="pos-badge pos-c roster-player">大　西</div><span class="mood-face mood-2">😟</span><span class="roster-pos-tag pos-c">捕</span></div>
+              <div class="roster-row"><span class="roster-order-num">8</span><div class="pos-badge pos-o roster-player">日　高</div><span class="mood-face mood-4">😊</span><span class="roster-pos-tag pos-o">中</span></div>
+              <div class="roster-row"><span class="roster-order-num">9</span><div class="pos-badge pos-o roster-player">北　澤</div><span class="mood-face mood-3">😐</span><span class="roster-pos-tag pos-o">左</span></div>
+              <div class="roster-row"><span class="roster-order-num">P</span><div class="pos-badge pos-two roster-player">大　谷</div><span class="mood-face mood-5">😄</span><span class="roster-pos-tag pos-p">投</span></div>
+            </div>
+
+            <div class="roster-col">
+              <div class="roster-col-head" style="background:linear-gradient(180deg,#209c66,#106941);">ベンチ入り控え選手</div>
+              <div class="roster-row"><div class="pos-badge pos-c roster-player">柴　田</div><span class="mood-face mood-3">😐</span><span class="roster-pos-tag pos-c">捕</span></div>
+              <div class="roster-row"><div class="pos-badge pos-p roster-player">橋　本</div><span class="mood-face mood-4">😊</span><span class="roster-pos-tag pos-p">投</span></div>
+              <div class="roster-row"><div class="pos-badge pos-p roster-player">岩　崎</div><span class="mood-face mood-5">😄</span><span class="roster-pos-tag pos-p">投</span></div>
+              <div class="roster-row"><div class="pos-badge pos-p roster-player">河　西</div><span class="mood-face mood-2">😟</span><span class="roster-pos-tag pos-p">投</span></div>
+              <div class="roster-row"><div class="pos-badge pos-p roster-player">中村英</div><span class="mood-face mood-1">😨</span><span class="roster-pos-tag pos-p">投</span></div>
+              <div class="roster-row"><div class="pos-badge pos-c roster-player">川島悠</div><span class="mood-face mood-4">😊</span><span class="roster-pos-tag pos-c">捕</span></div>
+              <div class="roster-row"><div class="pos-badge pos-i roster-player">小　森</div><span class="mood-face mood-3">😐</span><span class="roster-pos-tag pos-i">二</span></div>
+              <div class="roster-row"><div class="pos-badge pos-i roster-player">田　中</div><span class="mood-face mood-4">😊</span><span class="roster-pos-tag pos-i">一</span></div>
+              <div class="roster-row"><div class="pos-badge pos-o roster-player">平　田</div><span class="mood-face mood-5">😄</span><span class="roster-pos-tag pos-o">外</span></div>
+            </div>
+          </div>
+
+          <!-- サブ2：栄冠ナイン風進行カレンダー -->
+          <div class="eikan-view" id="s05EikanView">
+            <div class="eikan-cal-strip">
+              <div class="eikan-day-cell"><span class="eikan-weekday">土</span><div class="eikan-tile et-blue"></div></div>
+              <div class="eikan-day-cell"><span class="eikan-weekday" style="color:#ff8a8a;">日</span><div class="eikan-tile et-yel"></div></div>
+              <div class="eikan-day-cell"><span class="eikan-weekday">月</span><div class="eikan-tile et-wht"></div></div>
+              <div class="eikan-day-cell"><span class="eikan-weekday">火</span><div class="eikan-tile et-blue"></div></div>
+              <div class="eikan-day-cell"><span class="eikan-weekday">水</span><div class="eikan-tile et-red"></div></div>
+              <div class="eikan-day-cell"><span class="eikan-weekday">木</span><div class="eikan-tile et-grn"></div></div>
+              <div class="eikan-day-cell"><span class="eikan-weekday">金</span><div class="eikan-tile et-yel"></div></div>
+              <div class="eikan-day-cell"><span class="eikan-weekday">土</span><div class="eikan-tile et-blue"></div></div>
+              <div class="eikan-day-cell"><span class="eikan-weekday" style="color:#ff8a8a;">日</span><div class="eikan-tile et-wht"></div></div>
+            </div>
+
+            <div style="display:flex;justify-content:flex-end;align-items:center;padding-right:10px;">
+              <div style="background:#fff;color:#0b2c59;border:3px solid #1759a8;border-radius:12px;padding:8px 18px;font-weight:900;font-size:16px;box-shadow:0 4px 10px rgba(0,0,0,0.2);">
+                進行カードを選択して日程を進めます（4月12日 月）
+              </div>
+            </div>
+
+            <div class="eikan-cards-bar">
+              <div class="eikan-card" style="border-color:#d93b3b;background:linear-gradient(#fff,#ffe3e3);">
+                <span class="eikan-num" style="color:#c92020;">1</span>
+                <span style="font-size:42px;margin-top:14px;">🛌</span>
+                <span style="font-size:14px;font-weight:900;color:#8a1010;">練習休み</span>
+              </div>
+              <div class="eikan-card" style="border-color:#d99a00;background:linear-gradient(#fff,#fff5cc);">
+                <span class="eikan-num" style="color:#b87a00;">2</span>
+                <span style="font-size:42px;margin-top:14px;">📣</span>
+                <span style="font-size:14px;font-weight:900;color:#6e4900;">励ます</span>
+              </div>
+              <div class="eikan-card">
+                <span class="eikan-num">3</span>
+                <span style="font-size:42px;margin-top:14px;">🏏</span>
+                <span style="font-size:14px;font-weight:900;color:#0f5c28;">ミートバッティング</span>
+              </div>
+              <div class="eikan-card">
+                <span class="eikan-num">4</span>
+                <span style="font-size:42px;margin-top:14px;">🏃</span>
+                <span style="font-size:14px;font-weight:900;color:#0f5c28;">ダッシュ</span>
+              </div>
+              <div class="eikan-card" style="border-color:#2678e6;background:linear-gradient(#fff,#dceeff);">
+                <span class="eikan-num" style="color:#1552a8;">5</span>
+                <span style="font-size:42px;margin-top:14px;">⚾</span>
+                <span style="font-size:14px;font-weight:900;color:#0e3875;">変化球投げ込み</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="pp-footer-help">オーダーの入れ替えや1軍/2軍の登録、練習指示を設定します。</div>
+    </section>
+
+
+    <!-- ------------------------------------------------------------------
+         SCREEN 06: ショップ・アイテム＆確認ダイアログ
+         ------------------------------------------------------------------ -->
+    <section class="screen" id="s06">
+      <div class="pp-topbar">
+        <div class="pp-breadcrumb">
+          <div class="pp-diamond-icon"></div>
+          <div class="pp-breadcrumb-text">
+            <span class="pp-breadcrumb-sub">ショップ</span>
+            <span class="pp-breadcrumb-main">アイテムショップ</span>
+          </div>
+        </div>
+        <div class="pp-guide-pill">
+          <span class="pp-guide-item"><span class="pad-btn pad-x">×</span> 戻る</span>
+          <span class="pp-guide-item"><span class="pad-btn pad-o">○</span> 購入確認</span>
+        </div>
+      </div>
+
+      <div class="s06-layout">
+        <div class="pp-menu-box">
+          <div class="pp-menu-header">MENU</div>
+          <button class="pp-btn is-active" onclick="openShopModal()">O K (購入する)</button>
+          <button class="pp-btn" onclick="focusMenuBtn(this)">選択する</button>
+          <button class="pp-btn" style="margin-top:auto;" onclick="switchScreen('s01')">キャンセル</button>
+        </div>
+
+        <div class="s06-shop-box">
+          <div class="s06-shop-top">
+            <div class="pp-l1r1-tabs" style="width:460px;">
+              <span class="lr-badge">L</span>
+              <button class="pp-tab-btn is-active">サクセス</button>
+              <button class="pp-tab-btn">サクサクセス</button>
+              <button class="pp-tab-btn">栄冠ナイン</button>
+              <span class="lr-badge">R</span>
+            </div>
+            <div class="s06-pp-wallet">
+              <span>合計: <b id="shopTotal" style="color:#ffe248;">1,800</b></span>
+              <span style="opacity:0.4;">|</span>
+              <span id="shopWallet">116,314</span> <span class="pp-coin">PP</span>
+            </div>
+          </div>
+
+          <div class="s06-item-table">
+            <div class="shop-head">
+              <div style="text-align:left;">アイテム名</div><div>所持</div><div>購入数</div><div>価格</div>
+            </div>
+            <div class="shop-row is-active" data-price="1800" data-qty="1">
+              <div>📄 天才の入部届</div><div style="text-align:center;">1</div>
+              <div class="qty-ctrl"><button class="qty-btn" onclick="chgQty(this,-1)">-</button><span class="q-num">1</span><button class="qty-btn" onclick="chgQty(this,1)">+</button></div>
+              <div style="text-align:right;">1,800 <span class="pp-coin">PP</span></div>
+            </div>
+            <div class="shop-row" data-price="600" data-qty="0">
+              <div>💊 ヒーリングカード</div><div style="text-align:center;">6</div>
+              <div class="qty-ctrl"><button class="qty-btn" onclick="chgQty(this,-1)">-</button><span class="q-num">0</span><button class="qty-btn" onclick="chgQty(this,1)">+</button></div>
+              <div style="text-align:right;">600 <span class="pp-coin">PP</span></div>
+            </div>
+            <div class="shop-row" data-price="600" data-qty="0">
+              <div>🌀 変化球強化カード</div><div style="text-align:center;">1</div>
+              <div class="qty-ctrl"><button class="qty-btn" onclick="chgQty(this,-1)">-</button><span class="q-num">0</span><button class="qty-btn" onclick="chgQty(this,1)">+</button></div>
+              <div style="text-align:right;">600 <span class="pp-coin">PP</span></div>
+            </div>
+            <div class="shop-row" data-price="1800" data-qty="0">
+              <div>💎 ラッキートレジャー</div><div style="text-align:center;">0</div>
+              <div class="qty-ctrl"><button class="qty-btn" onclick="chgQty(this,-1)">-</button><span class="q-num">0</span><button class="qty-btn" onclick="chgQty(this,1)">+</button></div>
+              <div style="text-align:right;">1,800 <span class="pp-coin">PP</span></div>
+            </div>
+            <div class="shop-row" data-price="1200" data-qty="0">
+              <div>📕 野球マン登場カード</div><div style="text-align:center;">2</div>
+              <div class="qty-ctrl"><button class="qty-btn" onclick="chgQty(this,-1)">-</button><span class="q-num">0</span><button class="qty-btn" onclick="chgQty(this,1)">+</button></div>
+              <div style="text-align:right;">1,200 <span class="pp-coin">PP</span></div>
+            </div>
+          </div>
+
+          <div style="display:flex;justify-content:flex-end;">
+            <button class="pp-btn is-active" onclick="openShopModal()">確認ダイアログを表示</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 青白確認モーダル -->
+      <div class="pp-modal-overlay" id="shopModal">
+        <div class="pp-modal-box">
+          <div class="pp-modal-msg" id="shopModalMsg">
+            選択したアイテムを <span style="color:#ffe44d;">1,800 PP</span> で購入します。<br>よろしいですか？
+          </div>
+          <div class="pp-modal-actions">
+            <button class="pp-btn is-active" onclick="confirmShopModal()">は　い</button>
+            <button class="pp-btn" onclick="closeShopModal()">いいえ</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="pp-footer-help">パワポイントを使ってサクセスや栄冠ナインで使えるアイテムを購入できます。</div>
+    </section>
+
+
+    <!-- ------------------------------------------------------------------
+         SCREEN 07: モバイル縦画面（パワプロアプリ風 9:16再構成）
+         ------------------------------------------------------------------ -->
+    <section class="screen" id="s07">
+      <div class="s07-bg">
+        <div class="phone-frame">
+          <!-- 上部ステータス -->
+          <div class="app-topbar">
+            <div class="app-turn-circle">
+              <span style="font-size:9px;color:#2b6fb3;">残り</span>
+              <span style="font-size:20px;">9</span>
+              <span style="font-size:8px;">ターン</span>
+            </div>
+            <div style="flex:1;display:flex;flex-direction:column;gap:4px;">
+              <div style="display:flex;justify-content:space-between;font-size:11px;font-weight:900;">
+                <span>セクション3 / 2年 2月4週</span>
+                <span class="mood-face mood-5" style="width:18px;height:18px;font-size:10px;">😄</span>
+              </div>
+              <div class="sc-hp-bar-outer" style="height:12px;">
+                <div class="sc-hp-bar-fill" style="width:84%;"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 中央：左＝縦積み経験点 / 右＝仲間評価 -->
+          <div class="app-mid">
+            <div class="app-exp-stack">
+              <div class="app-exp-item"><span style="color:#ff8a8a;">筋力</span><span>41</span></div>
+              <div class="app-exp-item"><span style="color:#8aff9e;">敏捷</span><span>51 <b style="color:#ffe248;">+114</b></span></div>
+              <div class="app-exp-item"><span style="color:#70cfff;">技術</span><span>41 <b style="color:#ffe248;">+235</b></span></div>
+              <div class="app-exp-item"><span style="color:#ffb8ff;">変化</span><span>0</span></div>
+              <div class="app-exp-item"><span style="color:#e0e0e0;">精神</span><span>196 <b style="color:#ffe248;">+82</b></span></div>
+            </div>
+
+            <div class="app-mate-stack">
+              <div class="app-mate-row">
+                <div style="display:flex;justify-content:space-between;"><span>早川</span><span style="color:#ffe248;">タッグ!</span></div>
+                <div class="mate-gauge"><div class="mate-gauge-fill" style="width:95%;"></div></div>
+              </div>
+              <div class="app-mate-row">
+                <div>新島</div>
+                <div class="mate-gauge"><div class="mate-gauge-fill" style="width:80%;"></div></div>
+              </div>
+              <div class="app-mate-row">
+                <div>轟</div>
+                <div class="mate-gauge"><div class="mate-gauge-fill" style="width:60%;"></div></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 下部：円形練習ボタン -->
+          <div class="app-cmd-dock">
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:0 6px;">
+              <span style="background:#fff;color:#0b2447;border-radius:999px;padding:1px 10px;font-size:11px;font-weight:900;">ケガ率 <b style="color:#16a33a;">0%</b></span>
+              <span style="font-size:13px;font-weight:900;color:#ffe248;">守備練習 Lv.2</span>
+            </div>
+            <div class="app-circle-btns">
+              <div class="app-circle-btn" style="background:radial-gradient(#ff99aa,#d92b4c);">🏏<span class="app-lv-tag">Lv.2</span></div>
+              <div class="app-circle-btn" style="background:radial-gradient(#70d6ff,#1976d2);">🏋️<span class="app-lv-tag">Lv.1</span></div>
+              <div class="app-circle-btn" style="background:radial-gradient(#8cff8c,#2e9e3b);">👟<span class="app-lv-tag">Lv.1</span></div>
+              <div class="app-circle-btn is-active" style="background:radial-gradient(#ffe666,#e68a00);">🧤<span class="app-lv-tag">Lv.2</span></div>
+              <div class="app-circle-btn" style="background:radial-gradient(#c299ff,#6b36cc);">💭<span class="app-lv-tag">Lv.3</span></div>
+            </div>
+          </div>
+
+          <!-- 最下部5タブナビ -->
+          <div class="app-bottom-nav">
+            <div class="app-nav-tab is-active">🏠<span>ホーム</span></div>
+            <div class="app-nav-tab">🧢<span>マイチーム</span></div>
+            <div class="app-nav-tab">👥<span>イベキャラ</span></div>
+            <div class="app-nav-tab">🎰<span>ガチャ</span></div>
+            <div class="app-nav-tab">🛒<span>ショップ</span></div>
+          </div>
+        </div>
+
+        <div class="s07-notes">
+          <h3>スマホ縦画面（9:16）再構成ルール</h3>
+          <p>コンシューマ版（16:9）の横長UIを縮小するのではなく、スマホ向けに以下を組み替えています：</p>
+          <ul style="padding-left:18px;margin:8px 0;">
+            <li><b>円形ターンバッジ＋上部バー</b>：左上に現在残りターンを配置</li>
+            <li><b>左右縦積みウィジェット</b>：経験点を左、キャラ評価を右へ縦積みし中央の背景・立ち絵を確保</li>
+            <li><b>円形コマンドボタン</b>：親指でタップしやすい大きな丸型ボタンを下部ドックに配置</li>
+            <li><b>5タブ固定フッター</b>：ソシャゲ定番の常時ナビゲーション</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+  </div>
+</div>
+
+<script>
+// === 1. 画面サイズ自動スケーリング（どんなブラウザ幅でも16:9を崩さない） ===
+function fitStage() {
+  const wrapper = document.getElementById('stageWrapper');
+  const stage = document.getElementById('gameStage');
+  const scale = Math.min(
+    (wrapper.clientWidth - 28) / 1280,
+    (wrapper.clientHeight - 28) / 720,
+    1
+  );
+  stage.style.transform = `scale(${scale})`;
+}
+window.addEventListener('resize', fitStage);
+window.addEventListener('DOMContentLoaded', fitStage);
+
+// === 2. プレビュー画面切り替え ===
+function switchScreen(id, tabEl) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  if (tabEl) {
+    document.querySelectorAll('.preview-tab').forEach(t => t.classList.remove('active'));
+    tabEl.classList.add('active');
+  } else {
+    const idx = ['s01','s02','s03','s04','s05','s06','s07'].indexOf(id);
+    const tabs = document.querySelectorAll('.preview-tab');
+    tabs.forEach(t => t.classList.remove('active'));
+    if (tabs[idx]) tabs[idx].classList.add('active');
+  }
+}
+
+// === 3. Screen 01 モード選択データ生成 ===
+const modes2026 = [
+  { name: '対戦', icon: '🆚', bg: 'linear-gradient(135deg,#ff8033,#e63900)', desc: 'プロ球団やオリジナルチームで熱い試合を楽しもう！', target: null },
+  { name: 'サクセス', icon: '🕒', bg: 'linear-gradient(135deg,#33d6d6,#0088a8)', desc: '物語を進めながら、オリジナル選手を育成しよう！', target: 's02', active: true },
+  { name: 'ペナント', icon: '🏆', bg: 'linear-gradient(135deg,#ffe033,#f29c00)', desc: '監督・GMとなって日本一のペナントを勝ち取れ！', target: 's05' },
+  { name: 'チャンピオンシップ', icon: '👑', bg: 'linear-gradient(135deg,#ff4d6a,#c91038)', desc: '全国のプレイヤーと腕を競い合おう！', target: null },
+  { name: '大会', icon: '🏅', bg: 'linear-gradient(135deg,#cc4dff,#7300cc)', desc: 'トーナメントやリーグ戦を開催して楽しもう！', target: null },
+  { name: '栄冠ナイン', icon: '🏫', bg: 'linear-gradient(135deg,#8ce633,#24a824)', desc: '高校野球の監督として甲子園優勝を目指そう！', target: 's05' },
+  { name: 'マイライフ', icon: '⚾', bg: 'linear-gradient(135deg,#73e65c,#ff5983)', desc: 'プロ入りから引退までプロ野球選手の人生を体験しよう！', target: null },
+  { name: 'マイ選手リーグ', icon: '🏟️', bg: 'linear-gradient(135deg,#33e699,#00a388)', desc: '育成した選手でオリジナルチームを作って全国対戦！', target: null },
+  { name: 'ホームランアタック', icon: '☄️', bg: 'linear-gradient(135deg,#59c6ff,#1a66cc)', desc: 'ホームランを量産してハイスコアを狙え！', target: null },
+  { name: 'パワフェス', icon: '🎪', bg: 'linear-gradient(135deg,#d93699,#4724a8)', desc: '歴代サクセスキャラが集う大会で勝ち抜け！', target: null },
+  { name: 'レジェンドバトル', icon: '⭐', bg: 'linear-gradient(135deg,#ffd633,#e68a00)', desc: '歴代日本代表レジェンドと真剣勝負！', target: null },
+  { name: 'LIVE選手', icon: '👤', bg: 'linear-gradient(135deg,#33c6ff,#0077cc)', desc: 'みんなが作成したオリジナル選手をダウンロード！', target: 's04' },
+  { name: '練習', icon: '⚙️', bg: 'linear-gradient(135deg,#59f07a,#00b359)', desc: '打撃・投球・守備の操作を練習しよう！', target: null },
+  { name: 'アレンジ', icon: '🔄', bg: 'linear-gradient(135deg,#ff73b3,#cc4466)', desc: 'オリジナルチームを編成・カスタマイズ！', target: null },
+  { name: 'LIVEシナリオ', icon: '📺', bg: 'linear-gradient(135deg,#4df0ff,#0099cc)', desc: 'プロ野球の名場面・シナリオをプレイしよう！', target: 's03' },
+  { name: 'LIVEチーム', icon: '👥', bg: 'linear-gradient(135deg,#a380ff,#5c33cc)', desc: 'アップロードされたチームに挑戦しよう！', target: null }
+];
+
+const gridEl = document.getElementById('modernGrid');
+modes2026.forEach(m => {
+  const tile = document.createElement('div');
+  tile.className = 's01-tile' + (m.active ? ' is-active' : '');
+  tile.style.background = m.bg;
+  tile.innerHTML = `<div class="s01-tile-icon">${m.icon}</div><div>${m.name}</div>`;
+  tile.onclick = () => {
+    document.querySelectorAll('.s01-tile').forEach(t => t.classList.remove('is-active'));
+    tile.classList.add('is-active');
+    document.getElementById('heroModeTitle').textContent = m.name;
+    document.getElementById('s01Help').textContent = m.desc;
+    if (m.target) setTimeout(() => switchScreen(m.target), 180);
+  };
+  gridEl.appendChild(tile);
+});
+
+function setMenuStyle(style) {
+  const mod = document.getElementById('menuModern');
+  const pok = document.getElementById('menuPoker');
+  const b1 = document.getElementById('btnTheme2026');
+  const b2 = document.getElementById('btnThemePokeR');
+  if (style === 'modern') {
+    mod.style.display = 'flex';
+    pok.classList.remove('active');
+    b1.classList.add('is-active'); b2.classList.remove('is-active');
+  } else {
+    mod.style.display = 'none';
+    pok.classList.add('active');
+    b2.classList.add('is-active'); b1.classList.remove('is-active');
+  }
+}
+
+function selectPokerTab(el, title, desc) {
+  document.querySelectorAll('.poker-tab-btn').forEach(b => b.classList.remove('is-active'));
+  el.classList.add('is-active');
+  document.getElementById('s01Help').textContent = `${title}：${desc}`;
+}
+
+// === 4. Screen 02 サクセス練習クリック連動 ===
+let hp = 83;
+function selectPractice(el, name, fx, str, agi, tec, brk, mnt, hpCost) {
+  const wasActive = el.classList.contains('is-active');
+  document.querySelectorAll('.cmd-card').forEach(c => c.classList.remove('is-active'));
+  el.classList.add('is-active');
+  document.getElementById('practiceFx').textContent = fx;
+  document.getElementById('practiceDesc').textContent = `${name}練習を行います（再クリックで経験点加算デモ）`;
+
+  const fields = [['Str', str], ['Agi', agi], ['Tec', tec], ['Brk', brk], ['Mnt', mnt]];
+  fields.forEach(([k, v]) => {
+    document.getElementById('add' + k).textContent = v > 0 ? `+${v}` : '';
+    const bon = document.getElementById('bon' + k);
+    if (v >= 30) { bon.style.display = 'inline'; bon.textContent = `+${Math.round(v*0.3)}`; }
+    else { bon.style.display = 'none'; }
+  });
+
+  if (wasActive) {
+    fields.forEach(([k, v]) => {
+      const valEl = document.getElementById('exp' + k);
+      valEl.textContent = parseInt(valEl.textContent) + v;
+    });
+    hp = Math.max(0, Math.min(105, hp - hpCost));
+    document.getElementById('scHpFill').style.width = `${Math.round(hp / 105 * 100)}%`;
+    document.getElementById('scHpText').textContent = `${hp} / 105`;
+  }
+}
+
+// === 5. Screen 03 会話テーマ＆選択肢 ===
+function toggleDialogueTheme() {
+  document.getElementById('s03Stage').classList.toggle('is-pokepoke');
+}
+function pickChoice(btn, reply) {
+  document.querySelectorAll('.s03-choice-btn').forEach(b => b.classList.remove('is-active'));
+  btn.classList.add('is-active');
+  document.getElementById('dialogueText').innerHTML = reply;
+}
+
+// === 6. Screen 04 選手データ（野手・投手切替＆特殊能力ホバー説明） ===
+const playerData = {
+  batter: {
+    name: '前　田', posClass: 'pos-o', team: 'C', num: '31',
+    aptLabel: '守備位置', aptVal: '外', star: '★457',
+    rec: '<span class="s04-record-label">成績</span><span>率 .317</span><span>27本</span><span>70点</span><span>10盗</span>',
+    form: '<span class="s04-record-label">フォーム</span><span>スタンダード 122</span><span class="s04-record-label" style="margin-left:auto;">投打</span><span>右投左打</span>',
+    ranks: [
+      { n:'チャンス', r:'D', cls:'' }, { n:'対左投手', r:'E', cls:'' }, { n:'キャッチャー', r:'D', cls:'' }, { n:'ケガしにくさ', r:'E', cls:'' },
+      { n:'盗　塁', r:'E', cls:'' }, { n:'走　塁', r:'D', cls:'' }, { n:'送　球', r:'B', cls:'is-good' }, { n:'回　復', r:'B', cls:'is-good' }
+    ],
+    chips: [
+      { n:'アベレージヒッター', t:'blue', d:'ヒットが出やすくなる' },
+      { n:'広角打法', t:'blue', d:'流し方向への強い打球が伸びる' },
+      { n:'威圧感', t:'blue', d:'相手投手の球威を下げ、スタミナ消費を増やす' },
+      { n:'対ストレート○', t:'blue', d:'ストレート打ちが得意になる' },
+      { n:'選球眼', t:'green', d:'ストライクゾーンのボールの見極めが良くなる' },
+      { n:'初球○', t:'blue', d:'カウント0ストライク時の打撃力アップ' },
+      { n:'アーティスト', t:'gold', d:'【金特】ホームラン性の大飛球を打ちやすい' },
+      { n:'悪球打ち', t:'mix', d:'【赤青特】ストライクゾーン外の球でも積極的に振る' },
+      { n:'併　殺', t:'red', d:'【赤特】ランナー1塁時にゴロを打ちやすくなる' }
+    ]
+  },
+  pitcher: {
+    name: '山　口', posClass: 'pos-p', team: 'G', num: '47',
+    aptLabel: '適　性', aptVal: '先 中 抑', star: '★442',
+    rec: '<span class="s04-record-label">成績</span><span>防 0.84</span><span>3勝</span><span>2敗</span><span>47HP 5S</span>',
+    form: '<span class="s04-record-label">フォーム</span><span>スリークォーター 89</span><span class="s04-record-label" style="margin-left:auto;">投打</span><span>左投左打</span>',
+    ranks: [
+      { n:'対ピンチ', r:'D', cls:'' }, { n:'対左打者', r:'B', cls:'is-good' }, { n:'打たれ強さ', r:'B', cls:'is-good' }, { n:'鉄　人', r:'金', cls:'is-gold' },
+      { n:'ノ　ビ', r:'F', cls:'is-bad' }, { n:'クイック', r:'D', cls:'' }, { n:'ケガしにくさ', r:'D', cls:'' }, { n:'回　復', r:'B', cls:'is-good' }
+    ],
+    chips: [
+      { n:'キレ○', t:'blue', d:'変化球のキレが良くなる' },
+      { n:'逃げ球', t:'blue', d:'失投が真ん中に行きにくくなる' },
+      { n:'奪三振', t:'blue', d:'2ストライク時に球威がアップする' },
+      { n:'打球反応○', t:'blue', d:'ピッチャー返しの打球に素早く反応する' },
+      { n:'球持ち○', t:'blue', d:'打者からタイミングを取りにくくする' },
+      { n:'低め○', t:'blue', d:'低めへの制球力がアップする' },
+      { n:'ポーカーフェイス', t:'mix', d:'【赤青特】ピンチでも動揺せず表情に出ない' },
+      { n:'ゴロピッチャー', t:'mix', d:'【赤青特】ゴロを打たせやすくなる' },
+      { n:'調子安定', t:'green', d:'調子が極端に悪くなりにくい' },
+      { n:'スロースターター', t:'red', d:'【赤特】先発時、序盤の球威が落ちる' }
+    ]
+  }
+};
+
+function switchPlayerType(type) {
+  const p = playerData[type];
+  document.getElementById('btnViewBatter').classList.toggle('is-active', type === 'batter');
+  document.getElementById('btnViewPitcher').classList.toggle('is-active', type === 'pitcher');
+  document.getElementById('batterStatsCol').style.display = type === 'batter' ? 'flex' : 'none';
+  document.getElementById('pitcherStatsCol').style.display = type === 'pitcher' ? 'flex' : 'none';
+
+  const plate = document.getElementById('pNamePlate');
+  plate.textContent = p.name;
+  plate.className = `pos-badge ${p.posClass} s04-name-plate`;
+  document.getElementById('pTeamLogo').textContent = p.team;
+  document.getElementById('pUniNum').textContent = p.num;
+  document.getElementById('pAptLabel').textContent = p.aptLabel;
+  document.getElementById('pAptVal').textContent = p.aptVal;
+  document.getElementById('pStar').textContent = p.star;
+  document.getElementById('pRecordBar').innerHTML = p.rec;
+  document.getElementById('pFormBar').innerHTML = p.form;
+
+  const rGrid = document.getElementById('abRanksGrid');
+  rGrid.innerHTML = p.ranks.map(rk => `
+    <div class="ab-rank-row ${rk.cls}">
+      <span>${rk.n}</span>
+      ${rk.r === '金' ? '' : `<span class="ab-rank-letter rk-${rk.r}">${rk.r}</span>`}
+    </div>
+  `).join('');
+
+  const cGrid = document.getElementById('abChipsGrid');
+  let chipsHtml = p.chips.map(c =>
+    `<div class="ab-chip ab-${c.t}" onmouseenter="document.getElementById('s04Help').textContent='${c.n}：${c.d}'">${c.n}</div>`
+  ).join('');
+  for (let i = p.chips.length; i < 20; i++) {
+    chipsHtml += `<div class="ab-chip ab-empty"></div>`;
+  }
+  cGrid.innerHTML = chipsHtml;
+}
+switchPlayerType('batter');
+
+// === 7. Screen 05 共通MENUフォーカス & サブ画面切替 ===
+function focusMenuBtn(btn) {
+  const box = btn.closest('.pp-menu-box');
+  box.querySelectorAll('.pp-btn').forEach(b => b.classList.remove('is-active'));
+  btn.classList.add('is-active');
+}
+function switchS05Sub(sub, tab) {
+  document.getElementById('tabRoster').classList.remove('is-active');
+  document.getElementById('tabEikan').classList.remove('is-active');
+  tab.classList.add('is-active');
+  document.getElementById('s05RosterView').style.display = sub === 'roster' ? 'grid' : 'none';
+  document.getElementById('s05EikanView').classList.toggle('active', sub === 'eikan');
+}
+
+// === 8. Screen 06 ショップ＆モーダルロジック ===
+function chgQty(btn, delta) {
+  const row = btn.closest('.shop-row');
+  document.querySelectorAll('.shop-row').forEach(r => r.classList.remove('is-active'));
+  row.classList.add('is-active');
+  let q = Math.max(0, Math.min(99, parseInt(row.dataset.qty) + delta));
+  row.dataset.qty = q;
+  row.querySelector('.q-num').textContent = q;
+  let total = 0;
+  document.querySelectorAll('.shop-row').forEach(r => {
+    total += parseInt(r.dataset.price) * parseInt(r.dataset.qty);
+  });
+  document.getElementById('shopTotal').textContent = total.toLocaleString();
+}
+function openShopModal() {
+  const total = document.getElementById('shopTotal').textContent;
+  document.getElementById('shopModalMsg').innerHTML = `選択したアイテムを <span style="color:#ffe44d;">${total} PP</span> で購入します。<br>よろしいですか？`;
+  document.getElementById('shopModal').classList.add('open');
+}
+function closeShopModal() { document.getElementById('shopModal').classList.remove('open'); }
+function confirmShopModal() {
+  closeShopModal();
+  alert('購入しました！（サンプルテンプレート動作）');
+}
+</script>
+</body>
+</html>

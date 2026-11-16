@@ -95,5 +95,44 @@
   "no_confidence": {
     "cooperation_to_oppose": 45,
     "ruling_defect_per_loyalty": 0.03
+  },
+  "election": {
+    "note": "総選挙の計算。全国の政党支持は2024年の比例の当選者数の比を基準に、内閣支持率の基準からのずれ（全国の風）で与党が上下する。小選挙区は党の県内の強さと候補者本人の票で決まる。",
+    "support_floor": 1,
+    "wind_ruling": 0.5,
+    "wind_partner": 0.05,
+    "support_noise": 1,
+    "regional_base": 0.7,
+    "regional_strength": 0.8,
+    "partner_transfer": 0.6,
+    "personal_jiban": 0.08,
+    "personal_fame": 0.002,
+    "personal_org": 0.0015,
+    "incumbency": 0.1,
+    "personal_noise": 0.04,
+    "always_run": [
+      "minsei",
+      "minken",
+      "shusan"
+    ],
+    "retire_age": 82,
+    "jiban_win_gain": 0.5,
+    "ronin_jiban_loss": 1,
+    "ronin_keep_share": 0.3,
+    "ronin_max_age": 75,
+    "support_base": {
+      "note": "2024年衆院選の比例の得票率（%、概数。出典は未確認の記憶による値なので、確かめてから直す）。架空政党のidで持つ。",
+      "minsei": 26.7,
+      "minken": 21.2,
+      "kyowa": 11.3,
+      "kosei": 10.9,
+      "sasshin": 9.4,
+      "reimei": 7,
+      "shusan": 6.2,
+      "sankaku": 3.4,
+      "hoshu": 2.1,
+      "shahei": 1.7
+    },
+    "wind_reference": 40
   }
 }

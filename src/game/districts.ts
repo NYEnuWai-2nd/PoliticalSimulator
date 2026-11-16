@@ -109,3 +109,33 @@ export function initialSeatPlan(): SeatPlan {
   for (const [pref, { party }] of Object.entries(overrides)) smd.set(Number(pref), party);
   return { smd, pr: largestRemainder(SEATS_2024.pr_total, PR_SEATS) };
 }
+
+/** ドント式。票（得票率など）の比で total 議席を配る。同じ商なら政党の定義順を優先する */
+export function dhondt(votes: Record<string, number>, total: number): Map<string, number> {
+  const out = new Map<string, number>();
+  const ids = Object.keys(votes).filter((id) => votes[id] > 0);
+  for (let i = 0; i < total; i++) {
+    let best: string | undefined;
+    let bestQ = -1;
+    for (const id of ids) {
+      const q = votes[id] / ((out.get(id) ?? 0) + 1);
+      if (q > bestQ || (q === bestQ && best !== undefined && orderOf(id) < orderOf(best))) {
+        best = id;
+        bestQ = q;
+      }
+    }
+    if (!best) break;
+    out.set(best, (out.get(best) ?? 0) + 1);
+  }
+  return out;
+}
+
+/** 2024年に、その県の小選挙区で各党が取った議席の割合（選挙の計算で使う） */
+export function prefStrength(pref: PrefCode, party: string): number {
+  return strength(pref, party);
+}
+
+/** 2024年の比例の当選者数の比（全国の政党支持の基準に使う） */
+export function prTotals2024(): Record<string, number> {
+  return { ...SEATS_2024.pr_total };
+}

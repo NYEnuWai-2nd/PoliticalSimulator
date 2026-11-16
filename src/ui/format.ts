@@ -31,5 +31,6 @@ export function memberLink(m: Member): string {
 }
 
 export function seatLabel(m: Member): string {
+  if (m.seat === "なし") return `浪人・候補（${prefLabel(m.home)}）`;
   return m.seat === "小選挙区" ? prefLabel(m.district!) : `比例（${prefLabel(m.home)}）`;
 }
