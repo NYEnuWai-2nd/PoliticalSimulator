@@ -10,6 +10,8 @@ import type { Appointment } from "../game/cabinet.js";
 import { chooseEvent, govAction, startCareer, takeTurn, upgradeAbility } from "../game/career.js";
 import type { CareerState, CareerWorld, OriginId, RouteId } from "../game/career.js";
 import type { Ability } from "../game/tables.js";
+import { deserializeCareer, parseSave, saveLabel, serializeCareer } from "../game/save.js";
+import type { NameData } from "../data/nameData.js";
 import { partyById } from "../game/parties.js";
 import { PREFECTURES, renderJapanMap } from "../map/japanMap.js";
 import { FX, activityIds, activityView, cabinetView, memberDetail, partyView, selfView, setupView, statusBar } from "./views.js";
@@ -43,6 +45,105 @@ interface App {
   setupStep: number;
   /** 詳しい情報を出している人物 */
   memberId?: number;
+  names?: NameData;
+  /** 最後に自動保存した時刻（表示用） */
+  savedAt?: string;
+}
+
+// ---------- セーブ ----------
+
+const SAVE_KEY = "seiji.career.autosave";
+
+function readAutosave(): string | undefined {
+  try {
+    return localStorage.getItem(SAVE_KEY) ?? undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+/** 自動保存の説明（読めないデータなら undefined） */
+function autosaveLabel(): string | undefined {
+  const text = readAutosave();
+  if (!text) return undefined;
+  try {
+    const save = parseSave(text);
+    return save.state.over ? undefined : saveLabel(save);
+  } catch {
+    return undefined;
+  }
+}
+
+let saveWarned = false;
+/** 状態が変わるたびにこのブラウザへ保存する。引退したら消す */
+function autosave(): void {
+  const { state, world } = app;
+  // 確認用の URL（?start=…）で始めたときは、本来のセーブを上書きしない
+  if (!state || !world || params.has("start")) return;
+  try {
+    if (state.over) {
+      localStorage.removeItem(SAVE_KEY);
+      app.savedAt = undefined;
+      return;
+    }
+    localStorage.setItem(SAVE_KEY, JSON.stringify(serializeCareer(state, world, app.seed)));
+    const now = new Date();
+    app.savedAt = `${now.getHours()}:${String(now.getMinutes()).padStart(2, "0")}`;
+  } catch {
+    app.savedAt = undefined;
+    if (!saveWarned) {
+      saveWarned = true;
+      window.setTimeout(() => showToast("このブラウザに保存できませんでした。「自分」の画面からファイルに書き出してください"), 0);
+    }
+  }
+}
+
+async function loadSave(text: string): Promise<void> {
+  app.busy = true;
+  try {
+    const save = parseSave(text);
+    app.names ??= await loadNameData();
+    const { state, world } = await deserializeCareer(save, app.names);
+    app.seed = save.worldSeed;
+    app.state = state;
+    app.world = world;
+    app.electionsShown = state.elections.length;
+    app.selected = undefined;
+    app.memberId = undefined;
+    app.tab = "act";
+    app.last = { text: `${saveLabel(save)}から再開した。`, fx: "" };
+  } catch (e) {
+    showToast(e instanceof Error ? e.message : String(e));
+  } finally {
+    app.busy = false;
+  }
+  render();
+}
+
+function exportSave(): void {
+  const { state, world } = app;
+  if (!state || !world) return;
+  const blob = new Blob([JSON.stringify(serializeCareer(state, world, app.seed))], { type: "application/json" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `giin-jinsei_${state.year}-${String(state.month).padStart(2, "0")}_${world.player.name.surname}.json`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  window.setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+
+function importSave(): void {
+  const input = document.createElement("input");
+  input.type = "file";
+  input.accept = "application/json,.json";
+  input.addEventListener("change", async () => {
+    const file = input.files?.[0];
+    if (!file) return;
+    if (app.state && !app.state.over && !window.confirm("今のゲームを終えて、ファイルのデータを読み込みますか？")) return;
+    await loadSave(await file.text());
+  });
+  input.click();
 }
 
 const params = new URLSearchParams(location.search);
@@ -60,15 +161,16 @@ const root = document.querySelector<HTMLDivElement>("#app")!;
 
 function render(): void {
   const { state, world } = app;
+  if (state && world && !app.busy) autosave();
   if (!state || !world) {
     root.innerHTML = `<div class="shell"><header class="topbar"><div class="crumb"><div class="diamond"></div><div><span class="crumb-sub">議員人生</span><span class="crumb-main">はじめる</span></div></div></header>
-      <main class="view">${app.base ? setupView(app.base.roster, app.setup, app.setupStep) : `<p class="cut box">名前データを読み込んでいます…</p>`}</main></div>`;
+      <main class="view">${app.base ? setupView(app.base.roster, app.setup, app.setupStep, autosaveLabel()) : `<p class="cut box">名前データを読み込んでいます…</p>`}</main></div>`;
     return;
   }
   const tab = TABS.find((t) => t.id === app.tab)!;
   let body = "";
   if (app.tab === "act") body = activityView(state, world, app.selected, app.last);
-  else if (app.tab === "self") body = selfView(state, world);
+  else if (app.tab === "self") body = selfView(state, world, app.savedAt);
   else if (app.tab === "party") body = partyView(state, world);
   else if (app.tab === "cabinet") body = cabinetView(state, world);
   else body = mapViewShell();
@@ -147,7 +249,7 @@ function modalHtml(): string {
   if (state.over) {
     return `<div class="overlay"><div class="cut dialog" role="dialog" aria-modal="true"><h2>${icon("st-rose", 32)} 政治家人生のおわり</h2><p>${esc(state.over)}</p>
       <ul>${state.achievements.map((a) => `<li>${esc(a)}</li>`).join("")}</ul>
-      <button class="btn primary" data-action="restart">最初から遊ぶ</button></div></div>`;
+      <p class="btn-row"><button class="btn primary" data-action="restart-same">同じ世界でもう一度</button><button class="btn" data-action="restart">新しい世界で遊ぶ</button></p></div></div>`;
   }
   return "";
 }
@@ -278,7 +380,20 @@ root.addEventListener("click", (ev) => {
     if (d.gov === "dissolve" && !window.confirm("衆議院を解散して、月末に総選挙を行いますか？")) return;
     const r = govAction(app.state!, app.world!, d.gov, d.arg);
     showToast(r.message);
-  } else if (d.action === "restart") location.href = location.pathname;
+  } else if (d.action === "continue") {
+    const text = readAutosave();
+    if (text) void loadSave(text);
+  } else if (d.action === "import") importSave();
+  else if (d.action === "export") exportSave();
+  else if (d.action === "restart" || d.action === "restart-same") {
+    if (app.state && !app.state.over && !window.confirm("今のゲームの続きは消えます。最初から始めますか？（残すときは先にファイルに書き出してください）")) return;
+    try {
+      localStorage.removeItem(SAVE_KEY);
+    } catch {
+      /* 保存できない環境 */
+    }
+    location.href = d.action === "restart-same" ? `${location.pathname}?seed=${app.seed}` : location.pathname;
+  }
 });
 
 // 数字キーで画面を切り替え、活動の画面では左右キーで選び Enter で実行する。出来事は数字キーで選ぶ
@@ -412,6 +527,7 @@ function setupCardScroll(): void {
 async function boot(): Promise<void> {
   render();
   const data = await loadNameData();
+  app.names = data;
   const { roster, factory } = await createWorld(data, app.seed);
   app.base = { roster, government: formInitialGovernment(roster), factory };
   const quick = params.get("start");

@@ -6,16 +6,24 @@
 // surnames / givenNames / exclusion はそれぞれ surnames.json / given_names.json /
 // exclude_real_politicians.json を読み込んだオブジェクト。
 
-// シード固定の乱数（mulberry32）。同じシードなら毎回同じ名前の並びになる
+// シード固定の乱数（mulberry32）。同じシードなら毎回同じ名前の並びになる。
+// 返す関数の state を読み書きすると、乱数の途中の状態を保存・復元できる（セーブ用）
 export function mulberry32(seed) {
   let a = seed >>> 0;
-  return function () {
+  const next = function () {
     a = (a + 0x6d2b79f5) >>> 0;
     let t = a;
     t = Math.imul(t ^ (t >>> 15), t | 1);
     t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   };
+  Object.defineProperty(next, "state", {
+    get: () => a,
+    set: (v) => {
+      a = v >>> 0;
+    },
+  });
+  return next;
 }
 
 async function sha256Hex(text) {
@@ -105,5 +113,15 @@ export async function createNameGenerator({
     used.add(kana);
   }
 
-  return { generate, reserve };
+  // 乱数の状態と使った名前を書き出す／戻す（セーブデータ用）
+  function snapshot() {
+    return { rng: rand.state, used: [...used] };
+  }
+  function restore(snap) {
+    rand.state = snap.rng;
+    used.clear();
+    for (const n of snap.used) used.add(n);
+  }
+
+  return { generate, reserve, snapshot, restore };
 }

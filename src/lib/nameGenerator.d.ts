@@ -45,6 +45,14 @@ export interface NameGenerator {
   /** surname を指定すると、その姓（姓データにある漢字）で名だけを選ぶ */
   generate(options?: { gender?: Gender; birthYear?: number; surname?: string; maxTries?: number }): Promise<GeneratedName>;
   reserve(kanji: string, kana: string): void;
+  /** 乱数の状態と使った名前（セーブデータ用） */
+  snapshot(): NameGeneratorSnapshot;
+  restore(snap: NameGeneratorSnapshot): void;
+}
+
+export interface NameGeneratorSnapshot {
+  rng: number;
+  used: string[];
 }
 
 export function createNameGenerator(options: {
@@ -56,4 +64,4 @@ export function createNameGenerator(options: {
 }): Promise<NameGenerator>;
 
 /** シード固定の乱数（mulberry32）。0以上1未満の数を返す関数を作る */
-export function mulberry32(seed: number): () => number;
+export function mulberry32(seed: number): (() => number) & { state: number };

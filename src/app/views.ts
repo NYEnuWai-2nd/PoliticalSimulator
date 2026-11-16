@@ -43,14 +43,15 @@ export const FX: Record<string, string> = {
 
 export const SETUP_STEPS = ["出自", "政党", "出馬の道と県", "経歴類型", "確認"] as const;
 
-export function setupView(roster: Member[], c: SetupChoice, step: number): string {
+/** saved：自動保存のデータがあればその説明（「続きから」に出す） */
+export function setupView(roster: Member[], c: SetupChoice, step: number, saved?: string): string {
   const progress = SETUP_STEPS.map((s, i) => `<span class="step-dot${i === step ? " is-active" : i < step ? " is-done" : ""}">${i + 1}. ${s}</span>`).join("");
   const back = step > 0 ? `<button class="btn small" data-action="setup-back">◀ 戻る</button>` : `<span></span>`;
   let title = "";
   let body = "";
   if (step === 0) {
     title = "出自（難易度）を選ぶ";
-    body = `<div class="options cols-1">${ORIGINS.map(
+    body = `<div class="cut box resume">${saved ? `<button class="btn primary" data-action="continue">続きから</button><span class="muted">${esc(saved)}</span>` : `<span class="muted">はじめから遊ぶ</span>`}<button class="btn small push" data-action="import">ファイルから読み込む</button></div><div class="options cols-1">${ORIGINS.map(
       (o) => `<button class="option${c.origin === o.id ? " is-active" : ""}" data-setup="origin" data-value="${o.id}"><b>${o.name}（${o.difficulty}）</b><small>${esc(o.description)}</small></button>`,
     ).join("")}</div>`;
   } else if (step === 1) {
@@ -237,7 +238,8 @@ export function memberDetail(state: CareerState, world: CareerWorld, id: number)
 
 // ---------- 自分（能力アップ） ----------
 
-export function selfView(state: CareerState, world: CareerWorld): string {
+/** savedAt：最後に自動保存した時刻（保存できなかったら undefined） */
+export function selfView(state: CareerState, world: CareerWorld, savedAt?: string): string {
   const p = world.player;
   const s = careerSummary(state, world);
   const rows = ABILITIES.map((a) => {
@@ -267,6 +269,9 @@ export function selfView(state: CareerState, world: CareerWorld): string {
         <section class="cut box"><h2>関係</h2><div class="rows">${rel}</div></section>
         <section class="cut box"><h2>党首選</h2>${leader}</section>
         <section class="cut box"><h2>経歴</h2><ul style="margin:0;padding-left:1.2em">${ach}</ul></section>
+        <section class="cut box"><h2>セーブ</h2><p class="muted" style="margin:0 0 8px">${savedAt ? `このブラウザに自動で保存しています（最後の保存 ${esc(savedAt)}）。` : "このブラウザには保存できていません。ファイルに書き出してください。"}</p>
+          <p class="btn-row" style="margin:0"><button class="btn small" data-action="export">ファイルに書き出す</button><button class="btn small" data-action="import">ファイルから読み込む</button></p>
+          <p class="btn-row" style="margin:8px 0 0"><button class="btn small" data-action="restart-same">同じ世界で最初から</button><button class="btn small" data-action="restart">新しい世界で最初から</button></p></section>
       </div>
     </div>
   </div>`;

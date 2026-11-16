@@ -1,6 +1,6 @@
 // 議員名簿の生成（設計は docs/design.md の3節）
 import { createNameGenerator, mulberry32 } from "../lib/nameGenerator.js";
-import type { Gender, GeneratedName } from "../lib/nameGenerator.js";
+import type { Gender, GeneratedName, NameGeneratorSnapshot } from "../lib/nameGenerator.js";
 import type { NameData } from "../data/nameData.js";
 import { ABILITIES, TABLES, centerOf } from "./tables.js";
 import type { Abilities, Archetype, Lineage, TermTier } from "./tables.js";
@@ -194,7 +194,7 @@ function rollIdeology(party: Party, rand: Rand): Ideology {
 export type SeatAssignment = { seat: "小選挙区"; district: PrefCode } | { seat: "比例"; home: PrefCode } | { seat: "なし"; home: PrefCode };
 
 interface Generator {
-  rand: Rand;
+  rand: Rand & { state: number };
   names: Awaited<ReturnType<typeof createNameGenerator>>;
   nextId: number;
 }
@@ -249,10 +249,30 @@ export interface MemberFactory {
   create(party: Party, assignment: SeatAssignment): Promise<Member>;
   /** 0以上1未満の乱数（生成と同じ系列） */
   rand: Rand;
+  /** 乱数、名前の生成器、次の番号の状態（セーブデータ用） */
+  snapshot(): FactorySnapshot;
+}
+
+export interface FactorySnapshot {
+  rand: number;
+  names: NameGeneratorSnapshot;
+  nextId: number;
 }
 
 function factoryOf(g: Generator): MemberFactory {
-  return { create: (party, assignment) => generateMember(g, party, assignment), rand: g.rand };
+  return {
+    create: (party, assignment) => generateMember(g, party, assignment),
+    rand: g.rand,
+    snapshot: () => ({ rand: g.rand.state, names: g.names.snapshot(), nextId: g.nextId }),
+  };
+}
+
+/** セーブデータから候補者を作る道具を戻す（名簿は作り直さない） */
+export async function restoreFactory(data: NameData, seed: number, snap: FactorySnapshot): Promise<MemberFactory> {
+  const g: Generator = { rand: mulberry32(0), names: await createNameGenerator({ ...data, seed }), nextId: snap.nextId };
+  g.rand.state = snap.rand;
+  g.names.restore(snap.names);
+  return factoryOf(g);
 }
 
 /**
