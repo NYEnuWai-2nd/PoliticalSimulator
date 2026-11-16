@@ -5,5 +5,55 @@
       "party": "shusan",
       "reason": "沖縄は左派が強いため、集産党の議席にする。上書きされた県の元の勝者は小選挙区が1つ減る。"
     }
-  }
+  },
+  "fixed_members": [
+    {
+      "role": "首相",
+      "note": "民政党総裁。モデルは開始時期の首相だが、経歴は写さず、評判（防衛と政策に強い、知名度が高い、党内の基盤が弱い）だけを能力に反映した手作りのキャラクター。 信念は固いが党への忠誠は低い（党内で主流に逆らってきた評判による）。",
+      "party": "minsei",
+      "district": 31,
+      "name": {
+        "surname": "石橋",
+        "givenName": "茂樹",
+        "surnameKana": "いしばし",
+        "givenNameKana": "しげき",
+        "romaji": "Shigeki Ishibashi",
+        "displayName": "石橋 茂樹",
+        "nameStyle": "昭和後期型"
+      },
+      "gender": "男",
+      "birthYear": 1958,
+      "archetype": "汎用",
+      "lineage": "世襲",
+      "terms": 12,
+      "tier": "重鎮",
+      "abilities": {
+        "弁舌": 74,
+        "政策": 84,
+        "調整": 44,
+        "知名度": 86,
+        "組織": 62,
+        "資金": 55
+      },
+      "jiban": 4,
+      "specialties": [
+        "安全保障",
+        "地方・行政"
+      ],
+      "traits": [
+        "誠実",
+        "孤高",
+        "慎重"
+      ],
+      "ideology": {
+        "economy": 0,
+        "fiscal": 0.5,
+        "security": -2,
+        "social": -0.5,
+        "governance": 1
+      },
+      "conviction": 5,
+      "loyalty": 2
+    }
+  ]
 }

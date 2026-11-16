@@ -1,0 +1,95 @@
+{
+  "note": "場面ごとのセリフ。variants から一つを選ぶ。speaker は役割で、その時点の役職者に置き換える（pm 首相、chief_cabinet_secretary 官房長官、secretary_general 幹事長、minister 法案の担当大臣、opposition_leader 野党第一党の党首、chair 議長、reporter 記者、narrator 地の文）。{pm} {bill} {yes} {no} {rebels} {approval} {year} は値に置き換える。",
+  "scenes": {
+    "start": {
+      "title": "石橋内閣、発足",
+      "variants": [
+        [
+          { "speaker": "narrator", "text": "{year}年1月。少数与党のまま、石橋内閣が船出した。" },
+          { "speaker": "pm", "text": "国民の皆さんに納得していただける政治を、一つずつ積み上げていきたい。" },
+          { "speaker": "chief_cabinet_secretary", "text": "総理、まずは予算です。3月末までに通さなければなりません。" },
+          { "speaker": "secretary_general", "text": "うちと公正党だけでは過半数に届きません。どこかの野党と話をつける必要があります。" },
+          { "speaker": "opposition_leader", "text": "数で押し切れない以上、政府には丁寧に説明を尽くしてもらいます。" }
+        ]
+      ]
+    },
+    "vote_pass": {
+      "title": "採決：可決",
+      "variants": [
+        [
+          { "speaker": "chair", "text": "{bill}の採決の結果、賛成{yes}票、反対{no}票。よって本案は可決されました。" },
+          { "speaker": "minister", "text": "皆さまのご協力に感謝します。しっかり実行に移してまいります。" },
+          { "speaker": "pm", "text": "まずは一歩前進だ。" }
+        ],
+        [
+          { "speaker": "chair", "text": "賛成{yes}票、反対{no}票。{bill}は可決されました。" },
+          { "speaker": "chief_cabinet_secretary", "text": "なんとか票が集まりましたね、総理。" },
+          { "speaker": "pm", "text": "協力してくれた各党には、借りができたな。" }
+        ]
+      ]
+    },
+    "vote_fail": {
+      "title": "採決：否決",
+      "variants": [
+        [
+          { "speaker": "chair", "text": "{bill}の採決の結果、賛成{yes}票、反対{no}票。よって本案は否決されました。" },
+          { "speaker": "opposition_leader", "text": "数の足りない政権が、準備不足の法案を出すからこうなるのです。" },
+          { "speaker": "pm", "text": "……出直しだ。どこで読み違えたのか、洗い直してくれ。" }
+        ],
+        [
+          { "speaker": "chair", "text": "賛成{yes}票、反対{no}票。{bill}は否決されました。" },
+          { "speaker": "minister", "text": "申し訳ありません、総理。私の説明が足りませんでした。" },
+          { "speaker": "chief_cabinet_secretary", "text": "協議をやり直しましょう。各党の感触を確かめてから出すべきでした。" }
+        ]
+      ]
+    },
+    "rebels": {
+      "title": "造反",
+      "variants": [
+        [
+          { "speaker": "secretary_general", "text": "総理、うちから造反が{rebels}人出ました。党内をまとめきれませんでした。" },
+          { "speaker": "pm", "text": "根回しが足りなかったか……。" }
+        ]
+      ]
+    },
+    "budget_fail": {
+      "title": "予算、年度内に成立せず",
+      "variants": [
+        [
+          { "speaker": "narrator", "text": "{year}年度予算は年度内に成立しなかった。政府は暫定予算でしのぐことになった。" },
+          { "speaker": "reporter", "text": "総理、予算が年度内に成立しなかったのは異例です。政権の責任をどうお考えですか。" },
+          { "speaker": "pm", "text": "国民生活に影響が出ないよう、全力を尽くします。" }
+        ]
+      ]
+    },
+    "no_confidence_fail": {
+      "title": "内閣不信任案、否決",
+      "variants": [
+        [
+          { "speaker": "opposition_leader", "text": "支持率が{approval}%まで落ちた政権に、この国を任せることはできません。不信任案を提出します。" },
+          { "speaker": "chair", "text": "賛成{yes}票、反対{no}票。よって本案は否決されました。" },
+          { "speaker": "pm", "text": "首の皮一枚、つながったか。" }
+        ]
+      ]
+    },
+    "no_confidence_pass": {
+      "title": "内閣不信任案、可決",
+      "variants": [
+        [
+          { "speaker": "opposition_leader", "text": "支持率が{approval}%まで落ちた政権に、この国を任せることはできません。不信任案を提出します。" },
+          { "speaker": "chair", "text": "賛成{yes}票、反対{no}票。よって本案は可決されました。" },
+          { "speaker": "pm", "text": "……国民の皆さんには、大変申し訳なく思います。内閣は総辞職します。" }
+        ]
+      ]
+    },
+    "term_end": {
+      "title": "任期満了",
+      "variants": [
+        [
+          { "speaker": "narrator", "text": "衆議院議員の任期が満了した。いよいよ総選挙だ。" },
+          { "speaker": "pm", "text": "支持率{approval}%。この数字で、国民の審判を受ける。" }
+        ]
+      ]
+    }
+  }
+}

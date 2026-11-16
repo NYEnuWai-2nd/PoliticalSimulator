@@ -1,0 +1,87 @@
+{
+  "note": "政府が出せる法案。ideology は法案の思想の位置（関係する軸だけ。−3〜+3）。work は準備に必要な量で、担当大臣（field の大臣）の政策の能力で毎月進む。on_pass は成立したときの支持率の変化。",
+  "bills": [
+    {
+      "id": "budget",
+      "name": "2026年度予算",
+      "field": "財政・税制",
+      "ideology": {},
+      "work": 2,
+      "on_pass": 1,
+      "required": true,
+      "description": "3月末までに成立させないと支持率が大きく下がる。思想の偏りがないので野党も反対しにくい。"
+    },
+    {
+      "id": "child",
+      "name": "子育て支援拡充法案",
+      "field": "厚生・労働",
+      "ideology": { "economy": 1.5, "social": 1 },
+      "work": 4,
+      "on_pass": 3,
+      "description": "再分配寄り。野党の多くが賛成しやすいが、財政規律派は渋る。"
+    },
+    {
+      "id": "tax_cut",
+      "name": "所得税減税法案",
+      "field": "財政・税制",
+      "ideology": { "fiscal": -2, "economy": -0.5 },
+      "work": 4,
+      "on_pass": 4,
+      "description": "積極財政寄り。協和党が強く望む。"
+    },
+    {
+      "id": "defense",
+      "name": "防衛力強化法案",
+      "field": "安全保障",
+      "ideology": { "security": -2.5 },
+      "work": 5,
+      "on_pass": -1,
+      "description": "抑止重視。保守系の野党は賛成しやすいが、公正党の中にも反対が出やすい。"
+    },
+    {
+      "id": "regional",
+      "name": "地方創生交付金法案",
+      "field": "地方・行政",
+      "ideology": { "governance": -1, "economy": 0.5 },
+      "work": 3,
+      "on_pass": 2,
+      "description": "地方への財源移譲。刷新が評価しやすい。"
+    },
+    {
+      "id": "surname",
+      "name": "選択的夫婦別姓法案",
+      "field": "法務・治安",
+      "ideology": { "social": 2.5 },
+      "work": 3,
+      "on_pass": 1,
+      "description": "多様性重視。野党の多くは賛成だが、民政党の保守派が造反しやすい。"
+    },
+    {
+      "id": "funds",
+      "name": "政治資金規正法改正案",
+      "field": "法務・治安",
+      "ideology": { "governance": -2 },
+      "work": 4,
+      "on_pass": 3,
+      "description": "改革寄り。世論の受けはよいが、安定志向の議員は乗り気でない。"
+    },
+    {
+      "id": "nuclear",
+      "name": "原発再稼働推進法案",
+      "field": "経済・産業",
+      "ideology": { "economy": -1, "governance": 1.5 },
+      "work": 4,
+      "on_pass": -2,
+      "description": "市場・安定寄り。左派の野党は強く反対する。"
+    },
+    {
+      "id": "farm",
+      "name": "農業所得補償法案",
+      "field": "農林水産",
+      "ideology": { "economy": 1, "governance": 0.5 },
+      "work": 3,
+      "on_pass": 1,
+      "description": "地方の農業票に効く。市場重視派は渋る。"
+    }
+  ]
+}

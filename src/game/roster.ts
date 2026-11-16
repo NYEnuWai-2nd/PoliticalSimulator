@@ -8,6 +8,7 @@ import { IDEOLOGY_AXES, PARTIES, partyById } from "./parties.js";
 import type { Ideology, Party } from "./parties.js";
 import { SMD_SEATS, initialSeatPlan, prefWeight } from "./districts.js";
 import type { PrefCode } from "./districts.js";
+import scenario from "../../data/game/scenario.json";
 
 /** ゲーム開始時の年 */
 export const START_YEAR = 2026;
@@ -42,6 +43,60 @@ export interface Member {
   traits: string[];
   /** 思想5軸（−3〜+3、0.5刻み） */
   ideology: Ideology;
+  /** 信念の固さ（1〜5）。高いほど党の方針に逆らってでも自分の思想で投票する */
+  conviction: number;
+  /** 党への忠誠（1〜5）。高いほど党の方針に従い、政界再編で党を離れにくい */
+  loyalty: number;
+  /** 手作りの固定キャラクターの役割（首相など）。生成した議員にはない */
+  fixedRole?: string;
+}
+
+/** data/game/scenario.json の fixed_members の1件 */
+interface FixedMember {
+  role: string;
+  party: string;
+  district: PrefCode;
+  name: Omit<GeneratedName, "gender" | "birthYear">;
+  gender: Gender;
+  birthYear: number;
+  archetype: string;
+  lineage: string;
+  terms: number;
+  tier: string;
+  abilities: Abilities;
+  jiban: number;
+  specialties: string[];
+  traits: string[];
+  ideology: Ideology;
+  conviction: number;
+  loyalty: number;
+}
+
+export const FIXED_MEMBERS = (scenario as unknown as { fixed_members: FixedMember[] }).fixed_members;
+
+function fixedToMember(f: FixedMember, id: number): Member {
+  return {
+    id,
+    party: f.party,
+    name: { ...f.name, gender: f.gender, birthYear: f.birthYear } as GeneratedName,
+    gender: f.gender,
+    birthYear: f.birthYear,
+    archetype: f.archetype,
+    lineage: f.lineage,
+    terms: f.terms,
+    tier: f.tier,
+    abilities: { ...f.abilities },
+    seat: "小選挙区",
+    district: f.district,
+    home: f.district,
+    jiban: f.jiban,
+    specialties: [...f.specialties],
+    traits: [...f.traits],
+    ideology: { ...f.ideology },
+    conviction: f.conviction,
+    loyalty: f.loyalty,
+    fixedRole: f.role,
+  };
 }
 
 export function ageOf(member: Member, year: number = START_YEAR): number {
@@ -110,6 +165,19 @@ function rollTraits(rand: Rand): string[] {
   return out;
 }
 
+/** 信念の固さ。性格の「誠実」で上がり、「狡猾」で下がる */
+function rollConviction(traits: string[], rand: Rand): number {
+  const v = 3 + centered(rand) * 2 + (traits.includes("誠実") ? 1 : 0) - (traits.includes("狡猾") ? 1 : 0);
+  return clamp(Math.round(v), 1, 5);
+}
+
+/** 党への忠誠。「野心家」で下がり、世襲・名門（党の地盤を継いでいる）で上がる */
+function rollLoyalty(traits: string[], lineage: Lineage, rand: Rand): number {
+  const inherited = lineage.id === "hereditary" || lineage.id === "dynasty";
+  const v = 3 + centered(rand) * 2 - (traits.includes("野心家") ? 1 : 0) + (inherited ? 1 : 0);
+  return clamp(Math.round(v), 1, 5);
+}
+
 function rollIdeology(party: Party, rand: Rand): Ideology {
   const out = {} as Ideology;
   for (const axis of IDEOLOGY_AXES) {
@@ -141,6 +209,10 @@ async function generateMember(g: Generator, party: Party, assignment: SeatAssign
   const gender: Gender = rand() < FEMALE_RATE ? "女" : "男";
   const name = await g.names.generate({ gender, birthYear });
   const home = assignment.seat === "小選挙区" ? assignment.district : assignment.home;
+  const abilities = rollAbilities(arch, tier, lineage, rand);
+  const jiban = rollJiban(tier, lineage, assignment.seat, rand);
+  const specialties = rollSpecialties(arch, rand);
+  const traits = rollTraits(rand);
   return {
     id: ++g.nextId,
     party: party.id,
@@ -151,14 +223,16 @@ async function generateMember(g: Generator, party: Party, assignment: SeatAssign
     lineage: lineage.name,
     terms,
     tier: tier.name,
-    abilities: rollAbilities(arch, tier, lineage, rand),
+    abilities,
     seat: assignment.seat,
     district: assignment.seat === "小選挙区" ? assignment.district : null,
     home,
-    jiban: rollJiban(tier, lineage, assignment.seat, rand),
-    specialties: rollSpecialties(arch, rand),
-    traits: rollTraits(rand),
+    jiban,
+    specialties,
+    traits,
     ideology: rollIdeology(party, rand),
+    conviction: rollConviction(traits, rand),
+    loyalty: rollLoyalty(traits, lineage, rand),
   };
 }
 
@@ -172,8 +246,18 @@ export async function generateRoster(data: NameData, seed: number): Promise<Memb
   // 名前用と属性用で乱数の系列を分け、片方の仕様を変えてももう片方の並びが変わらないようにする
   const g: Generator = { rand: mulberry32(seed ^ 0x9e3779b9), names: await createNameGenerator({ ...data, seed }), nextId: 0 };
   const plan = initialSeatPlan();
+  // 固定キャラクターの名前を先に登録し、生成する議員と同姓同名にならないようにする
+  for (const f of FIXED_MEMBERS) g.names.reserve(f.name.surname + f.name.givenName, f.name.surnameKana + f.name.givenNameKana);
   const members: Member[] = [];
-  for (const pref of PREF_CODES) members.push(await generateMember(g, partyById(plan.smd.get(pref)!), { seat: "小選挙区", district: pref }));
+  for (const pref of PREF_CODES) {
+    const fixed = FIXED_MEMBERS.find((f) => f.district === pref);
+    if (fixed) {
+      if (plan.smd.get(pref) !== fixed.party) throw new Error(`${fixed.role}の選挙区（${pref}）が${fixed.party}の議席になっていません`);
+      members.push(fixedToMember(fixed, ++g.nextId));
+      continue;
+    }
+    members.push(await generateMember(g, partyById(plan.smd.get(pref)!), { seat: "小選挙区", district: pref }));
+  }
   for (const party of PARTIES) {
     for (let i = 0; i < (plan.pr.get(party.id) ?? 0); i++) {
       const home = pick(PREF_CODES, prefWeight, g.rand);

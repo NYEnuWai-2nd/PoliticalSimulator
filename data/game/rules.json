@@ -1,0 +1,99 @@
+{
+  "note": "ターンの流れの決まりと調整用の値（試作用の仮の値）。設計は docs/design.md の「ターンの流れ」。",
+  "start": {
+    "year": 2026,
+    "month": 1
+  },
+  "term_end": {
+    "year": 2028,
+    "month": 10
+  },
+  "action_points_per_turn": 3,
+  "session_months": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    10,
+    11,
+    12
+  ],
+  "budget": {
+    "bill": "budget",
+    "deadline_month": 3,
+    "failure_approval": -8
+  },
+  "approval": {
+    "initial": 34,
+    "baseline": 33,
+    "drift": 0.1,
+    "noise": 1.5,
+    "no_confidence_threshold": 15
+  },
+  "cohesion": {
+    "initial": 0.7,
+    "decay": 0.02,
+    "nemawashi_base": 0.06,
+    "nemawashi_per_ability": 0.001
+  },
+  "cooperation": {
+    "initial": {
+      "kyowa": 25,
+      "sasshin": 20,
+      "minken": 5,
+      "sankaku": 5,
+      "hoshu": 10,
+      "kosei": 60
+    },
+    "decay": 3,
+    "talk_base": 8,
+    "talk_per_ability": 0.25,
+    "talk_distance_penalty": 3,
+    "rival_penalty": {
+      "minken": 8
+    }
+  },
+  "press": {
+    "per_ability": 0.12,
+    "noise": 1.5,
+    "gaffe_base": 0.25,
+    "gaffe_per_ability": 0.003,
+    "gaffe_effect": -3,
+    "ceiling": 60,
+    "repeat_factor": 0.4
+  },
+  "drafting": {
+    "progress_per_ability": 0.03
+  },
+  "vote": {
+    "party_line_threshold": 0.5,
+    "opposition_base": 0.2,
+    "cooperation_weight": 0.008,
+    "party_distance_weight": 0.18,
+    "defect_distance_start": 2,
+    "defect_per_distance": 0.12,
+    "defect_conviction_weight": 0.25,
+    "defect_cohesion_weight": 0.35,
+    "defect_max": 0.7,
+    "independent_support_distance": 1.5,
+    "popularity_weight": 0.05,
+    "opposition_cohesion": 0.8,
+    "defect_loyalty_weight": 0.15,
+    "cross_distance": 0.8,
+    "cross_per_distance": 0.03,
+    "cross_max": 0.08,
+    "independent_yes_close": 0.6,
+    "independent_yes_far": 0.1
+  },
+  "vote_coalition": {
+    "base": 0.45,
+    "cooperation_weight": 0.005,
+    "distance_weight": 0.15
+  },
+  "no_confidence": {
+    "cooperation_to_oppose": 45,
+    "ruling_defect_per_loyalty": 0.03
+  }
+}

@@ -1,0 +1,83 @@
+{
+  "note": "毎月の終わりに起きうる出来事。chance はひと月に起きる確率、weight は起きたときにどれが選ばれるかの重み。target が cabinet_low_speech なら弁舌の低い閣僚ほど選ばれやすい。text は記録に残る文。lines はポップアップで見せるセリフ（speaker は dialogue.json と同じ役割に加え、member が出来事の当事者）。{member} は当事者の名前に置き換える。",
+  "chance": 0.35,
+  "events": [
+    {
+      "id": "gaffe",
+      "weight": 3,
+      "target": "cabinet_low_speech",
+      "approval": -3,
+      "title": "閣僚の失言",
+      "text": "{member}が記者会見で失言し、批判を浴びた。",
+      "lines": [
+        { "speaker": "reporter", "text": "先ほどの発言は、被災された方々への配慮に欠けるのではありませんか。" },
+        { "speaker": "member", "text": "え、いや、その……そういう意味で申し上げたのではなく……。" },
+        { "speaker": "chief_cabinet_secretary", "text": "総理、すぐに釈明させます。これ以上、騒ぎが大きくならないように。" },
+        { "speaker": "pm", "text": "言葉一つで政権が揺らぐ。肝に銘じてもらわないと困る。" }
+      ]
+    },
+    {
+      "id": "scandal",
+      "weight": 2,
+      "target": "ruling_member",
+      "approval": -4,
+      "cohesion": -0.05,
+      "title": "政治資金の疑惑",
+      "text": "{member}の政治資金をめぐる疑惑が報じられた。",
+      "lines": [
+        { "speaker": "narrator", "text": "週刊誌が、{member}の政治資金をめぐる疑惑を報じた。" },
+        { "speaker": "member", "text": "記載に不備があったかもしれませんが、私的に使ったことは一切ありません。" },
+        { "speaker": "opposition_leader", "text": "与党はいつまで同じことを繰り返すつもりですか。徹底的に追及します。" },
+        { "speaker": "secretary_general", "text": "党内も動揺しています。早めに手を打たないと。" }
+      ]
+    },
+    {
+      "id": "economy_good",
+      "weight": 2,
+      "approval": 2,
+      "title": "景気指標が好調",
+      "text": "景気指標が予想を上回り、政権への評価が上向いた。",
+      "lines": [
+        { "speaker": "narrator", "text": "発表された景気指標が、市場の予想を上回った。" },
+        { "speaker": "chief_cabinet_secretary", "text": "総理、追い風です。この勢いで政策を前に進めましょう。" },
+        { "speaker": "pm", "text": "浮かれずに、実感の伴う景気回復を目指そう。" }
+      ]
+    },
+    {
+      "id": "economy_bad",
+      "weight": 2,
+      "approval": -2,
+      "title": "物価高への不満",
+      "text": "物価の上昇が続き、生活への不満が高まった。",
+      "lines": [
+        { "speaker": "reporter", "text": "総理、物価の上昇が止まりません。政府の対策は後手に回っているのではありませんか。" },
+        { "speaker": "pm", "text": "国民の皆さんの不安は重く受け止めています。必要な手は打ってまいります。" },
+        { "speaker": "opposition_leader", "text": "口先だけで、暮らしは一向によくなりません。" }
+      ]
+    },
+    {
+      "id": "disaster",
+      "weight": 1,
+      "approval": 1,
+      "title": "大雨への対応",
+      "text": "大雨被害への政府の対応が評価された。",
+      "lines": [
+        { "speaker": "narrator", "text": "各地を大雨が襲った。政府は直ちに対策本部を立ち上げた。" },
+        { "speaker": "pm", "text": "人命第一だ。自治体と連携して、できることはすべてやってくれ。" },
+        { "speaker": "chief_cabinet_secretary", "text": "迅速な初動は、現地でも高く評価されています。" }
+      ]
+    },
+    {
+      "id": "diplomacy",
+      "weight": 1,
+      "approval": 2,
+      "title": "首脳会談",
+      "text": "首脳会談が成果を上げ、首相への評価が高まった。",
+      "lines": [
+        { "speaker": "narrator", "text": "首相は首脳会談に臨み、共同声明をまとめ上げた。" },
+        { "speaker": "reporter", "text": "総理、今回の会談の手応えはいかがでしたか。" },
+        { "speaker": "pm", "text": "率直に意見を交わすことができました。信頼関係を築く第一歩になったと思います。" }
+      ]
+    }
+  ]
+}

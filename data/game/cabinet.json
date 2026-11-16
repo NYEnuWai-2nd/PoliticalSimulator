@@ -1,0 +1,24 @@
+{
+  "note": "開始時点の内閣と与党の党役員。posts の順に、まだ役職のない議員から点数が最も高い人を選ぶ。点数 = Σ(能力 × weights) + 得意分野が field と一致すれば specialty_bonus + 当選回数（最大12回）× terms_weight。min_terms 未満の議員は選ばない。party が ruling_coalition_partner なら連立相手から選ぶ。",
+  "ruling_party": "minsei",
+  "coalition_partners": ["kosei"],
+  "specialty_bonus": 15,
+  "terms_weight": 1.5,
+  "posts": [
+    { "id": "pm", "name": "内閣総理大臣", "kind": "内閣", "fixed_role": "首相" },
+    { "id": "secretary_general", "name": "幹事長", "kind": "党", "min_terms": 6, "weights": { "調整": 0.4, "組織": 0.3, "資金": 0.3 } },
+    { "id": "chief_cabinet_secretary", "name": "内閣官房長官", "kind": "内閣", "min_terms": 4, "weights": { "調整": 0.5, "弁舌": 0.3, "知名度": 0.2 } },
+    { "id": "policy_chief", "name": "政調会長", "kind": "党", "min_terms": 4, "weights": { "政策": 0.6, "調整": 0.4 } },
+    { "id": "general_council_chair", "name": "総務会長", "kind": "党", "min_terms": 6, "weights": { "調整": 0.7, "組織": 0.3 } },
+    { "id": "finance", "name": "財務大臣", "kind": "内閣", "field": "財政・税制", "min_terms": 3, "weights": { "政策": 0.6, "調整": 0.2, "弁舌": 0.2 } },
+    { "id": "foreign", "name": "外務大臣", "kind": "内閣", "field": "外交", "min_terms": 3, "weights": { "政策": 0.5, "弁舌": 0.3, "調整": 0.2 } },
+    { "id": "defense", "name": "防衛大臣", "kind": "内閣", "field": "安全保障", "min_terms": 3, "weights": { "政策": 0.6, "弁舌": 0.2, "調整": 0.2 } },
+    { "id": "economy", "name": "経済産業大臣", "kind": "内閣", "field": "経済・産業", "min_terms": 3, "weights": { "政策": 0.6, "調整": 0.2, "弁舌": 0.2 } },
+    { "id": "health", "name": "厚生労働大臣", "kind": "内閣", "field": "厚生・労働", "min_terms": 3, "weights": { "政策": 0.6, "調整": 0.2, "弁舌": 0.2 } },
+    { "id": "justice", "name": "法務大臣", "kind": "内閣", "field": "法務・治安", "min_terms": 3, "weights": { "政策": 0.6, "弁舌": 0.2, "調整": 0.2 } },
+    { "id": "internal_affairs", "name": "総務大臣", "kind": "内閣", "field": "地方・行政", "min_terms": 3, "weights": { "政策": 0.5, "調整": 0.3, "組織": 0.2 } },
+    { "id": "education", "name": "文部科学大臣", "kind": "内閣", "field": "教育", "min_terms": 3, "weights": { "政策": 0.6, "弁舌": 0.2, "調整": 0.2 } },
+    { "id": "agriculture", "name": "農林水産大臣", "kind": "内閣", "field": "農林水産", "min_terms": 3, "weights": { "政策": 0.5, "調整": 0.2, "組織": 0.3 } },
+    { "id": "land", "name": "国土交通大臣", "kind": "内閣", "field": "国土・交通", "min_terms": 2, "party": "ruling_coalition_partner", "weights": { "政策": 0.6, "調整": 0.2, "組織": 0.2 } }
+  ]
+}
