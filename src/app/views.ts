@@ -17,6 +17,7 @@ import { PREFECTURES } from "../map/japanMap.js";
 import type { Member } from "../game/roster.js";
 import { MAJORITY } from "../game/districts.js";
 import { chip, esc, face, icon, moodIcon, partyColor, pct, rankBadge } from "./ui.js";
+import { VERSION_LABEL } from "../version.js";
 
 export interface SetupChoice {
   origin?: OriginId;
@@ -101,7 +102,7 @@ export function setupView(roster: Member[], c: SetupChoice, step: number, saved?
       <p style="text-align:center"><button class="btn primary big" data-action="start">この条件で始める</button></p>`;
   }
   return `<div class="setup">
-    <div class="setup-head"><h1>議員人生</h1>${step === 0 ? `<p class="goal">一人の新人候補として総選挙での初当選を目指し、地盤を固めて役職を上っていく。党首選に勝って与党の党首になれば首相にもなれる。75歳になるか、30年たつと引退して終わる。</p>` : ""}<div class="steps">${progress}</div></div>
+    <div class="setup-head"><h1>議員人生 <small class="version">${esc(VERSION_LABEL)}</small></h1>${step === 0 ? `<p class="goal">一人の新人候補として総選挙での初当選を目指し、地盤を固めて役職を上っていく。党首選に勝って与党の党首になれば首相にもなれる。75歳になるか、30年たつと引退して終わる。</p>` : ""}<div class="steps">${progress}</div></div>
     <section class="cut box step-box"><div class="step-title">${back}<h2>${title}</h2><span></span></div>${body}</section>
   </div>`;
 }
@@ -543,7 +544,7 @@ const HELP: [string, string][] = [
 export function helpView(): string {
   return `<div class="overlay" data-action="close-overlay"><div class="cut dialog light sheet" role="dialog" aria-modal="true" aria-label="遊び方">
     <div class="sheet-head"><h2>遊び方</h2><button class="btn small close" data-action="close-overlay" aria-label="閉じる">✕</button></div>
-    <div class="sheet-body help">${HELP.map(([t, b]) => `<section><h3>${t}</h3><p>${b}</p></section>`).join("")}</div></div></div>`;
+    <div class="sheet-body help">${HELP.map(([t, b]) => `<section><h3>${t}</h3><p>${b}</p></section>`).join("")}<p class="version" style="margin-top:14px">議員人生 ${esc(VERSION_LABEL)}</p></div></div></div>`;
 }
 
 // ---------- 総選挙の結果（議席の前回比、当確、相手の一言） ----------

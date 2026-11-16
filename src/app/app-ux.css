@@ -1353,3 +1353,14 @@
 .hl-text {
   font-weight: 800;
 }
+
+/* ===== 版の表示 ===== */
+
+.version {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted);
+  letter-spacing: 0;
+  -webkit-text-stroke: 0;
+  text-shadow: none;
+}

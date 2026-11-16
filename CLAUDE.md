@@ -85,6 +85,8 @@ tools/analysis/           データ作成に使った分析スクリプト（参
 
 ## 開発の手順
 
+版の番号は package.json の version（今は 0.0.1-alpha）。ビルドのときに build-info.ts が版の番号とコミットの短いハッシュを埋め込み、始め方の画面の見出し、遊び方の画面、CLI の `--version` と JSON の起動直後の1行に「v0.0.1-alpha（16c9295・2026-11-16）」の形で出る。GitHub Pages に公開されたものがリポジトリのどのコミットかを、これで見比べる。コミットしていない変更を含むビルドには「+変更あり」が付く。版を上げるときは `npm version <版> --no-git-tag-version` で package.json と package-lock.json をそろえる。
+
 `npm install` のあと、`npm run dev` で開発サーバー、`npm test` でテスト（Vitest）、`npm run build` で型検査と `dist/` への書き出しを行う。`npm run build:cli` で CLI 版を `cli/seiji.mjs` に書き出す（git には入れない）。Viteの `base` は `./` にしてあり、GitHub Pagesのサブパスでもそのまま動く。
 
 ## 画面の構成

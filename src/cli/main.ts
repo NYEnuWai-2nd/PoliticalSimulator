@@ -36,10 +36,11 @@ import {
   upgradeCost,
 } from "../game/career.js";
 import type { CareerState, CareerWorld, OriginId, RouteId } from "../game/career.js";
+import { APP_VERSION, BUILD_COMMIT, VERSION_LABEL } from "../version.js";
 
 const NAME_DATA = { surnames, givenNames, exclusion } as unknown as NameData;
 
-const HELP = `議員人生モード（CLI 版）
+const HELP = `議員人生モード（CLI 版） ${VERSION_LABEL}
 党の公募で選ばれた新人候補として始め、毎月1つ活動を選んで経験点をため、能力を上げ、総選挙での当選を目指します。
 落選しても浪人として続けられます。75歳か30年で引退すると終わります。
 
@@ -76,6 +77,7 @@ const HELP = `議員人生モード（CLI 版）
 起動時の引数
   --seed <数>     世界の乱数の種（既定 2026）。同じ種と同じコマンドなら毎回同じ結果
   --json          1行1つの JSON で応答する（AI などのプログラム向け）
+  --version       版の番号とビルドしたコミットを出して終わる
   --start "<出自> <政党> <道> <県> <経歴類型>"   起動と同時に始める`;
 
 interface Session {
@@ -98,7 +100,10 @@ function parseArgs(argv: string[]) {
     if (argv[i] === "--seed") out.seed = Number(argv[++i]);
     else if (argv[i] === "--json") out.json = true;
     else if (argv[i] === "--start") out.start = argv[++i] ?? "";
-    else if (argv[i] === "--help" || argv[i] === "-h") {
+    else if (argv[i] === "--version" || argv[i] === "-v") {
+      process.stdout.write(VERSION_LABEL + "\n");
+      process.exit(0);
+    } else if (argv[i] === "--help" || argv[i] === "-h") {
       process.stdout.write(HELP + "\n");
       process.exit(0);
     }
@@ -302,7 +307,9 @@ function available(s: Session): string[] {
 function emit(s: Session, r: Reply, type: "ready" | "response" = "response"): void {
   if (s.json) {
     const state = s.state && s.world ? careerSummary(s.state, s.world) : undefined;
-    process.stdout.write(JSON.stringify({ type, ok: r.ok, message: r.message, data: r.data, state, available: available(s) }) + "\n");
+    // 起動直後の1行には、版の番号とビルドしたコミットも載せる
+    const version = type === "ready" ? { version: APP_VERSION, commit: BUILD_COMMIT } : {};
+    process.stdout.write(JSON.stringify({ type, ...version, ok: r.ok, message: r.message, data: r.data, state, available: available(s) }) + "\n");
   } else if (r.message) process.stdout.write(r.message + "\n");
 }
 
