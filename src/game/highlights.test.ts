@@ -91,3 +91,27 @@ describe("推移への助言", () => {
     expect(adviseMonth(state, world, 6).some((a) => a.act === "fund" && a.text.includes("資金が"))).toBe(true);
   });
 });
+
+describe("第3版レポートの残り", () => {
+  it("体力が少ないほど倒れやすく、0なら必ず倒れる", async () => {
+    const { breakdownChance } = await import("./career.js");
+    expect(breakdownChance(50)).toBe(0);
+    expect(breakdownChance(0)).toBe(1);
+    expect(breakdownChance(10)).toBeGreaterThan(breakdownChance(19));
+  });
+
+  it("任期満了は同じ月に二重に記録されない", async () => {
+    const { state, world } = await begin(7, "dynasty", "minsei");
+    await play(state, world, 60);
+    const byTurn = new Map<number, number>();
+    for (const l of state.log) if (l.text.startsWith("衆議院議員の任期が満了した")) byTurn.set(l.turn, (byTurn.get(l.turn) ?? 0) + 1);
+    for (const n of byTurn.values()) expect(n).toBe(1);
+  }, 60_000);
+
+  it("序盤は、条件の遠い金特のコツはつかまない", async () => {
+    const { state, world } = await begin(5);
+    await play(state, world, 40);
+    const gold = ["senkyo_kamisama", "nemawashi_oni", "ronpa_ou"];
+    expect(Object.keys(state.skillHints ?? {}).some((id) => gold.includes(id))).toBe(false);
+  }, 60_000);
+});

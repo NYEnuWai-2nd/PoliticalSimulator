@@ -1,7 +1,7 @@
 // 毎月の助言（通常モードで秘書が話す。CLI の hint でも使う）。
 // 今の数値を条件の表に当てはめ、優先度の高いものから数個を返す。画面には依存しない。
 import careerRaw from "../../data/game/career.json";
-import { ACTIVITIES, canLearnSkill, canRunForLeader, canUpgrade, isPrimeMinister, moneyOutlook, postCategory, prRank, raceForecast } from "./career.js";
+import { ACTIVITIES, breakdownChance, canLearnSkill, canRunForLeader, canUpgrade, isPrimeMinister, moneyOutlook, postCategory, prRank, raceForecast } from "./career.js";
 import type { CareerState, CareerWorld } from "./career.js";
 import { ABILITIES } from "./tables.js";
 import { SKILLS, neglectShift, skillById } from "./skills.js";
@@ -43,7 +43,7 @@ export function adviseMonth(state: CareerState, world: CareerWorld, max = 3): Ad
 
   // 体力
   if (state.stamina < 30)
-    add({ text: `先生、顔色が悪いですよ（体力${state.stamina}）。無理をすると倒れます。今月は休養にしましょう。`, act: "rest", priority: 100 });
+    add({ text: `先生、顔色が悪いですよ（体力${state.stamina}）。体力を使う活動をすると${Math.round(breakdownChance(state.stamina) * 100)}%の確率で倒れます。今月は休養にしましょう。`, act: "rest", priority: 100 });
   else if (state.stamina < 45) add({ text: `体力が${state.stamina}まで減っています。重い活動の前に、休養か趣味の時間を挟むと安心です。`, act: "rest", priority: 45 });
 
   // 資金

@@ -29,13 +29,14 @@ import {
   takeTurn,
   govAction,
   govBills,
+  electionComments,
   isPrimeMinister,
   learnSkill,
   postCategory,
   upgradeAbility,
   upgradeCost,
 } from "../game/career.js";
-import type { CareerState, CareerWorld, OriginId, RouteId } from "../game/career.js";
+import type { CareerState, CareerWorld, ElectionSummary, OriginId, RouteId } from "../game/career.js";
 import { APP_VERSION, BUILD_COMMIT, VERSION_LABEL } from "../version.js";
 
 const NAME_DATA = { surnames, givenNames, exclusion } as unknown as NameData;
@@ -166,6 +167,32 @@ async function startReply(s: Session, args: string[]): Promise<Reply> {
   }
 }
 
+/** 総選挙の結果の文（議席と前回比、当選確実、自分と相手の一言） */
+function electionText(e: ElectionSummary): string {
+  const prev = new Map((e.prevSeats ?? []).map((x) => [x.party, x.total]));
+  const seats = [...e.seats]
+    .sort((a, b) => b.total - a.total)
+    .map((x) => {
+      const d = x.total - (prev.get(x.party) ?? 0);
+      return `${partyById(x.party).short}${x.total}${e.prevSeats ? `（${d > 0 ? "+" : d < 0 ? "−" : "±"}${Math.abs(d)}）` : ""}`;
+    })
+    .join("　");
+  const me = e.district.find((x) => x.isPlayer);
+  const swing = me && e.prevShare !== undefined ? Math.round((me.share - e.prevShare) * 1000) / 10 : undefined;
+  const pct = (x: number) => `${Math.round(x * 1000) / 10}%`;
+  const district = e.district.length
+    ? e.district.map((x) => `${x.isPlayer ? "★" : ""}${x.name}(${partyById(x.party).short})${pct(x.share)}`).join(" ／ ") + (swing !== undefined ? `　自分の前回比 ${swing > 0 ? "+" : ""}${swing}` : "")
+    : `比例名簿 ${e.pr?.rank}位（党の比例当選 ${e.pr?.seats}人）`;
+  const w = electionComments(e);
+  return [
+    `■ ${e.year}年${e.month}月 総選挙 開票結果`,
+    `  議席 ${seats}`,
+    `  ${e.won ? "【当選確実】" : "【落選】"}${district}`,
+    `  自分「${w.self}」`,
+    ...(w.rival ? [`  ${w.rival.name}（${partyById(w.rival.party).short}・${w.rival.won ? "当選" : "落選"}）「${w.rival.text}」`] : []),
+  ].join("\n");
+}
+
 function statusText(s: Session): string {
   const sum = careerSummary(s.state!, s.world!);
   const ab = ABILITIES.map((a) => `${a}${rankOf(sum.abilities[a])}(${sum.abilities[a]})`).join(" ");
@@ -244,11 +271,18 @@ async function handle(s: Session, line: string): Promise<Reply | "quit"> {
       return { ok: true, message: statusText(s) };
     case "do": {
       const before = s.state.elections.length;
+      const hlBefore = s.state.highlights?.length ?? 0;
       const r = await takeTurn(s.state, s.world, args[0] ?? "");
       if (!r.ok) return r;
       const extra = s.state.log.slice(-6).map((l) => l.text).filter((t) => t !== r.message);
       const election = s.state.elections.length > before ? s.state.elections.at(-1) : undefined;
-      return { ok: true, message: [r.message, ...(election ? extra : []), "", statusText(s)].join("\n"), data: election ? { election } : undefined };
+      // 山場の場面（政権交代、首相交代、就任）は、会話も文章で出す
+      const scenes = (s.state.highlights ?? []).slice(hlBefore).map((h) => [`【${h.title}】${h.text}`, ...h.lines.map((l) => (l.name ? `  ${l.name}${l.role ? `（${l.role}）` : ""}「${l.text}」` : `  ${l.text}`))].join("\n"));
+      return {
+        ok: true,
+        message: [r.message, ...(election ? [electionText(election), ...extra.filter((t) => !t.startsWith("【"))] : []), ...scenes, "", statusText(s)].join("\n"),
+        data: election ? { election } : undefined,
+      };
     }
     case "costs":
       return costsReply(s);

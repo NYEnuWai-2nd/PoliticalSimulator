@@ -2,7 +2,7 @@
 // HTML を返すだけで、操作は main.ts が受け取る。
 // data-tip を付けた要素は、マウスを乗せるか長押しするとツールチップが出る（main.ts）。
 // data-member を付けた要素は、押すとその人物の詳しい情報が出る。
-import { ACTIVITIES, ELECTION_LINES, EXP_TYPES, ORIGINS, RELATIONS, ROUTE_NAMES, canLearnSkill, canRunForLeader, canUpgrade, careerSummary, govBills, isPrimeMinister, moneyOutlook, postCategory, prRank, raceForecast, startOptions, upgradeCost } from "../game/career.js";
+import { ACTIVITIES, EXP_TYPES, electionComments, ORIGINS, RELATIONS, ROUTE_NAMES, canLearnSkill, canRunForLeader, canUpgrade, careerSummary, govBills, isPrimeMinister, moneyOutlook, postCategory, prRank, raceForecast, startOptions, upgradeCost } from "../game/career.js";
 import type { Party } from "../game/parties.js";
 import { COLOR_NAMES, SKILLS, conditionProgress, learnCost, sortSkills } from "../game/skills.js";
 import { adviseMonth, filterAdvice, recommendedActivity } from "../game/advice.js";
@@ -549,8 +549,6 @@ export function helpView(): string {
 
 // ---------- 総選挙の結果（議席の前回比、当確、相手の一言） ----------
 
-const lineOf = (list: string[] | undefined, seed: number) => (list?.length ? list[seed % list.length] : "");
-
 export function electionView(state: CareerState, e: ElectionSummary): string {
   const prev = new Map((e.prevSeats ?? []).map((x) => [x.party, x.total]));
   const total = e.seats.reduce((a, x) => a + x.total, 0) || 1;
@@ -563,17 +561,16 @@ export function electionView(state: CareerState, e: ElectionSummary): string {
     })
     .join("");
   const reveal = e.seats.length; // 自分の結果は、議席の行が出そろってから出す
-  const seed = e.year + e.month;
   const me = e.district.find((x) => x.isPlayer);
-  const rival = e.won ? e.district.find((x) => !x.isPlayer) : e.district.find((x) => !x.isPlayer && x.share === Math.max(...e.district.map((d) => d.share)));
+  const words = electionComments(e);
   const swing = me && e.prevShare !== undefined ? Math.round((me.share - e.prevShare) * 1000) / 10 : undefined;
   const district = e.district.length
     ? `<div class="race-bar" style="height:22px;margin:8px 0">${e.district.map((d) => `<i style="width:${d.share * 100}%;background:${partyColor(d.party)}"></i>`).join("")}</div>
       <p class="el-shares">${e.district.map((d) => `${d.isPlayer ? "★" : ""}${esc(d.name)}（${esc(partyById(d.party).short)}）${pct(d.share)}`).join("　")}${swing !== undefined ? `<span class="seat-diff ${swing > 0 ? "up" : swing < 0 ? "down" : ""}">前回比 ${swing > 0 ? "+" : ""}${swing}</span>` : ""}</p>`
     : `<p>比例名簿 ${e.pr!.rank}位（党の比例当選 ${e.pr!.seats}人）</p>`;
   const say = (name: string, role: string, text: string) => (text ? `<div class="say"><b>${esc(name)}</b>${role ? `<small>${esc(role)}</small>` : ""}<p>${esc(text)}</p></div>` : "");
-  const selfLine = say("自分", "", lineOf(e.won ? ELECTION_LINES.won_self : ELECTION_LINES.lost_self, seed));
-  const rivalLine = rival ? say(rival.name, `${partyById(rival.party).short}・${e.won ? "落選" : "当選"}`, lineOf(e.won ? ELECTION_LINES.won_rival : ELECTION_LINES.lost_rival, seed + 1)) : "";
+  const selfLine = say("自分", "", words.self);
+  const rivalLine = words.rival ? say(words.rival.name, `${partyById(words.rival.party).short}・${words.rival.won ? "当選" : "落選"}`, words.rival.text) : "";
   const after = state.log
     .filter((l) => l.date === `${e.year}年${e.month}月` && /政権|党首選|首相|連立|に就いた/.test(l.text) && !l.text.startsWith("【"))
     .map((l) => `<li>${esc(l.text)}</li>`)

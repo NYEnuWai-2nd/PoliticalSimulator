@@ -811,7 +811,7 @@ export async function takeTurn(state: CareerState, world: CareerWorld, activityI
   if (!act) return { ok: false, message: "その活動はありません。" };
   let message: string;
   // 体力が少ないまま無理をすると倒れることがある
-  if (act.stamina < 0 && state.stamina < C.low_stamina.threshold && rand(state) < C.low_stamina.breakdown_chance) {
+  if (act.stamina < 0 && state.stamina < C.low_stamina.threshold && rand(state) < breakdownChance(state.stamina)) {
     state.stamina = clamp(state.stamina + 10, 0, state.maxStamina);
     state.mood = clamp(state.mood - 1, 1, 5);
     message = `${act.name}の途中で体調を崩し、寝込んでしまった。`;
@@ -846,7 +846,9 @@ export async function takeTurn(state: CareerState, world: CareerWorld, activityI
   state.activityCounts = { ...state.activityCounts, [act.id]: (state.activityCounts?.[act.id] ?? 0) + 1 };
   // その活動で身につく特殊能力のコツを、ときどきつかむ
   const hints = state.skillHints ?? {};
-  const candidates = hintCandidates(world.player.skills, act.id, hints);
+  const pl = world.player;
+  const hintCtx = { activityCounts: state.activityCounts ?? {}, abilities: pl.abilities, terms: pl.terms, jiban: pl.jiban };
+  const candidates = hintCandidates(world.player.skills, act.id, hints).filter((sk) => meetsExceptActivity(sk.acquire, hintCtx));
   if (candidates.length && rand(state) < HINTS.chance) {
     const sk = candidates[Math.floor(rand(state) * candidates.length)];
     state.skillHints = { ...hints, [sk.id]: (hints[sk.id] ?? 0) + 1 };
@@ -883,6 +885,26 @@ export function learnSkill(state: CareerState, world: CareerWorld, id: string): 
   state.skillHints = rest;
   log(state, `コツを生かして、特殊能力「${sk.name}」を身につけた！`);
   return { ok: true, message: `特殊能力「${sk.name}」を身につけた！` };
+}
+
+/** 体力を使う活動で倒れる確率。体力が threshold を切ると breakdown_chance で、0に近づくほど上がり、0なら必ず倒れる */
+export function breakdownChance(stamina: number): number {
+  const L = C.low_stamina;
+  if (stamina >= L.threshold) return 0;
+  return L.breakdown_chance + (1 - L.breakdown_chance) * (1 - Math.max(0, stamina) / L.threshold);
+}
+
+/** 総選挙の結果に添える、自分と相手の一言（画面と CLI で同じものを出す） */
+export function electionComments(e: ElectionSummary): { self: string; rival?: { name: string; party: string; won: boolean; text: string } } {
+  const seed = e.year + e.month;
+  const pick = (list: string[] | undefined, n: number) => (list?.length ? list[n % list.length] : "");
+  const others = e.district.filter((x) => !x.isPlayer);
+  // 自分が勝てば2位の相手、負ければ当選した相手
+  const rival = e.won ? others[0] : others.reduce<(typeof others)[number] | undefined>((a, x) => (!a || x.share > a.share ? x : a), undefined);
+  return {
+    self: pick(e.won ? ELECTION_LINES.won_self : ELECTION_LINES.lost_self, seed),
+    rival: rival ? { name: rival.name, party: rival.party, won: !e.won, text: pick(e.won ? ELECTION_LINES.won_rival : ELECTION_LINES.lost_rival, seed + 1) } : undefined,
+  };
 }
 
 /** 出来事の選択肢を選ぶ（index は0から） */
@@ -998,7 +1020,7 @@ async function endMonth(state: CareerState, world: CareerWorld): Promise<void> {
     log(state, `首相が衆議院を解散した（内閣支持率${g.approval}%）。`);
   }
   if (termEnded || dissolve) {
-    if (termEnded) log(state, "衆議院議員の任期が満了した。");
+    if (termEnded) log(state, "衆議院議員の任期が満了した。", "major");
     await holdElection(state, world);
   } else {
     maybeLifeEvent(state, world);
@@ -1130,6 +1152,8 @@ function copyGovLog(state: CareerState): void {
   const from = state.govLogCopied ?? 0;
   const batch = new Map<string, CareerLog>();
   for (const e of state.gov.log.slice(from)) {
+    // 任期満了は月末の処理で自分の記録に書くので、政権の記録からは写さない（同じ月に二重に出ないように）
+    if (e.text.startsWith("衆議院議員の任期が満了した")) continue;
     // 政権の行動（記者会見、協議、根回し、法案の準備）は細かい動きとして扱う
     const level: CareerLog["level"] = e.kind === "行動" ? "minor" : undefined;
     // 数字と括弧の中を除いた文が同じなら、同じ種類の動きとしてまとめる
