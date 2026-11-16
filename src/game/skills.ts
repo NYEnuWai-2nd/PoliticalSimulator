@@ -54,6 +54,8 @@ export interface Skill {
   acquire?: SkillCondition;
   cure?: SkillCondition;
   replaces?: string[];
+  /** コツがあるときに経験点を払って覚える費用（経験点の種類ごと） */
+  learn?: { exp: Record<string, number> };
 }
 
 interface SkillData {
@@ -62,10 +64,12 @@ interface SkillData {
   lineage_skills: Record<string, { id: string; rate: number }[]>;
   npc: { red_rate: number; gold_rate: number; gold_min_terms: number; green_rate: number; red_pool: string[]; gold_pool: string[]; green_pool: string[] };
   player: Record<string, string[]>;
+  hints: { chance: number; max_level: number; discount_per_level: number };
 }
 
 const DATA = raw as unknown as SkillData;
 export const SKILLS = DATA.skills;
+export const HINTS = DATA.hints;
 export const COLOR_NAMES: Record<SkillColor, string> = { gold: "金", blue: "青", red: "赤", green: "緑" };
 const COLOR_ORDER: SkillColor[] = ["gold", "blue", "green", "red"];
 
@@ -207,4 +211,30 @@ export function rollNpcSkills(opts: { id: number; archetypeId: string; lineageId
   if (rand() < N.green_rate) add(pickFrom(N.green_pool));
   if (rand() < N.red_rate) add(pickFrom(N.red_pool));
   return out;
+}
+
+// ---- コツ（パワプロのコツ、ウマ娘のヒントに当たる） ----
+
+/** 上位の特殊能力を持っていて、もう身につける意味がないか */
+export function superseded(ids: readonly string[], id: string): boolean {
+  return SKILLS.some((x) => x.replaces?.includes(id) && ids.includes(x.id));
+}
+
+/** その活動でコツを得られる特殊能力（その活動の回数が身につける条件にあり、まだ持っていないもの） */
+export function hintCandidates(ids: readonly string[], activity: string, hints: Record<string, number>): Skill[] {
+  return SKILLS.filter(
+    (s) => s.learn && s.acquire?.activity?.[activity] !== undefined && !ids.includes(s.id) && !superseded(ids, s.id) && (hints[s.id] ?? 0) < HINTS.max_level,
+  );
+}
+
+/** コツの Lv に応じた、覚えるのに使う経験点 */
+export function learnCost(skill: Skill, level: number): Record<string, number> {
+  const f = 1 - HINTS.discount_per_level * Math.max(0, level - 1);
+  return Object.fromEntries(Object.entries(skill.learn?.exp ?? {}).map(([k, v]) => [k, Math.ceil(v * f)]));
+}
+
+/** 活動の回数以外の条件（能力、当選回数、地盤）を満たしているか。コツで覚えるときに使う */
+export function meetsExceptActivity(c: SkillCondition | undefined, ctx: ConditionContext): boolean {
+  if (!c) return true;
+  return meets({ ...c, activity: undefined }, ctx);
 }

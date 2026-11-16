@@ -7,7 +7,8 @@ import { createWorld } from "../game/roster.js";
 import type { Member, MemberFactory } from "../game/roster.js";
 import { formInitialGovernment } from "../game/cabinet.js";
 import type { Appointment } from "../game/cabinet.js";
-import { chooseEvent, govAction, raceForecast, startCareer, takeTurn, upgradeAbility } from "../game/career.js";
+import { chooseEvent, govAction, learnSkill, raceForecast, startCareer, takeTurn, upgradeAbility } from "../game/career.js";
+import type { AdviceLevel } from "../game/advice.js";
 import type { CareerState, CareerWorld, OriginId, RouteId } from "../game/career.js";
 import type { Ability } from "../game/tables.js";
 import { deserializeCareer, parseSave, saveLabel, serializeCareer } from "../game/save.js";
@@ -15,7 +16,7 @@ import { skillById } from "../game/skills.js";
 import type { NameData } from "../data/nameData.js";
 import { partyById } from "../game/parties.js";
 import { PREFECTURES, renderJapanMap } from "../map/japanMap.js";
-import { FX, activityIds, activityView, cabinetView, helpView, logView, memberDetail, partyView, selfView, setupView, statusBar } from "./views.js";
+import { FX, activityIds, activityView, cabinetView, electionView, helpView, highlightView, logView, memberDetail, partyView, selfView, setupView, statusBar } from "./views.js";
 import type { LogFilter, SetupChoice, UiMode } from "./views.js";
 import { chip, esc, icon, pct } from "./ui.js";
 
@@ -56,6 +57,20 @@ interface App {
   result?: { title: string; choice: string; text: string };
   /** 画面のモード（このブラウザに覚えておく） */
   mode: UiMode;
+  /** 秘書の助言の出し方（このブラウザに覚えておく） */
+  adviceLevel: AdviceLevel;
+  /** 見せた山場の場面の数 */
+  highlightsShown: number;
+}
+
+const ADVICE_KEY = "seiji.adviceLevel";
+function loadAdviceLevel(): AdviceLevel {
+  try {
+    const v = localStorage.getItem(ADVICE_KEY);
+    return v === "warn" || v === "off" ? v : "all";
+  } catch {
+    return "all";
+  }
 }
 
 const MODE_KEY = "seiji.uiMode";
@@ -135,6 +150,7 @@ async function loadSave(text: string): Promise<void> {
     app.state = state;
     app.world = world;
     app.electionsShown = state.elections.length;
+    app.highlightsShown = state.highlights?.length ?? 0;
     app.selected = undefined;
     app.memberId = undefined;
     app.tab = "act";
@@ -181,8 +197,10 @@ const app: App = {
   busy: false,
   electionsShown: 0,
   setupStep: 0,
-  logFilter: "all",
+  logFilter: "major",
   mode: loadMode(),
+  adviceLevel: loadAdviceLevel(),
+  highlightsShown: 0,
 };
 const root = document.querySelector<HTMLDivElement>("#app")!;
 
@@ -194,13 +212,13 @@ function render(): void {
   if (state && world && !app.busy) autosave();
   if (!state || !world) {
     root.innerHTML = `<div class="shell"><header class="topbar"><div class="crumb"><div class="diamond"></div><div><span class="crumb-sub">議員人生</span><span class="crumb-main">はじめる</span></div></div></header>
-      <main class="view">${app.base ? setupView(app.base.roster, app.setup, app.setupStep, autosaveLabel(), app.mode) : `<p class="cut box">名前データを読み込んでいます…</p>`}</main></div>`;
+      <main class="view">${app.base ? setupView(app.base.roster, app.setup, app.setupStep, autosaveLabel(), app.mode, app.adviceLevel) : `<p class="cut box">名前データを読み込んでいます…</p>`}</main></div>`;
     return;
   }
   const tab = TABS.find((t) => t.id === app.tab)!;
   let body = "";
-  if (app.tab === "act") body = activityView(state, world, app.selected, app.last, app.mode);
-  else if (app.tab === "self") body = selfView(state, world, app.savedAt, app.mode);
+  if (app.tab === "act") body = activityView(state, world, app.selected, app.last, app.mode, app.adviceLevel);
+  else if (app.tab === "self") body = selfView(state, world, app.savedAt, app.mode, app.adviceLevel);
   else if (app.tab === "party") body = partyView(state, world);
   else if (app.tab === "cabinet") body = cabinetView(state, world);
   else body = mapViewShell();
@@ -271,19 +289,10 @@ function modalHtml(): string {
       <button class="btn primary" data-action="close-result">閉じる</button></div></div>`;
   }
   // 総選挙の結果
-  if (state.elections.length > app.electionsShown) {
-    const e = state.elections[state.elections.length - 1];
-    const district = e.district.length
-      ? `<div class="race-bar" style="height:22px;margin:8px 0">${e.district.map((d) => `<i style="width:${d.share * 100}%;background:${partyById(d.party).color}"></i>`).join("")}</div>
-        <p>${e.district.map((d) => `${d.isPlayer ? "★" : ""}${esc(d.name)}（${esc(partyById(d.party).short)}）${pct(d.share)}`).join("　")}</p>`
-      : `<p>比例名簿 ${e.pr!.rank}位（党の比例当選 ${e.pr!.seats}人）</p>`;
-    const seats = e.seats.sort((a, b) => b.total - a.total).map((s) => `${chip(s.party)} ${esc(partyById(s.party).short)} ${s.total}`).join("　");
-    const after = state.log.filter((l) => l.date === `${e.year}年${e.month}月` && /政権|党首選|首相|連立|に就いた/.test(l.text)).map((l) => `<li>${esc(l.text)}</li>`).join("");
-    return `<div class="overlay"><div class="cut dialog" role="dialog" aria-modal="true">
-      <h2>${icon(e.won ? "st-rose" : "ev-reject", 32)} ${e.year}年${e.month}月 総選挙 ― ${e.won ? "当選！" : "落選"}</h2>
-      ${district}<p style="font-size:14px">${seats}</p>${after ? `<ul style="font-size:14px">${after}</ul>` : ""}
-      <button class="btn primary" data-action="close-election">続ける</button></div></div>`;
-  }
+  if (state.elections.length > app.electionsShown) return electionView(state, state.elections[state.elections.length - 1]);
+  // 山場の場面（政権交代、首相交代、自分の就任）
+  const hl = state.highlights ?? [];
+  if (hl.length > app.highlightsShown) return highlightView(hl[app.highlightsShown]);
   // 出来事の選択肢
   if (state.pendingEvent) {
     const pe = state.pendingEvent;
@@ -315,6 +324,9 @@ function showToast(text: string): void {
 async function start(): Promise<void> {
   const c = app.setup;
   if (!app.base || !c.origin || !c.party || !c.route || !c.pref || !c.archetype) return;
+  // 続きのデータがあれば、消えることを確かめる（確認用の ?start= では聞かない）
+  const saved = params.has("start") ? undefined : autosaveLabel();
+  if (saved && !window.confirm(`このブラウザに保存している続き（${saved}）は消えます。新しく始めますか？\n残すときは、先に「続きから」で開いて「自分」の画面からファイルに書き出してください。`)) return;
   app.busy = true;
   try {
     const { state, world } = await startCareer(app.base, { origin: c.origin, party: c.party, route: c.route, pref: c.pref, archetype: c.archetype }, app.seed);
@@ -493,6 +505,20 @@ root.addEventListener("click", (ev) => {
     if (d.gov === "dissolve" && !window.confirm("衆議院を解散して、月末に総選挙を行いますか？")) return;
     const r = govAction(app.state!, app.world!, d.gov, d.arg);
     showToast(r.message);
+  } else if (d.action === "close-highlight") {
+    app.highlightsShown++;
+    render();
+  } else if (d.learn) {
+    const r = learnSkill(app.state!, app.world!, d.learn);
+    showToast(r.message);
+  } else if (d.action === "advice-all" || d.action === "advice-warn" || d.action === "advice-off") {
+    app.adviceLevel = d.action.slice(7) as AdviceLevel;
+    try {
+      localStorage.setItem(ADVICE_KEY, app.adviceLevel);
+    } catch {
+      /* 保存できない環境では、そのときだけ切り替える */
+    }
+    render();
   } else if (d.action === "mode-normal" || d.action === "mode-pro") {
     app.mode = d.action === "mode-normal" ? "normal" : "pro";
     saveMode(app.mode);
@@ -525,16 +551,23 @@ window.addEventListener("keydown", (e) => {
     }
     return;
   }
-  if (app.state.pendingEvent) {
-    const n = Number(e.key);
-    if (n >= 1 && n <= app.state.pendingEvent.choices.length) choose(n - 1);
-    return;
-  }
   if (app.state.elections.length > app.electionsShown) {
     if (e.key === "Enter" || e.key === " ") {
       app.electionsShown = app.state.elections.length;
       render();
     }
+    return;
+  }
+  if ((app.state.highlights?.length ?? 0) > app.highlightsShown) {
+    if (e.key === "Enter" || e.key === " ") {
+      app.highlightsShown++;
+      render();
+    }
+    return;
+  }
+  if (app.state.pendingEvent) {
+    const n = Number(e.key);
+    if (n >= 1 && n <= app.state.pendingEvent.choices.length) choose(n - 1);
     return;
   }
   const n = Number(e.key);
@@ -666,6 +699,7 @@ async function boot(): Promise<void> {
     }
     if (params.get("select")) app.selected = params.get("select")!;
     if (months) app.electionsShown = params.get("showElection") ? 0 : app.state?.elections.length ?? 0;
+    if (months) app.highlightsShown = params.get("showElection") ? 0 : app.state?.highlights?.length ?? 0;
     // 確認用：?overlay=log または help で記録か遊び方を開く
     const overlay = params.get("overlay");
     if (overlay === "log" || overlay === "help") app.overlay = overlay;

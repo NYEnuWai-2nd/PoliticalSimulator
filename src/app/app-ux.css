@@ -1101,3 +1101,255 @@
     padding-top: 14px;
   }
 }
+
+/* ===== プロモードの警告（1行） ===== */
+
+.pro-warn {
+  --c: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  max-width: 560px;
+  padding: 4px 10px;
+  background: #fff3e0;
+  outline: 2px solid #f08a24;
+  outline-offset: -2px;
+  font-size: 13px;
+  font-weight: 800;
+  color: #6b3300;
+}
+
+/* ===== 特殊能力：コツと覚える ===== */
+
+.hint-badge {
+  display: inline-block;
+  margin-right: 6px;
+  padding: 0 6px;
+  border-radius: 4px;
+  background: #ffcf33;
+  color: #4a3200;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.learn-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  margin-top: 4px;
+}
+
+.d-skills p {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 0 0 4px;
+}
+
+.d-skills p small {
+  font-size: 12px;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+/* ===== 記録の重み ===== */
+
+.log-list li.gov.minor {
+  opacity: 0.7;
+  font-size: 12px;
+}
+
+.log-list li.major .log-kind {
+  background: #d4302f;
+}
+
+.log-list li.major > span:last-child {
+  font-weight: 900;
+}
+
+.log-count {
+  margin-left: 6px;
+  padding: 0 5px;
+  border-radius: 4px;
+  background: #e2ecf6;
+  color: #2b6aa8;
+  font-size: 11px;
+}
+
+/* ===== 総選挙の開票結果 ===== */
+
+.dialog.election {
+  width: min(620px, calc(100vw - 24px));
+  max-height: calc(100dvh - 32px);
+  overflow-y: auto;
+}
+
+.seat-table {
+  display: grid;
+  gap: 4px;
+  margin: 6px 0 10px;
+}
+
+.seat-row {
+  display: grid;
+  grid-template-columns: auto 4.5em minmax(40px, 1fr) 2.2em 3em;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  opacity: 0;
+  animation: el-in 0.3s ease-out forwards;
+  animation-delay: calc(var(--i) * 0.18s);
+}
+
+.seat-bar {
+  height: 12px;
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.seat-bar i {
+  display: block;
+  height: 100%;
+}
+
+.seat-row b {
+  text-align: right;
+}
+
+.seat-diff {
+  margin-left: 6px;
+  font-size: 12px;
+  font-weight: 900;
+  color: #b9c7d6;
+}
+
+.seat-diff.up {
+  color: #5ee08a;
+}
+
+.seat-diff.down {
+  color: #ff8a8a;
+}
+
+.el-mine {
+  position: relative;
+  opacity: 0;
+  animation: el-in 0.4s ease-out forwards;
+  animation-delay: calc(var(--i) * 0.18s + 0.4s);
+}
+
+.stamp {
+  display: inline-block;
+  padding: 2px 16px;
+  border: 3px solid currentColor;
+  font-size: 26px;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  transform: rotate(-6deg);
+  animation: stamp 0.35s cubic-bezier(0.2, 1.6, 0.4, 1) both;
+  animation-delay: calc(var(--i) * 0.18s + 0.5s);
+}
+
+.stamp.win {
+  color: #ff4040;
+  background: rgba(255, 255, 255, 0.92);
+}
+
+.stamp.lose {
+  color: #8aa0b8;
+  background: rgba(255, 255, 255, 0.85);
+}
+
+.el-shares {
+  font-size: 14px;
+}
+
+.el-after {
+  font-size: 13px;
+}
+
+@keyframes el-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes stamp {
+  from {
+    opacity: 0;
+    transform: scale(2.2) rotate(-6deg);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) rotate(-6deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .seat-row,
+  .el-mine,
+  .stamp {
+    animation: none;
+    opacity: 1;
+  }
+}
+
+/* ===== 会話（選挙の一言、山場の場面） ===== */
+
+.says {
+  display: grid;
+  gap: 6px;
+  margin: 10px 0;
+}
+
+.say {
+  padding: 6px 10px;
+  background: rgba(255, 255, 255, 0.92);
+  color: var(--ink);
+  border-left: 4px solid var(--focus);
+}
+
+.say b {
+  margin-right: 6px;
+}
+
+.say small {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.say p {
+  margin: 2px 0 0;
+  font-size: 14px;
+}
+
+.narr {
+  margin: 0;
+  font-size: 14px;
+  font-style: italic;
+  opacity: 0.9;
+}
+
+.dialog.highlight {
+  width: min(560px, calc(100vw - 24px));
+}
+
+.hl-title {
+  display: inline-block;
+  padding: 2px 14px;
+  background: linear-gradient(90deg, #d4302f, #ff8a00);
+  color: #fff;
+  font-size: 20px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+}
+
+.hl-text {
+  font-weight: 800;
+}

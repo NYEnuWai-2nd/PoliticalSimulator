@@ -6,7 +6,8 @@
 import careerRaw from "../../data/game/career.json";
 import lifeRaw from "../../data/game/life_events.json";
 import flavorRaw from "../../data/game/activity_flavor.json";
-import { expMultiplier, jibanMultiplier, mishapsFor, moneyMultiplier, neglectShift, relationMultiplier, riskBonus, skillById, staminaMultiplier, startingSkills, updateSkills } from "./skills.js";
+import highlightsRaw from "../../data/game/highlights.json";
+import { HINTS, expMultiplier, hintCandidates, jibanMultiplier, learnCost, meetsExceptActivity, mishapsFor, moneyMultiplier, neglectShift, relationMultiplier, riskBonus, skillById, staminaMultiplier, startingSkills, superseded, updateSkills } from "./skills.js";
 import { mulberry32 } from "../lib/nameGenerator.js";
 import type { Member, MemberFactory } from "./roster.js";
 import { START_YEAR } from "./roster.js";
@@ -122,6 +123,19 @@ export interface CareerLog {
   text: string;
   /** 政局（政権の行動、採決、政界の出来事）の記録なら "gov"。書いていなければ自分の記録 */
   kind?: "gov";
+  /** 重み。major は山場（総選挙、就任、政権交代など）、minor は細かい動き（記者会見、協議など）。書いていなければふつう */
+  level?: "major" | "minor";
+  /** 同じ月に同じ種類の動きが重なったときの回数（2以上のときだけ書く） */
+  count?: number;
+}
+
+/** 山場の場面（政権交代、首相交代、自分の就任）。画面ではポップアップで見せる */
+export interface Highlight {
+  turn: number;
+  kind: string;
+  title: string;
+  text: string;
+  lines: { name: string; role: string; text: string }[];
 }
 
 /** 総選挙の結果のうち、画面と記録に残すもの */
@@ -136,6 +150,10 @@ export interface ElectionSummary {
   pr?: { rank: number; seats: number };
   /** 政党ごとの議席 */
   seats: { party: string; total: number }[];
+  /** 選挙の前の議席（前回比に使う） */
+  prevSeats?: { party: string; total: number }[];
+  /** 前回の総選挙での自分の得票率（同じ小選挙区で戦ったとき） */
+  prevShare?: number;
   support: Record<string, number>;
 }
 
@@ -207,6 +225,12 @@ export interface CareerState {
   rngCounter: number;
   /** 活動ごとに行った回数（特殊能力を身につける条件に使う） */
   activityCounts?: Record<string, number>;
+  /** 特殊能力のコツ（id → Lv1〜3）。コツがあれば経験点を払って覚えられる */
+  skillHints?: Record<string, number>;
+  /** 山場の場面（新しいものが後ろ。画面で見せたかどうかは画面の側で数える） */
+  highlights?: Highlight[];
+  /** 月末ごとの数値の推移（助言で「この3か月で下がった」と言うのに使う。最新6か月分） */
+  history?: { turn: number; approval: number; money: number; share?: number }[];
   /** 政権の記録（gov.log）のうち、自分の記録に写し終えた数 */
   govLogCopied?: number;
   over?: string;
@@ -230,8 +254,8 @@ function rand(s: CareerState): number {
   return mulberry32((s.seed * 2_654_435_761 + s.turn * 40_503 + s.rngCounter++ * 69_069 + 7) >>> 0)();
 }
 
-function log(s: CareerState, text: string): void {
-  s.log.push({ turn: s.turn, date: dateOf(s), text });
+function log(s: CareerState, text: string, level?: CareerLog["level"]): void {
+  s.log.push({ turn: s.turn, date: dateOf(s), text, ...(level ? { level } : {}) });
 }
 
 export const originById = (id: OriginId) => ORIGINS.find((o) => o.id === id)!;
@@ -742,6 +766,7 @@ function checkSkills(state: CareerState, world: CareerWorld): void {
   const r = updateSkills(p.skills, { activityCounts: state.activityCounts ?? {}, abilities: p.abilities, terms: p.terms, jiban: p.jiban });
   if (!r.gained.length && !r.lost.length) return;
   setPlayer(world, { ...p, skills: r.skills });
+  if (state.skillHints) for (const g of r.gained) delete state.skillHints[g.id];
   for (const g of r.gained) log(state, `特殊能力「${g.name}」を身につけた！ ${g.description}`);
   for (const l of r.lost) log(state, l.color === "red" ? `欠点「${l.name}」を克服した。` : `特殊能力「${l.name}」は上位の能力に置き換わった。`);
 }
@@ -778,7 +803,7 @@ export async function takeTurn(state: CareerState, world: CareerWorld, activityI
   if (activityId === "duty") {
     if (!postCategory(state, world)) return { ok: false, message: "公務は役職に就いているときだけできます。" };
     const message = doDuty(state, world);
-    log(state, message);
+    log(state, message, "minor");
     await endMonth(state, world);
     return { ok: true, message };
   }
@@ -819,9 +844,45 @@ export async function takeTurn(state: CareerState, world: CareerWorld, activityI
     }
   }
   state.activityCounts = { ...state.activityCounts, [act.id]: (state.activityCounts?.[act.id] ?? 0) + 1 };
-  log(state, message);
+  // その活動で身につく特殊能力のコツを、ときどきつかむ
+  const hints = state.skillHints ?? {};
+  const candidates = hintCandidates(world.player.skills, act.id, hints);
+  if (candidates.length && rand(state) < HINTS.chance) {
+    const sk = candidates[Math.floor(rand(state) * candidates.length)];
+    state.skillHints = { ...hints, [sk.id]: (hints[sk.id] ?? 0) + 1 };
+    message += `。【コツ】「${sk.name}」のコツをつかんだ（Lv${state.skillHints[sk.id]}）`;
+  }
+  log(state, message, "minor");
   await endMonth(state, world);
   return { ok: true, message };
+}
+
+/** コツのある特殊能力を、経験点を払って覚えられるか（理由つき） */
+export function canLearnSkill(state: CareerState, world: CareerWorld, id: string): { ok: boolean; reason?: string; cost?: Record<string, number> } {
+  const sk = skillById(id);
+  const level = state.skillHints?.[id] ?? 0;
+  if (!sk?.learn) return { ok: false, reason: "コツで覚えられる特殊能力ではありません。" };
+  if (world.player.skills.includes(id) || superseded(world.player.skills, id)) return { ok: false, reason: "もう持っています。" };
+  if (level < 1) return { ok: false, reason: "まだコツをつかんでいません。" };
+  const p = world.player;
+  if (!meetsExceptActivity(sk.acquire, { activityCounts: state.activityCounts ?? {}, abilities: p.abilities, terms: p.terms, jiban: p.jiban }))
+    return { ok: false, reason: "能力、当選回数、地盤の条件を満たしていません。" };
+  const cost = learnCost(sk, level);
+  if (Object.entries(cost).some(([k, n]) => state.exp[k as ExpId] < n)) return { ok: false, reason: "経験点が足りません。", cost };
+  return { ok: true, cost };
+}
+
+export function learnSkill(state: CareerState, world: CareerWorld, id: string): TurnResult {
+  const r = canLearnSkill(state, world, id);
+  if (!r.ok) return { ok: false, message: r.reason ?? "" };
+  const sk = skillById(id)!;
+  for (const [k, n] of Object.entries(r.cost ?? {})) state.exp[k as ExpId] -= n;
+  setPlayer(world, { ...world.player, skills: [...world.player.skills.filter((x) => !sk.replaces?.includes(x)), id] });
+  const rest = { ...state.skillHints };
+  delete rest[id];
+  state.skillHints = rest;
+  log(state, `コツを生かして、特殊能力「${sk.name}」を身につけた！`);
+  return { ok: true, message: `特殊能力「${sk.name}」を身につけた！` };
 }
 
 /** 出来事の選択肢を選ぶ（index は0から） */
@@ -867,6 +928,7 @@ function maybeLifeEvent(state: CareerState, world: CareerWorld): void {
 }
 
 async function endMonth(state: CareerState, world: CareerWorld): Promise<void> {
+  const politicsBefore = snapshotPolitics(state, world);
   // 事務所の経費。資金が尽きるとやる気が下がる
   state.money -= (C.monthly_expense as Record<CareerState["status"], number>)[state.status];
   if (state.money < 0) {
@@ -941,6 +1003,9 @@ async function endMonth(state: CareerState, world: CareerWorld): Promise<void> {
   } else {
     maybeLifeEvent(state, world);
   }
+  detectHighlights(state, world, politicsBefore);
+  const share = state.setup.route === "pr" || state.over ? undefined : raceForecast(state, world).find((x) => x.isPlayer)?.share;
+  state.history = [...(state.history ?? []), { turn: state.turn, approval: state.gov.approval, money: state.money, share }].slice(-6);
   // 次の月へ
   state.turn++;
   state.month++;
@@ -967,6 +1032,9 @@ async function holdElection(state: CareerState, world: CareerWorld): Promise<voi
   const route = state.setup.route;
   const isPr = route === "pr";
   const rank = isPr ? prRank(state) : 0;
+  const prevSeats = Object.entries(world.roster.reduce<Record<string, number>>((acc, m) => ((acc[m.party] = (acc[m.party] ?? 0) + 1), acc), {})).map(([party, total]) => ({ party, total }));
+  const last = state.elections.at(-1);
+  const prevShare = !isPr && last && last.route !== "pr" ? last.district.find((x) => x.isPlayer)?.share : undefined;
   const result = await runElection({
     year: state.year,
     month: state.month,
@@ -997,6 +1065,8 @@ async function holdElection(state: CareerState, world: CareerWorld): Promise<voi
       ([party, total]) => ({ party, total }),
     ),
     support: result.support,
+    prevSeats,
+    prevShare,
   } satisfies ElectionSummary;
   state.elections.push(summary);
   world.roster = result.roster;
@@ -1006,14 +1076,14 @@ async function holdElection(state: CareerState, world: CareerWorld): Promise<voi
     world.player = me;
     state.status = "議員";
     const how = isPr ? `比例名簿${rank + 1}位（党の比例当選${prSeats}人）` : `得票率${pct(d!.candidates.find((c) => c.member.id === me.id)!.share)}`;
-    log(state, `${me.terms === 1 ? "初当選" : `${me.terms}回目の当選`}！ ${how}で${partyById(state.setup.party).name}の衆議院議員になった。`);
+    log(state, `${me.terms === 1 ? "初当選" : `${me.terms}回目の当選`}！ ${how}で${partyById(state.setup.party).name}の衆議院議員になった。`, "major");
     // 後継の道で当選したら、次からは自分の選挙区の現職として戦う
     if (route === "successor") state.setup = { ...state.setup, route: "smd" };
   } else {
     world.player = { ...world.player, seat: "なし", district: null };
     state.status = "浪人";
     const how = isPr ? `比例名簿${rank + 1}位で、党の比例当選${prSeats}人に届かなかった` : `得票率${pct(d!.candidates.find((c) => c.member.id === world.player.id)!.share)}で${d!.winner.name.displayName}（${partyById(d!.winner.party).short}）に敗れた`;
-    log(state, `落選。${how}。浪人として次の選挙を目指す。`);
+    log(state, `落選。${how}。浪人として次の選挙を目指す。`, "major");
     if (route === "successor") state.setup = { ...state.setup, route: "smd" };
   }
   if (first) state.parentId = undefined;
@@ -1058,8 +1128,88 @@ async function holdElection(state: CareerState, world: CareerWorld): Promise<voi
 /** 政権の記録のうち新しいものを、政局の記録として自分の記録に写す（総選挙で政権の状態が作り直されても残るように） */
 function copyGovLog(state: CareerState): void {
   const from = state.govLogCopied ?? 0;
-  for (const e of state.gov.log.slice(from)) state.log.push({ turn: state.turn, date: e.date, text: e.text, kind: "gov" });
+  const batch = new Map<string, CareerLog>();
+  for (const e of state.gov.log.slice(from)) {
+    // 政権の行動（記者会見、協議、根回し、法案の準備）は細かい動きとして扱う
+    const level: CareerLog["level"] = e.kind === "行動" ? "minor" : undefined;
+    // 数字と括弧の中を除いた文が同じなら、同じ種類の動きとしてまとめる
+    const key = e.text.replace(/（[^）]*）/g, "").replace(/[0-9.]+/g, "#");
+    const same = level === "minor" ? batch.get(key) : undefined;
+    if (same) {
+      same.count = (same.count ?? 1) + 1;
+      continue;
+    }
+    const entry: CareerLog = { turn: state.turn, date: e.date, text: e.text, kind: "gov", ...(level ? { level } : {}) };
+    state.log.push(entry);
+    batch.set(key, entry);
+  }
   state.govLogCopied = state.gov.log.length;
+}
+
+// ---- 山場の場面 ----
+
+type HighlightDef = { title: string; text: string; variants: { speaker: string; text: string }[][] };
+const HL = highlightsRaw as unknown as { scenes: Record<string, HighlightDef>; election_lines: Record<string, string[]> };
+
+/** 総選挙の結果に添える一言の文 */
+export const ELECTION_LINES = HL.election_lines;
+
+interface MonthSnapshot {
+  ruling: string;
+  pm?: Member;
+  post: string;
+  leader?: number;
+}
+
+function snapshotPolitics(state: CareerState, world: CareerWorld): MonthSnapshot {
+  return { ruling: state.gov.ruling.party, pm: world.government.find((a) => a.post.id === "pm")?.member, post: state.post, leader: state.leaders[state.setup.party] };
+}
+
+function pushHighlight(state: CareerState, world: CareerWorld, kind: string, vars: Record<string, string>, people: { old_pm?: Member; new_pm?: Member }): void {
+  const def = HL.scenes[kind];
+  if (!def) return;
+  const fill = (t: string) => t.replace(/\{(\w+)\}/g, (_, k: string) => vars[k] ?? (k === "secretary" ? state.secretaryName : ""));
+  const variant = def.variants[Math.floor(rand(state) * def.variants.length)] ?? [];
+  const pmNow = world.government.find((a) => a.post.id === "pm")?.member;
+  const who = (m: Member | undefined, role: string) => ({ name: m?.name.displayName ?? "", role: m ? role : "" });
+  const lines = variant.map((l) => {
+    const text = fill(l.text);
+    switch (l.speaker) {
+      case "old_pm":
+        return { ...who(people.old_pm, "前首相"), text };
+      case "new_pm":
+        return { ...who(people.new_pm, "首相"), text };
+      case "pm":
+        return { ...who(pmNow, "首相"), text };
+      case "secretary":
+        return { name: state.secretaryName, role: "秘書", text };
+      default:
+        return { name: "", role: "", text };
+    }
+  });
+  const text = fill(def.text);
+  state.highlights = [...(state.highlights ?? []), { turn: state.turn, kind, title: def.title, text, lines }].slice(-20);
+  log(state, `【${def.title}】${text}`, "major");
+}
+
+/** 月のはじめと終わりを見比べて、政権交代、首相交代、自分の就任があれば場面にする */
+function detectHighlights(state: CareerState, world: CareerWorld, before: MonthSnapshot): void {
+  const after = snapshotPolitics(state, world);
+  const playerId = world.player.id;
+  const vars = {
+    old: partyById(before.ruling).short,
+    new: partyById(after.ruling).short,
+    old_pm: before.pm?.name.displayName ?? "",
+    new_pm: after.pm?.name.displayName ?? "",
+    post: state.post,
+    party: partyById(state.setup.party).short,
+  };
+  const people = { old_pm: before.pm, new_pm: after.pm };
+  if (after.ruling !== before.ruling) pushHighlight(state, world, "ruling_change", vars, people);
+  else if (after.pm && before.pm && after.pm.id !== before.pm.id && after.pm.id !== playerId) pushHighlight(state, world, "pm_change", vars, people);
+  if (after.pm?.id === playerId && before.pm?.id !== playerId) pushHighlight(state, world, "player_pm", vars, people);
+  else if (state.post && state.post !== before.post && after.pm?.id !== playerId && after.leader !== playerId) pushHighlight(state, world, "player_post", vars, people);
+  if (after.leader === playerId && before.leader !== playerId && after.pm?.id !== playerId) pushHighlight(state, world, "player_leader", vars, people);
 }
 
 const pct = (x: number) => `${Math.round(x * 1000) / 10}%`;
@@ -1099,6 +1249,7 @@ export function careerSummary(state: CareerState, world: CareerWorld) {
     jibanProgress: p.jiban >= 4 ? "最大" : `${state.jibanProgress}/${C.jiban_step[p.jiban]}`,
     abilities: p.abilities,
     skills: p.skills,
+    skillHints: state.skillHints ?? {},
     exp: state.exp,
     relations: state.relations,
     approval: state.gov.approval,

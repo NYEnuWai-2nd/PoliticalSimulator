@@ -1,154 +1,422 @@
 {
-  "note": "特殊能力。color は gold（強力で珍しい）、blue（経歴類型や家系に結び付いた標準的な能力）、red（欠点）、green（利点にも欠点にもなる）。effects は受け身の効果で、exp は活動ごとの経験点の倍率（キーは活動の id、all は全部、duty は公務）、jiban は地盤の進み具合の倍率、stamina は活動で使う体力の倍率、relations は関係が上がるときの倍率、vote は選挙で本人の票に足す割合（地盤1段が0.08）、money は資金集めで得る資金の倍率、risk は出来事の能力判定で能力に足す値、neglect は地盤が下がるまでの月数の増減、mishap は活動のあとに起きうる失敗（chance の確率で effects）。acquire はプレイヤーが身につける条件（activity は活動の回数、ability は能力の下限、terms は当選回数、jiban は地盤）、cure は欠点が外れる条件、replaces は身につけたときに外れる特殊能力。出来事の effects の skills_add と skills_remove でも付け外しできる。",
+  "note": "特殊能力。color は gold（強力で珍しい）、blue（経歴類型や家系に結び付いた標準的な能力）、red（欠点）、green（利点にも欠点にもなる）。effects は受け身の効果で、exp は活動ごとの経験点の倍率（キーは活動の id、all は全部、duty は公務）、jiban は地盤の進み具合の倍率、stamina は活動で使う体力の倍率、relations は関係が上がるときの倍率、vote は選挙で本人の票に足す割合（地盤1段が0.08）、money は資金集めで得る資金の倍率、risk は出来事の能力判定で能力に足す値、neglect は地盤が下がるまでの月数の増減、mishap は活動のあとに起きうる失敗（chance の確率で effects）。acquire はプレイヤーが身につける条件（activity は活動の回数、ability は能力の下限、terms は当選回数、jiban は地盤）、cure は欠点が外れる条件、replaces は身につけたときに外れる特殊能力。出来事の effects の skills_add と skills_remove でも付け外しできる。 learn は、活動や出来事で得たコツ（Lv1〜3）があるときに経験点を払って覚えるときの費用（Lv が1上がるごとに15%安くなる）。活動の回数の条件は満たさなくてよいが、能力・当選回数・地盤の条件は満たす必要がある。",
   "skills": [
     {
       "id": "senkyo_kamisama",
       "name": "選挙の神様",
       "color": "gold",
       "description": "選挙に滅法強い。本人の票が大きく上乗せされる。",
-      "effects": { "vote": 0.04, "exp": { "local": 1.2 } },
-      "acquire": { "terms": 5, "jiban": 4, "activity": { "local": 60 } },
-      "replaces": ["dobuita"]
+      "effects": {
+        "vote": 0.04,
+        "exp": {
+          "local": 1.2
+        }
+      },
+      "acquire": {
+        "terms": 5,
+        "jiban": 4,
+        "activity": {
+          "local": 60
+        }
+      },
+      "replaces": [
+        "dobuita"
+      ],
+      "learn": {
+        "exp": {
+          "election": 240
+        }
+      }
     },
     {
       "id": "nemawashi_oni",
       "name": "根回しの鬼",
       "color": "gold",
       "description": "党内と県議団の関係が大きく上がりやすい。",
-      "effects": { "relations": { "party": 1.6, "kengi": 1.6 }, "exp": { "party": 1.3, "kengi": 1.3 } },
-      "acquire": { "ability": { "調整": 80 }, "activity": { "party": 40 } }
+      "effects": {
+        "relations": {
+          "party": 1.6,
+          "kengi": 1.6
+        },
+        "exp": {
+          "party": 1.3,
+          "kengi": 1.3
+        }
+      },
+      "acquire": {
+        "ability": {
+          "調整": 80
+        },
+        "activity": {
+          "party": 40
+        }
+      },
+      "learn": {
+        "exp": {
+          "network": 240
+        }
+      }
     },
     {
       "id": "ronpa_ou",
       "name": "論破王",
       "color": "gold",
       "description": "討論や答弁で負けない。出来事の弁舌の判定に強く、街頭演説の経験点が増える。",
-      "effects": { "risk": { "弁舌": 15 }, "exp": { "speech": 1.3 } },
-      "acquire": { "ability": { "弁舌": 80 }, "activity": { "speech": 40 } },
-      "replaces": ["tsuji_seppou"]
+      "effects": {
+        "risk": {
+          "弁舌": 15
+        },
+        "exp": {
+          "speech": 1.3
+        }
+      },
+      "acquire": {
+        "ability": {
+          "弁舌": 80
+        },
+        "activity": {
+          "speech": 40
+        }
+      },
+      "replaces": [
+        "tsuji_seppou"
+      ],
+      "learn": {
+        "exp": {
+          "media": 240
+        }
+      }
     },
     {
       "id": "meimon_kanban",
       "name": "名門の看板",
       "color": "gold",
       "description": "一族の名前だけで票と献金が集まる。",
-      "effects": { "vote": 0.03, "money": 1.3 }
+      "effects": {
+        "vote": 0.03,
+        "money": 1.3
+      }
+    },
+    {
+      "id": "aisatsu",
+      "name": "挨拶上手",
+      "color": "blue",
+      "description": "感じのよい挨拶で覚えてもらえる。後援会との関係が上がりやすい。",
+      "effects": {
+        "relations": {
+          "supporters": 1.2
+        }
+      },
+      "acquire": {
+        "activity": {
+          "local": 6
+        }
+      },
+      "learn": {
+        "exp": {
+          "election": 25
+        }
+      }
+    },
+    {
+      "id": "benkyouka",
+      "name": "勉強家",
+      "color": "blue",
+      "description": "資料をよく読む。政策勉強会の経験点が増える。",
+      "effects": {
+        "exp": {
+          "study": 1.15
+        }
+      },
+      "acquire": {
+        "activity": {
+          "study": 6
+        }
+      },
+      "learn": {
+        "exp": {
+          "policy": 25
+        }
+      }
+    },
+    {
+      "id": "kikijouzu",
+      "name": "聞き上手",
+      "color": "blue",
+      "description": "相手の話を最後まで聞く。県議団との関係が上がりやすい。",
+      "effects": {
+        "relations": {
+          "kengi": 1.2
+        }
+      },
+      "acquire": {
+        "activity": {
+          "kengi": 6
+        }
+      },
+      "learn": {
+        "exp": {
+          "network": 25
+        }
+      }
+    },
+    {
+      "id": "koe_ga_tooru",
+      "name": "よく通る声",
+      "color": "blue",
+      "description": "駅前でも声が届く。街頭演説の経験点が少し増える。",
+      "effects": {
+        "exp": {
+          "speech": 1.1
+        }
+      },
+      "acquire": {
+        "activity": {
+          "speech": 6
+        }
+      },
+      "learn": {
+        "exp": {
+          "media": 25
+        }
+      }
     },
     {
       "id": "kasumigaseki",
       "name": "霞が関人脈",
       "color": "blue",
       "description": "官僚とのつながりで政策の勉強がはかどり、公務の成果も上がる。",
-      "effects": { "exp": { "study": 1.3, "duty": 1.2 } }
+      "effects": {
+        "exp": {
+          "study": 1.3,
+          "duty": 1.2
+        }
+      }
     },
     {
       "id": "dobuita",
       "name": "ドブ板",
       "color": "blue",
       "description": "地元を歩くのが苦にならない。地元回りの経験点と地盤の固まり方が増える。",
-      "effects": { "exp": { "local": 1.3 }, "jiban": 1.25 },
-      "acquire": { "activity": { "local": 24 } }
+      "effects": {
+        "exp": {
+          "local": 1.3
+        },
+        "jiban": 1.25
+      },
+      "acquire": {
+        "activity": {
+          "local": 24
+        }
+      },
+      "learn": {
+        "exp": {
+          "election": 60
+        }
+      }
     },
     {
       "id": "soshikihyo",
       "name": "組織票",
       "color": "blue",
       "description": "支援団体の票が固い。選挙で本人の票が上乗せされる。",
-      "effects": { "vote": 0.02 }
+      "effects": {
+        "vote": 0.02
+      }
     },
     {
       "id": "mutouha",
       "name": "無党派に強い",
       "color": "blue",
       "description": "顔と名前で無党派の票を取れる。選挙の票と発信の経験点が増える。",
-      "effects": { "vote": 0.015, "exp": { "speech": 1.2 } }
+      "effects": {
+        "vote": 0.015,
+        "exp": {
+          "speech": 1.2
+        }
+      }
     },
     {
       "id": "senmon_touben",
       "name": "専門家答弁",
       "color": "blue",
       "description": "専門分野の質問に強い。出来事の政策の判定に強く、勉強会の経験点が増える。",
-      "effects": { "risk": { "政策": 10 }, "exp": { "study": 1.2 } }
+      "effects": {
+        "risk": {
+          "政策": 10
+        },
+        "exp": {
+          "study": 1.2
+        }
+      }
     },
     {
       "id": "gyosei_shuwan",
       "name": "行政手腕",
       "color": "blue",
       "description": "役所を動かすのがうまい。公務の成果と県議団との関係が上がりやすい。",
-      "effects": { "exp": { "duty": 1.3 }, "relations": { "kengi": 1.3 } }
+      "effects": {
+        "exp": {
+          "duty": 1.3
+        },
+        "relations": {
+          "kengi": 1.3
+        }
+      }
     },
     {
       "id": "koenkai_keishou",
       "name": "後援会継承",
       "color": "blue",
       "description": "親の後援会を受け継いだ。後援会との関係が上がりやすく、票も少し上乗せされる。",
-      "effects": { "relations": { "supporters": 1.3 }, "vote": 0.01 }
+      "effects": {
+        "relations": {
+          "supporters": 1.3
+        },
+        "vote": 0.01
+      }
     },
     {
       "id": "zaikai",
       "name": "財界人脈",
       "color": "blue",
       "description": "経済界に顔が利く。資金集めで得る資金が増える。",
-      "effects": { "money": 1.3, "exp": { "fund": 1.2 } }
+      "effects": {
+        "money": 1.3,
+        "exp": {
+          "fund": 1.2
+        }
+      }
     },
     {
       "id": "dandori",
       "name": "段取り上手",
       "color": "blue",
       "description": "仕事の段取りがよい。どの活動でも経験点が少し増える。",
-      "effects": { "exp": { "all": 1.08 } }
+      "effects": {
+        "exp": {
+          "all": 1.08
+        }
+      }
     },
     {
       "id": "kokusai",
       "name": "国際感覚",
       "color": "blue",
       "description": "海外の事情に明るい。勉強会と公務の経験点が増える。",
-      "effects": { "exp": { "study": 1.15, "duty": 1.15 } }
+      "effects": {
+        "exp": {
+          "study": 1.15,
+          "duty": 1.15
+        }
+      }
     },
     {
       "id": "anpo_jitsumu",
       "name": "安保の実務",
       "color": "blue",
       "description": "安全保障の現場を知っている。公務と出来事の政策の判定に強い。",
-      "effects": { "exp": { "duty": 1.2 }, "risk": { "政策": 5 } }
+      "effects": {
+        "exp": {
+          "duty": 1.2
+        },
+        "risk": {
+          "政策": 5
+        }
+      }
     },
     {
       "id": "genba_no_koe",
       "name": "現場の声",
       "color": "blue",
       "description": "現場の人の話を聞くのがうまい。後援会との関係と地域行事の経験点が増える。",
-      "effects": { "relations": { "supporters": 1.3 }, "exp": { "festival": 1.2 } }
+      "effects": {
+        "relations": {
+          "supporters": 1.3
+        },
+        "exp": {
+          "festival": 1.2
+        }
+      }
     },
     {
       "id": "tsuji_seppou",
       "name": "辻説法",
       "color": "blue",
       "description": "駅前で足を止めさせる話術。街頭演説の経験点が増える。",
-      "effects": { "exp": { "speech": 1.25 } },
-      "acquire": { "activity": { "speech": 24 } }
+      "effects": {
+        "exp": {
+          "speech": 1.25
+        }
+      },
+      "acquire": {
+        "activity": {
+          "speech": 24
+        }
+      },
+      "learn": {
+        "exp": {
+          "media": 60
+        }
+      }
     },
     {
       "id": "tairyoku_jiman",
       "name": "体力自慢",
       "color": "blue",
       "description": "疲れ知らず。活動で使う体力が減る。",
-      "effects": { "stamina": 0.85 },
-      "acquire": { "activity": { "training": 15 } }
+      "effects": {
+        "stamina": 0.85
+      },
+      "acquire": {
+        "activity": {
+          "training": 15
+        }
+      },
+      "learn": {
+        "exp": {
+          "election": 30,
+          "network": 20
+        }
+      }
     },
     {
       "id": "hasshinryoku",
       "name": "発信力",
       "color": "blue",
       "description": "言葉が広まりやすい。街頭演説の経験点と地元紙との関係が上がりやすい。",
-      "effects": { "exp": { "speech": 1.15 }, "relations": { "press": 1.3 } }
+      "effects": {
+        "exp": {
+          "speech": 1.15
+        },
+        "relations": {
+          "press": 1.3
+        }
+      }
     },
     {
       "id": "kengi_pipe",
       "name": "県議とのパイプ",
       "color": "blue",
       "description": "県議会に太いつながりがある。県議団との関係が上がりやすい。",
-      "effects": { "relations": { "kengi": 1.4 }, "exp": { "kengi": 1.2 } },
-      "acquire": { "activity": { "kengi": 20 } }
+      "effects": {
+        "relations": {
+          "kengi": 1.4
+        },
+        "exp": {
+          "kengi": 1.2
+        }
+      },
+      "acquire": {
+        "activity": {
+          "kengi": 20
+        }
+      },
+      "learn": {
+        "exp": {
+          "network": 60
+        }
+      }
     },
     {
       "id": "shitsugen",
@@ -157,37 +425,71 @@
       "description": "口が滑りやすい。街頭演説のあとに失言することがある。",
       "effects": {
         "mishap": {
-          "activities": ["speech"],
+          "activities": [
+            "speech"
+          ],
           "chance": 0.15,
           "text": "演説で口が滑り、失言として報じられた。",
-          "effects": { "relations": { "press": -8, "supporters": -3 }, "mood": -1 }
+          "effects": {
+            "relations": {
+              "press": -8,
+              "supporters": -3
+            },
+            "mood": -1
+          }
         }
       },
-      "cure": { "ability": { "弁舌": 70 } }
+      "cure": {
+        "ability": {
+          "弁舌": 70
+        }
+      }
     },
     {
       "id": "hirei_dayori",
       "name": "比例頼み",
       "color": "red",
       "description": "小選挙区で勝ち切れない。選挙で本人の票が減る。",
-      "effects": { "vote": -0.02 },
-      "cure": { "jiban": 3 }
+      "effects": {
+        "vote": -0.02
+      },
+      "cure": {
+        "jiban": 3
+      }
     },
     {
       "id": "jimoto_fuzai",
       "name": "地元不在",
       "color": "red",
       "description": "地元に帰らない印象がある。地盤が早く下がり、地元回りの経験点が減る。",
-      "effects": { "neglect": -2, "exp": { "local": 0.8 } },
-      "cure": { "activity": { "local": 36 } }
+      "effects": {
+        "neglect": -2,
+        "exp": {
+          "local": 0.8
+        }
+      },
+      "cure": {
+        "activity": {
+          "local": 36
+        }
+      }
     },
     {
       "id": "chousei_heta",
       "name": "調整下手",
       "color": "red",
       "description": "根回しが苦手。党の幹部と県議団との関係が上がりにくい。",
-      "effects": { "relations": { "party": 0.7, "kengi": 0.7 } },
-      "cure": { "ability": { "調整": 65 } }
+      "effects": {
+        "relations": {
+          "party": 0.7,
+          "kengi": 0.7
+        }
+      },
+      "cure": {
+        "ability": {
+          "調整": 65
+        }
+      }
     },
     {
       "id": "enjou",
@@ -196,10 +498,17 @@
       "description": "発言が燃えやすい。街頭演説のあとに炎上することがある。",
       "effects": {
         "mishap": {
-          "activities": ["speech"],
+          "activities": [
+            "speech"
+          ],
           "chance": 0.1,
           "text": "演説の切り抜き動画がネットで炎上した。",
-          "effects": { "relations": { "press": -6 }, "mood": -1 }
+          "effects": {
+            "relations": {
+              "press": -6
+            },
+            "mood": -1
+          }
         }
       }
     },
@@ -208,30 +517,55 @@
       "name": "苦労知らず",
       "color": "red",
       "description": "育ちのよさが鼻につく。選挙で本人の票が少し減る。",
-      "effects": { "vote": -0.015 },
-      "cure": { "activity": { "local": 30, "festival": 10 } }
+      "effects": {
+        "vote": -0.015
+      },
+      "cure": {
+        "activity": {
+          "local": 30,
+          "festival": 10
+        }
+      }
     },
     {
       "id": "byoujaku",
       "name": "病弱",
       "color": "red",
       "description": "無理がきかない。活動で使う体力が増える。",
-      "effects": { "stamina": 1.15 },
-      "cure": { "activity": { "training": 20 } }
+      "effects": {
+        "stamina": 1.15
+      },
+      "cure": {
+        "activity": {
+          "training": 20
+        }
+      }
     },
     {
       "id": "ippiki_ookami",
       "name": "一匹狼",
       "color": "green",
       "description": "群れない。党の幹部との関係は上がりにくいが、後援会には好かれる。",
-      "effects": { "relations": { "party": 0.7, "supporters": 1.3 } }
+      "effects": {
+        "relations": {
+          "party": 0.7,
+          "supporters": 1.3
+        }
+      }
     },
     {
       "id": "gekijougata",
       "name": "劇場型",
       "color": "green",
       "description": "目立つが危うい。街頭演説の経験点が増えるが、出来事の弁舌の判定に弱い。",
-      "effects": { "exp": { "speech": 1.3 }, "risk": { "弁舌": -10 } }
+      "effects": {
+        "exp": {
+          "speech": 1.3
+        },
+        "risk": {
+          "弁舌": -10
+        }
+      }
     }
   ],
   "archetype_skills": {
@@ -254,13 +588,28 @@
   "lineage_skills": {
     "note": "家系ごとの特殊能力と、ほかの議員に付く確率。プレイヤーは出自（世襲・名門）に応じて必ず付く。",
     "hereditary": [
-      { "id": "koenkai_keishou", "rate": 0.6 },
-      { "id": "kurou_shirazu", "rate": 0.3 }
+      {
+        "id": "koenkai_keishou",
+        "rate": 0.6
+      },
+      {
+        "id": "kurou_shirazu",
+        "rate": 0.3
+      }
     ],
     "dynasty": [
-      { "id": "meimon_kanban", "rate": 0.5 },
-      { "id": "koenkai_keishou", "rate": 0.5 },
-      { "id": "kurou_shirazu", "rate": 0.4 }
+      {
+        "id": "meimon_kanban",
+        "rate": 0.5
+      },
+      {
+        "id": "koenkai_keishou",
+        "rate": 0.5
+      },
+      {
+        "id": "kurou_shirazu",
+        "rate": 0.4
+      }
     ]
   },
   "npc": {
@@ -269,14 +618,41 @@
     "gold_rate": 0.12,
     "gold_min_terms": 6,
     "green_rate": 0.12,
-    "red_pool": ["shitsugen", "hirei_dayori", "jimoto_fuzai", "chousei_heta", "enjou", "byoujaku"],
-    "gold_pool": ["senkyo_kamisama", "nemawashi_oni", "ronpa_ou"],
-    "green_pool": ["ippiki_ookami", "gekijougata"]
+    "red_pool": [
+      "shitsugen",
+      "hirei_dayori",
+      "jimoto_fuzai",
+      "chousei_heta",
+      "enjou",
+      "byoujaku"
+    ],
+    "gold_pool": [
+      "senkyo_kamisama",
+      "nemawashi_oni",
+      "ronpa_ou"
+    ],
+    "green_pool": [
+      "ippiki_ookami",
+      "gekijougata"
+    ]
   },
   "player": {
     "note": "プレイヤーが始めるときに、経歴類型の特殊能力に加えて出自ごとに付く特殊能力。新人は叩き上げなので何も付かない。",
     "newcomer": [],
-    "hereditary": ["koenkai_keishou", "kurou_shirazu"],
-    "dynasty": ["meimon_kanban", "koenkai_keishou", "kurou_shirazu"]
+    "hereditary": [
+      "koenkai_keishou",
+      "kurou_shirazu"
+    ],
+    "dynasty": [
+      "meimon_kanban",
+      "koenkai_keishou",
+      "kurou_shirazu"
+    ]
+  },
+  "hints": {
+    "note": "活動のあとに、その活動で身につく特殊能力のコツを得る確率と、コツの上限",
+    "chance": 0.12,
+    "max_level": 3,
+    "discount_per_level": 0.15
   }
 }

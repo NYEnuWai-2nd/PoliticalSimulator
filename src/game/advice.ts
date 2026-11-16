@@ -1,10 +1,10 @@
 // 毎月の助言（通常モードで秘書が話す。CLI の hint でも使う）。
 // 今の数値を条件の表に当てはめ、優先度の高いものから数個を返す。画面には依存しない。
 import careerRaw from "../../data/game/career.json";
-import { ACTIVITIES, canRunForLeader, canUpgrade, isPrimeMinister, moneyOutlook, postCategory, prRank, raceForecast } from "./career.js";
+import { ACTIVITIES, canLearnSkill, canRunForLeader, canUpgrade, isPrimeMinister, moneyOutlook, postCategory, prRank, raceForecast } from "./career.js";
 import type { CareerState, CareerWorld } from "./career.js";
 import { ABILITIES } from "./tables.js";
-import { SKILLS, neglectShift } from "./skills.js";
+import { SKILLS, neglectShift, skillById } from "./skills.js";
 
 const C = careerRaw;
 
@@ -17,7 +17,15 @@ export interface Advice {
   tab?: "self" | "party" | "cabinet";
   /** 大きいほど先に出す */
   priority: number;
+  /** 放っておくと困ること（体力、資金、地盤、情勢の悪化など）。「警告だけ」の設定ではこれだけを出す */
+  warn?: boolean;
 }
+
+/** 助言の出し方。all は全部、warn は警告だけ、off は出さない */
+export type AdviceLevel = "all" | "warn" | "off";
+
+/** 警告とみなす優先度の下限 */
+const WARN_PRIORITY = 75;
 
 const actName = (id: string) => (id === "duty" ? "公務" : (ACTIVITIES.find((a) => a.id === id)?.name ?? id));
 
@@ -64,6 +72,36 @@ export function adviseMonth(state: CareerState, world: CareerWorld, max = 3): Ad
         add({ text: `総選挙まであと${mo.monthsToElection}か月。相手の${top.name}に${gap}ポイント負けています。地元回りで地盤を固めましょう。`, act: p.jiban < 4 ? "local" : "speech", priority: 85 });
       else add({ text: `総選挙まであと${mo.monthsToElection}か月、情勢は優勢です（${-gap}ポイントの差）。油断せず地元を固めましょう。`, act: "festival", priority: 40 });
     }
+  }
+
+  // この数か月の推移（月末ごとの記録と今を比べる）
+  const past = state.history?.find((h) => state.turn - h.turn >= 3) ?? state.history?.[0];
+  if (past && state.turn - past.turn >= 2) {
+    const months = state.turn - past.turn;
+    const dm = state.money - past.money;
+    if (dm <= -150 && mo.monthsLeft < 24)
+      add({ text: `この${months}か月で資金が${-dm}万円減っています（今は${state.money}万円）。早めに資金集めを挟みましょう。`, act: "fund", priority: 78 });
+    const da = Math.round((state.gov.approval - past.approval) * 10) / 10;
+    const mine = state.gov.ruling.party === state.setup.party || state.gov.ruling.partners.includes(state.setup.party);
+    if (Math.abs(da) >= 4)
+      add({
+        text: `この${months}か月で内閣支持率が${da > 0 ? "上がって" : "下がって"}います（${past.approval}→${state.gov.approval}%）。${mine === da > 0 ? "与党の自党には追い風です。今のうちに地盤を固めましょう。" : "自党には向かい風です。地元の支持を厚くしておきましょう。"}`,
+        act: mine === da > 0 ? "local" : "festival",
+        priority: mine === da > 0 ? 42 : 79,
+      });
+    const nowShare = state.setup.route === "pr" ? undefined : raceForecast(state, world).find((x) => x.isPlayer)?.share;
+    if (past.share !== undefined && nowShare !== undefined) {
+      const ds = Math.round((nowShare - past.share) * 1000) / 10;
+      if (ds <= -2) add({ text: `この${months}か月で、選挙区の見込みが${-ds}ポイント下がっています。地元回りと地域行事で取り返しましょう。`, act: "local", priority: 81 });
+      else if (ds >= 2) add({ text: `この${months}か月で、選挙区の見込みが${ds}ポイント上がっています。この調子です。`, priority: 20 });
+    }
+  }
+
+  // コツで覚えられる特殊能力
+  for (const [id, lv] of Object.entries(state.skillHints ?? {})) {
+    if (!canLearnSkill(state, world, id).ok) continue;
+    add({ text: `「${skillById(id)?.name}」のコツ（Lv${lv}）をつかんでいます。「自分」の画面で経験点を使って覚えられます。`, tab: "self", priority: 72 });
+    break;
   }
 
   // 能力を上げられる
@@ -116,6 +154,11 @@ export function adviseMonth(state: CareerState, world: CareerWorld, max = 3): Ad
     );
   }
 
+  const hash = (t: string) => [...t].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7);
+  for (const a of out) {
+    a.warn = a.priority >= WARN_PRIORITY;
+    if (!a.warn) a.priority -= ((state.turn + hash(a.text.slice(0, 8))) % 3) * 12;
+  }
   out.sort((a, b) => b.priority - a.priority);
   // 同じ活動をすすめる助言は1つにまとめる
   const seen = new Set<string>();
@@ -132,4 +175,11 @@ export function adviseMonth(state: CareerState, world: CareerWorld, max = 3): Ad
 /** 今月のおすすめの活動（助言の中で最初に活動をすすめているもの） */
 export function recommendedActivity(advice: Advice[]): string | undefined {
   return advice.find((a) => a.act)?.act;
+}
+
+/** 設定に合わせて助言を絞る（警告だけ、なし） */
+export function filterAdvice(advice: Advice[], level: AdviceLevel): Advice[] {
+  if (level === "off") return [];
+  if (level === "warn") return advice.filter((a) => a.warn);
+  return advice;
 }

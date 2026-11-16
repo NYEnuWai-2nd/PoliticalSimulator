@@ -53,7 +53,12 @@
         "governance": 1
       },
       "conviction": 5,
-      "loyalty": 2
+      "loyalty": 2,
+      "skills": [
+        "ronpa_ou",
+        "anpo_jitsumu",
+        "ippiki_ookami"
+      ]
     }
   ]
 }
