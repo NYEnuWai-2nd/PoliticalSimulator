@@ -55,7 +55,7 @@ interface App {
   overlay?: "log" | "help";
   logFilter: LogFilter;
   /** 出来事の結果（閉じるまで出しておく） */
-  result?: { title: string; choice: string; text: string };
+  result?: { title: string; choice: string; text: string; changes: string[] };
   /** 画面のモード（このブラウザに覚えておく） */
   mode: UiMode;
   /** 秘書の助言の出し方（このブラウザに覚えておく） */
@@ -253,7 +253,7 @@ function render(): void {
       <nav class="tabs" aria-label="画面の切り替え">${TABS.map((t, i) => `<button class="tab${t.id === app.tab ? " is-active" : ""}" data-tab="${t.id}">${icon(t.icon, 20)}${t.label}<kbd aria-hidden="true">${i + 1}</kbd></button>`).join("")}</nav>
     </header>
     <main class="view${app.tab === "act" ? " is-act" : ""}">${body}</main>
-    <footer class="status">${statusBar(state, world)}</footer>
+    <footer class="status">${statusBar(state, world, app.mode)}</footer>
   </div>
   ${modalHtml()}
   ${app.toast ? `<div class="cut toast" role="status">${esc(app.toast)}</div>` : ""}`;
@@ -312,7 +312,8 @@ function modalHtml(): string {
   if (app.result) {
     const r = app.result;
     return `<div class="overlay"><div class="cut dialog" role="dialog" aria-modal="true"><h2>${esc(r.title)}</h2><p class="muted" style="margin:0 0 6px">選んだこと：${esc(r.choice)}</p><p>${esc(r.text)}</p>
-      <button class="btn primary" data-action="close-result">閉じる</button></div></div>`;
+      ${r.changes.length ? `<p class="change-tags">${r.changes.map((c) => `<span class="change-tag ${/[-−]|下がった/.test(c) ? "down" : "up"}">${esc(c)}</span>`).join("")}</p>` : ""}
+      <button class="btn primary wide" data-action="close-result">閉じる</button></div></div>`;
   }
   // 総選挙の結果
   if (state.elections.length > app.electionsShown) return electionView(state, state.elections[state.elections.length - 1]);
@@ -431,16 +432,15 @@ function choose(index: number): void {
   const state = app.state!;
   const pe = state.pendingEvent;
   if (!pe) return;
-  const before = state.maxStamina;
   const r = chooseEvent(state, app.world!, index);
   if (!r.ok) {
     showToast(r.message);
     return;
   }
-  // 結果の文は「題名：選んだこと → 結果（変化）」の形
-  const text = r.message.split(" → ").slice(1).join(" → ") || r.message;
-  const extra = state.maxStamina !== before ? `　体力の上限が${state.maxStamina}になった` : "";
-  app.result = { title: pe.title, choice: pe.choices[index], text: text + extra };
+  // 結果の文は「題名：選んだこと → 結果（変化）」の形。変化は札にして別に出す
+  const text = (r.message.split(" → ").slice(1).join(" → ") || r.message).replace(/（[^）]*）$/, "");
+  const changes = r.changes ?? [];
+  app.result = { title: pe.title, choice: pe.choices[index], text, changes };
   render();
 }
 
@@ -648,7 +648,7 @@ window.addEventListener("keydown", (e) => {
 // ---------- ツールチップ（マウスを乗せる／長押し） ----------
 
 const tipEl = document.createElement("div");
-tipEl.className = "tooltip";
+tipEl.className = "cut tooltip";
 tipEl.setAttribute("role", "tooltip");
 document.body.appendChild(tipEl);
 let suppressClick = false;

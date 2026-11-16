@@ -139,7 +139,7 @@ export interface Highlight {
   kind: string;
   title: string;
   text: string;
-  lines: { name: string; role: string; text: string }[];
+  lines: { name: string; role: string; text: string; party?: string }[];
 }
 
 /** 総選挙の結果のうち、画面と記録に残すもの */
@@ -264,6 +264,11 @@ function rand(s: CareerState): number {
 
 function log(s: CareerState, text: string, level?: CareerLog["level"]): void {
   s.log.push({ turn: s.turn, date: dateOf(s), text, ...(level ? { level } : {}) });
+}
+
+/** 政局の記録（解散、党首選、連立、不信任案など。自分のことではない政治の動き） */
+function logGov(s: CareerState, text: string, level?: CareerLog["level"]): void {
+  s.log.push({ turn: s.turn, date: dateOf(s), text, kind: "gov", ...(level ? { level } : {}) });
 }
 
 export const originById = (id: OriginId) => ORIGINS.find((o) => o.id === id)!;
@@ -455,14 +460,14 @@ function runLeaderElection(state: CareerState, world: CareerWorld, party: string
   const isRuling = state.gov.ruling.party === party;
   const votes = result.candidates.map((c) => `${c.member.name.displayName}${c.member.id === world.player.id ? "（自分）" : ""}${c.votes}票`).join("、");
   const showLog = world.player.party === party || isRuling;
-  if (showLog) log(state, `${partyById(party).short}の党首選（${reason}）：${votes}。${result.winner.name.displayName}が${before === result.winner.id ? "再選された" : "新しい党首に選ばれた"}。`);
+  if (showLog) logGov(state, `${partyById(party).short}の党首選（${reason}）：${votes}。${result.winner.name.displayName}が${before === result.winner.id ? "再選された" : "新しい党首に選ばれた"}。`);
   if (playerRuns && result.winner.id !== world.player.id) log(state, "党首選に敗れた。");
   if (isRuling) {
     state.leaderTermEnd = addMonths(state, PL.leader.term_months);
     state.leaderTermsServed = before === result.winner.id ? state.leaderTermsServed + 1 : 1;
     if (before !== result.winner.id) state.pmSince = state.year;
     if (result.winner.id === world.player.id) state.playerLeaderTerms++;
-    if (termLimited) log(state, "首相は党首の任期の上限に達し、退いた。");
+    if (termLimited) logGov(state, "首相は党首の任期の上限に達し、退いた。");
     if (rebuild) {
       const changed = before !== result.winner.id;
       rebuildGovernment(state, world, state.gov.ruling);
@@ -973,6 +978,8 @@ function playerBonus(state: CareerState): number {
 export interface TurnResult {
   ok: boolean;
   message: string;
+  /** 動いた数値の一覧（出来事の結果で、画面に札として出す） */
+  changes?: string[];
 }
 
 /** 活動や出来事で得る経験点などの倍率。やる気と、秘書との関係（段取りのよさ）で決まる */
@@ -998,6 +1005,7 @@ function applyEffects(state: CareerState, world: CareerWorld, e: Effects): strin
     // 関係が上がるときは特殊能力（根回しの鬼、調整下手など）の倍率がかかる
     const v = (n as number) > 0 ? Math.round((n as number) * relationMultiplier(world.player.skills, k)) : (n as number);
     state.relations[k as RelationId] = clamp(state.relations[k as RelationId] + v, 0, 100);
+    if (v) out.push(`${RELATIONS.find((r) => r.id === k)?.name ?? k}${v > 0 ? "+" : ""}${v}`);
   }
   if (e.money) {
     state.money = Math.max(0, state.money + e.money);
@@ -1208,12 +1216,15 @@ export function chooseEvent(state: CareerState, world: CareerWorld, index: numbe
   const choice = ev.choices[index];
   if (!choice) return { ok: false, message: `選択肢は1〜${ev.choices.length}です。` };
   const failed = choice.risk && world.player.abilities[choice.risk.ability] + riskBonus(world.player.skills, choice.risk.ability) < choice.risk.threshold;
-  const changes = applyEffects(state, world, failed ? choice.risk!.fail_effects : choice.effects);
+  const eff = failed ? choice.risk!.fail_effects : choice.effects;
+  const changes = applyEffects(state, world, eff);
+  if (eff.stamina) changes.unshift(`体力${eff.stamina > 0 ? "+" : ""}${eff.stamina}`);
+  if (eff.mood) changes.push(eff.mood > 0 ? "やる気が上がった" : "やる気が下がった");
   const result = failed ? choice.risk!.fail_result : choice.result;
   const text = `${pe.title}：${choice.label} → ${result.replaceAll("{secretary}", state.secretaryName)}${changes.length ? `（${changes.join("、")}）` : ""}`;
   log(state, text);
   state.pendingEvent = undefined;
-  return { ok: true, message: text };
+  return { ok: true, message: text, changes };
 }
 
 function maybeLifeEvent(state: CareerState, world: CareerWorld): void {
@@ -1249,7 +1260,7 @@ async function endMonth(state: CareerState, world: CareerWorld): Promise<void> {
   if (state.money < 0) {
     state.money = 0;
     state.mood = clamp(state.mood - 1, 1, 5);
-    log(state, "資金が尽き、事務所の家賃の支払いに困った。");
+    log(state, "資金が尽き、事務所の家賃の支払いに困った。", "minor");
   }
   // 関係は放っておくと基準の値に少しずつ戻る
   const D = C.relation_drift;
@@ -1292,9 +1303,9 @@ async function endMonth(state: CareerState, world: CareerWorld): Promise<void> {
     g.over = undefined;
     if (pm || g.approval >= PL.pm.dissolve_approval) {
       dissolve = true;
-      log(state, "内閣不信任案が可決され、首相は衆議院を解散した。");
+      logGov(state, "内閣不信任案が可決され、首相は衆議院を解散した。", "major");
     } else {
-      log(state, "内閣不信任案が可決され、内閣は総辞職した。");
+      logGov(state, "内閣不信任案が可決され、内閣は総辞職した。", "major");
       runLeaderElection(state, world, g.ruling.party, "内閣総辞職", true);
     }
   }
@@ -1303,7 +1314,7 @@ async function endMonth(state: CareerState, world: CareerWorld): Promise<void> {
     state.lowApprovalMonths = g.approval < PL.pm.resign_approval ? state.lowApprovalMonths + 1 : 0;
     if (state.lowApprovalMonths >= PL.pm.resign_months) {
       state.lowApprovalMonths = 0;
-      log(state, `支持率の低迷（${g.approval}%）が続き、首相が辞任を表明した。`);
+      logGov(state, `支持率の低迷（${g.approval}%）が続き、首相が辞任を表明した。`, "major");
       runLeaderElection(state, world, g.ruling.party, "首相の辞任", true);
     }
   }
@@ -1315,10 +1326,10 @@ async function endMonth(state: CareerState, world: CareerWorld): Promise<void> {
     log(state, `首相として衆議院を解散した（内閣支持率${g.approval}%）。`);
   } else if (!pm && !dissolve && !termEnded && aiWantsDissolution(g, rand(state))) {
     dissolve = true;
-    log(state, `首相が衆議院を解散した（内閣支持率${g.approval}%）。`);
+    logGov(state, `首相が衆議院を解散した（内閣支持率${g.approval}%）。`, "major");
   }
   if (termEnded || dissolve) {
-    if (termEnded) log(state, "衆議院議員の任期が満了した。", "major");
+    if (termEnded) logGov(state, "衆議院議員の任期が満了した。", "major");
     await holdElection(state, world);
   } else {
     maybeLifeEvent(state, world);
@@ -1375,7 +1386,7 @@ async function holdElection(state: CareerState, world: CareerWorld): Promise<voi
   // 選挙費用
   const cost = Math.min(state.money, C.election_cost.max);
   state.money -= cost;
-  log(state, `選挙費用に${cost}万円を使った。`);
+  if (cost > 0) log(state, `選挙費用に${cost}万円を使った。`, "minor");
   const d = result.smd.find((x) => x.pref === state.setup.pref);
   const me = result.roster.find((m) => m.id === world.player.id);
   const prSeats = result.pr[state.setup.party]?.length ?? 0;
@@ -1422,7 +1433,7 @@ async function holdElection(state: CareerState, world: CareerWorld): Promise<voi
   // 連立を組み直す（政権交代もありうる）
   const prev = state.gov.ruling;
   const coalition = formCoalition(world.roster, prev);
-  log(state, coalition.text);
+  logGov(state, coalition.text, "major");
   // 党首の入れ替え：政権を失った党と、党首が議席を失った党は党首選をする
   state.gov.ruling = coalition.ruling;
   for (const party of Object.keys(state.leaders)) if (!world.roster.some((m) => m.party === party)) delete state.leaders[party];
@@ -1439,7 +1450,7 @@ async function holdElection(state: CareerState, world: CareerWorld): Promise<voi
     state.pmSince = state.year;
     if (state.leaders[coalition.ruling.party] === world.player.id) state.playerLeaderTerms++;
     const pmName = world.roster.find((m) => m.id === state.leaders[coalition.ruling.party])?.name.displayName ?? "";
-    log(state, `${describeRuling(coalition.ruling)}の連立政権が発足し、${pmName}が首相に就いた。`);
+    logGov(state, `${describeRuling(coalition.ruling)}の連立政権が発足し、${pmName}が首相に就いた。`);
   }
   // 内閣を組み直す。プレイヤーが役職に就くこともある
   rebuildGovernment(state, world, coalition.ruling);
@@ -1504,7 +1515,7 @@ function pushHighlight(state: CareerState, world: CareerWorld, kind: string, var
   const fill = (t: string) => t.replace(/\{(\w+)\}/g, (_, k: string) => vars[k] ?? (k === "secretary" ? state.secretaryName : ""));
   const variant = def.variants[Math.floor(rand(state) * def.variants.length)] ?? [];
   const pmNow = world.government.find((a) => a.post.id === "pm")?.member;
-  const who = (m: Member | undefined, role: string) => ({ name: m?.name.displayName ?? "", role: m ? role : "" });
+  const who = (m: Member | undefined, role: string) => ({ name: m?.name.displayName ?? "", role: m ? role : "", party: m?.party });
   const lines = variant.map((l) => {
     const text = fill(l.text);
     switch (l.speaker) {

@@ -1013,10 +1013,6 @@
   align-items: flex-start;
 }
 
-/* 通常モードでは状態の帯の細かい数字（支持率、与党、総選挙の年月）を省く */
-.mode-normal .status .hp-meta > span:first-child {
-  visibility: hidden;
-}
 
 @media (max-width: 760px) {
   .arena.normal {
@@ -1062,13 +1058,7 @@
     font-size: 11px;
   }
 
-  .mode-normal .status .hp-meta > span:first-child {
-    display: none;
-  }
 
-  .mode-normal .center .msg small {
-    display: none;
-  }
 }
 
 /* PC ではカードを全部並べるので、横スクロールの矢印と影は出さない */
@@ -1449,4 +1439,449 @@
   margin: 0;
   line-height: 1.6;
   font-weight: 700;
+}
+
+.off-reasons {
+  margin: 6px 0 0;
+  padding-left: 1.2em;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* =====================================================================
+   Gemini の画面の評価（2026-11-16）を受けた直し
+   ===================================================================== */
+
+/* ---- 角を切り落とした枠は、例外なく .cut の二重の疑似要素で描く（outline と clip-path を一緒に使わない） ---- */
+.pro-warn {
+  --bd: #f08a24;
+  --bg: #fff3e0;
+  outline: none;
+  background: none;
+}
+
+.tooltip {
+  --c: 8px;
+  --bd: #ffe24a;
+  --bg: rgba(8, 20, 40, 0.97);
+  position: fixed;
+  outline: none;
+  clip-path: none;
+  background: none;
+}
+
+/* ---- 日本語の途中で改行しない ---- */
+.post {
+  display: inline-block;
+  white-space: nowrap;
+}
+
+.legend-item,
+.lean-tag,
+.side-badge,
+.arch-rank,
+.el-name,
+.name-btn {
+  white-space: nowrap;
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+}
+
+.post-cabinet {
+  color: #c41c3a;
+}
+
+.post-party {
+  color: #1f4f9a;
+}
+
+/* ---- 始め方：与党・野党の札、思想のタグ、経歴類型のランク ---- */
+.side-badge {
+  display: inline-block;
+  margin-left: 4px;
+  padding: 0 6px;
+  border-radius: 4px;
+  background: #e4ecf5;
+  color: #34506f;
+  font-size: 11px;
+  font-weight: 900;
+  vertical-align: middle;
+}
+
+.side-badge.ruling {
+  background: #fff1c2;
+  color: #7a4a00;
+}
+
+.lean-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.lean-tag {
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: #e8f3fc;
+  color: #2b6aa8;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.arch-ranks {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 2px 8px;
+  margin-top: 2px;
+}
+
+.arch-rank {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 2px;
+}
+
+.arch-rank small {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.arch-rank b {
+  font-size: 15px;
+  -webkit-text-stroke: 0.4px #0b2447;
+}
+
+/* 県の一覧は、下に続くことが分かるように端をぼかす */
+.pref-list {
+  -webkit-mask-image: linear-gradient(to bottom, #000 88%, transparent);
+  mask-image: linear-gradient(to bottom, #000 88%, transparent);
+  padding-bottom: 28px;
+  scrollbar-width: thin;
+}
+
+/* ---- 押せないボタンははっきり沈め、押せる能力アップのボタンは色を付ける ---- */
+.btn:disabled,
+.card:disabled {
+  opacity: 0.35;
+  filter: grayscale(1);
+  box-shadow: none;
+}
+
+.ups .btn:not(:disabled) {
+  border-color: #1b86c7;
+  background: linear-gradient(180deg, #f0fbff, #a9e0ff);
+  color: #0b3a66;
+}
+
+/* ---- ランクの列：見出しと行で同じ並び ---- */
+.ranks {
+  display: grid;
+  grid-template-columns: repeat(6, 24px);
+  gap: 3px;
+}
+
+.rank,
+.rank-h {
+  width: 24px;
+  min-width: 0;
+}
+
+.rank-head .face-space {
+  width: 30px;
+  flex: none;
+}
+
+/* ---- ゲージの基準の線（関係は40、協力度は60） ---- */
+.mini-gauge.mark-40,
+.bar.mark-60 {
+  position: relative;
+}
+
+.mini-gauge.mark-40::after,
+.bar.mark-60::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 0 0 1px rgba(11, 36, 71, 0.4);
+}
+
+.mini-gauge.mark-40::after {
+  left: 40%;
+}
+
+.bar.mark-60::after {
+  left: 60%;
+}
+
+/* ---- 情勢：自分と相手の数字に政党の色の印 ---- */
+.race-me,
+.race-them {
+  font-weight: 900;
+}
+
+.race-me::before,
+.race-them::before {
+  content: "";
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: 4px;
+  border-radius: 2px;
+  background: var(--pc);
+}
+
+.race-vs {
+  color: var(--muted);
+}
+
+/* ---- 自分の画面：PC では左右の列の高さをそろえる ---- */
+.self-grid {
+  align-items: start;
+}
+
+/* ---- ポップアップ：暗幕を濃くし、PC では真ん中に出す ---- */
+.overlay {
+  background: rgba(6, 18, 38, 0.78);
+}
+
+.confirm-overlay {
+  align-items: center;
+}
+
+@media (min-width: 761px) {
+  .overlay {
+    align-items: center;
+  }
+}
+
+.btn.wide {
+  display: block;
+  width: 100%;
+  margin-top: 12px;
+}
+
+/* ---- 人物の詳しい情報：思想の軸の両端に名前 ---- */
+.d-axis {
+  grid-template-columns: 2.4em 4.8em minmax(40px, 1fr) 4.8em;
+}
+
+.axis-pole {
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.2;
+  text-align: center;
+}
+
+.axis-pole.on {
+  color: var(--ink);
+  font-weight: 900;
+}
+
+/* ---- 総選挙の開票結果：候補者は1人1行 ---- */
+.el-cands {
+  display: grid;
+  gap: 4px;
+  margin: 6px 0;
+}
+
+.el-cand {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto auto;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+}
+
+.el-cand.me {
+  font-weight: 900;
+  color: #ffe24a;
+}
+
+.el-cand small {
+  color: #b9c7d6;
+}
+
+.el-cand b {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---- 会話：左に顔の札 ---- */
+.say {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.say-face {
+  width: 36px;
+  height: 36px;
+  font-size: 18px;
+  color: #fff;
+  font-weight: 900;
+}
+
+.say-body {
+  min-width: 0;
+}
+
+.hl-title.cut {
+  --c: 8px;
+  --bd: #ffd34d;
+  --bg: linear-gradient(90deg, #d4302f, #ff8a00);
+  background: none;
+  padding: 4px 16px;
+  margin-bottom: 6px;
+}
+
+/* ---- 出来事の結果：何が動いたかの札 ---- */
+.change-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 8px 0 0;
+}
+
+.change-tag {
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 900;
+  background: #dff6e6;
+  color: #11692f;
+}
+
+.change-tag.down {
+  background: #fde3e3;
+  color: #a3222b;
+}
+
+/* ---- 記録：山場の行に薄い背景 ---- */
+.log-list li.major {
+  padding: 4px 6px;
+  border-radius: 4px;
+  background: #fff4e0;
+}
+
+/* ---- 遊び方：見出しに印、大事な言葉を強調 ---- */
+.help section h3 {
+  padding-left: 8px;
+  border-left: 4px solid var(--focus);
+}
+
+.help .kw {
+  color: #b35900;
+}
+
+/* ---- 影の内閣の開閉を押せる見た目に ---- */
+.shadow-cabinet summary {
+  display: inline-block;
+  padding: 4px 12px;
+  border: 2px solid #8ebce0;
+  border-radius: 999px;
+  background: #f2faff;
+}
+
+/* ---- 地図：PC では凡例まで1画面に収める ---- */
+@media (min-width: 761px) {
+  #map svg {
+    max-height: calc(100vh - 320px);
+    width: auto;
+    max-width: 100%;
+  }
+}
+
+/* ---- スマホ ---- */
+@media (max-width: 760px) {
+  /* 活動を選んだときの効果は消さない（実行の案内だけ省く） */
+  .center .msg .tap-hint {
+    display: none;
+  }
+
+  .center .msg small.effect {
+    display: block;
+  }
+
+  /* 丸い活動のボタンにも体力の増減と札を出す */
+  .cards-wrap .card .cost {
+    display: block;
+    position: absolute;
+    left: 50%;
+    bottom: -7px;
+    transform: translateX(-50%);
+    padding: 0 5px;
+    border-radius: 6px;
+    background: #fff;
+    font-size: 9px;
+    white-space: nowrap;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  }
+
+  .cards-wrap .card .tag {
+    display: block;
+    top: -8px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 0 5px;
+    font-size: 9px;
+    white-space: nowrap;
+    z-index: 2;
+  }
+
+  .cards-wrap .cards {
+    padding: 14px 34px 12px;
+  }
+
+  .scroll-hint {
+    opacity: 0.85;
+  }
+
+  /* 一覧のランクは行の下に置く。見出しも同じ位置から始める */
+  .rank-head .face-space,
+  .rank-head .grow {
+    display: none;
+  }
+
+  /* 能力の行は2段にする（1段目に名前・ランク・数値・ボタン、2段目にゲージと次の費用） */
+  .stat-row {
+    grid-template-columns: 4.2em 2em 2.4em 1fr;
+    grid-template-rows: auto auto;
+    row-gap: 4px;
+  }
+
+  .stat-row .stat-meter {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+
+  .stat-row .ups {
+    grid-column: 4;
+    grid-row: 1;
+    justify-self: end;
+  }
+
+  .stat-row .cost-line {
+    white-space: nowrap;
+  }
+
+  /* 特殊能力の行は、札と説明を上下に並べる */
+  .skill-row {
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .skill-row .skill {
+    min-width: 0;
+  }
+
+  .el-cand {
+    font-size: 13px;
+  }
 }
