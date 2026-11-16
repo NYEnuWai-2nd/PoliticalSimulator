@@ -82,6 +82,8 @@ interface LifeEvent {
   status?: string[];
   /** 役職の種類（minister, pm, party_exec, leader）。書いてあればその役職のときだけ起きる */
   post?: string[];
+  /** 季節の出来事。書いてあればその月だけ起きる */
+  months?: number[];
   choices: {
     label: string;
     result: string;
@@ -113,6 +115,8 @@ export interface CareerLog {
   turn: number;
   date: string;
   text: string;
+  /** 政局（政権の行動、採決、政界の出来事）の記録なら "gov"。書いていなければ自分の記録 */
+  kind?: "gov";
 }
 
 /** 総選挙の結果のうち、画面と記録に残すもの */
@@ -196,6 +200,8 @@ export interface CareerState {
   /** プレイヤーが与党の党首を務めた期数の通算（生涯の上限に使う） */
   playerLeaderTerms: number;
   rngCounter: number;
+  /** 政権の記録（gov.log）のうち、自分の記録に写し終えた数 */
+  govLogCopied?: number;
   over?: string;
 }
 
@@ -764,6 +770,7 @@ function maybeLifeEvent(state: CareerState, world: CareerWorld): void {
   const pool = LIFE_EVENTS.filter((e) => {
     if (e.status && !e.status.includes(state.status)) return false;
     if (e.post && !e.post.includes(kind)) return false;
+    if (e.months && !e.months.includes(state.month)) return false;
     const h = state.eventHistory[e.id];
     if (!h) return true;
     if (e.once) return false;
@@ -817,6 +824,7 @@ async function endMonth(state: CareerState, world: CareerWorld): Promise<void> {
   if (!pm) aiGovernmentActions(state.gov, ctx);
   endTurn(state.gov, ctx);
   state.gov.scenes = [];
+  copyGovLog(state);
   const g = state.gov;
   const termEnded = g.over?.startsWith("任期満了") ?? false;
   let dissolve = false;
@@ -967,6 +975,14 @@ async function holdElection(state: CareerState, world: CareerWorld): Promise<voi
   });
   state.gov.scenes = [];
   state.gov.fatigue = fatigueOf(state);
+  state.govLogCopied = state.gov.log.length;
+}
+
+/** 政権の記録のうち新しいものを、政局の記録として自分の記録に写す（総選挙で政権の状態が作り直されても残るように） */
+function copyGovLog(state: CareerState): void {
+  const from = state.govLogCopied ?? 0;
+  for (const e of state.gov.log.slice(from)) state.log.push({ turn: state.turn, date: e.date, text: e.text, kind: "gov" });
+  state.govLogCopied = state.gov.log.length;
 }
 
 const pct = (x: number) => `${Math.round(x * 1000) / 10}%`;
@@ -974,6 +990,18 @@ const pct = (x: number) => `${Math.round(x * 1000) / 10}%`;
 // ---- 表示用のまとめ ----
 
 /** 画面や CLI に出す、今の状態の要約 */
+/** 資金の見通し：毎月の経費、今の資金で経費を払える月数、任期満了までの月数、選挙費用の上限 */
+export function moneyOutlook(state: CareerState): { expense: number; monthsLeft: number; monthsToElection: number; electionCost: number } {
+  const expense = (C.monthly_expense as Record<CareerState["status"], number>)[state.status];
+  const t = state.gov.termEnd;
+  return {
+    expense,
+    monthsLeft: Math.floor(state.money / expense),
+    monthsToElection: Math.max(0, (t.year - state.year) * 12 + (t.month - state.month)),
+    electionCost: C.election_cost.max,
+  };
+}
+
 export function careerSummary(state: CareerState, world: CareerWorld) {
   const p = world.player;
   return {

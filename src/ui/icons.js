@@ -103,6 +103,7 @@ export function iconSvg(id, size = 32, label = "") {
   }
   return raw.replace(
     "<svg ",
-    `<svg width="${safeSize}" height="${safeSize}" role="img" aria-label="${safeLabel}" `
+    // 名前がなければ飾りとして読み上げない（横に同じ文字があるときなど）
+    label ? `<svg width="${safeSize}" height="${safeSize}" role="img" aria-label="${safeLabel}" ` : `<svg width="${safeSize}" height="${safeSize}" aria-hidden="true" focusable="false" `
   );
 }

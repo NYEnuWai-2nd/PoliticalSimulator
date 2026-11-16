@@ -1,9 +1,10 @@
 {
-  "note": "議員人生モードで毎月の終わりに起きうる日常の出来事。政治以外の出来事も含む（恋愛は入れない）。chance はひと月に何か起きる確率、weight は選ばれやすさ。status を書いた出来事はその立場のときだけ起きる。choices の effects は体力 stamina、やる気 mood、資金 money（万円）、経験点 exp、関係 relations、地盤の進み具合 jiban_progress、能力 abilities の増減。{secretary} は秘書の名前に置き換える。 once が true の出来事は一生に一度だけ起きる。同じ出来事は career.json の event_cooldown_months のあいだは繰り返さない。 post を書いた出来事はその役職のときだけ起きる（minister 大臣と官房長官、pm 首相、party_exec 党三役、leader 野党の党首）。risk のある選択肢は、能力が threshold 未満だと fail_effects と fail_result になる。approval は内閣支持率の増減。",
+  "note": "議員人生モードで毎月の終わりに起きうる日常の出来事。政治以外の出来事も含む（恋愛は入れない）。chance はひと月に何か起きる確率、weight は選ばれやすさ。status を書いた出来事はその立場のときだけ起きる。choices の effects は体力 stamina、やる気 mood、資金 money（万円）、経験点 exp、関係 relations、地盤の進み具合 jiban_progress、能力 abilities の増減。{secretary} は秘書の名前に置き換える。 once が true の出来事は一生に一度だけ起きる。同じ出来事は career.json の event_cooldown_months のあいだは繰り返さない。 post を書いた出来事はその役職のときだけ起きる（minister 大臣と官房長官、pm 首相、party_exec 党三役、leader 野党の党首）。risk のある選択肢は、能力が threshold 未満だと fail_effects と fail_result になる。approval は内閣支持率の増減。months を書いた出来事（季節の言葉が入るもの）はその月だけ起きる。",
   "chance": 0.3,
   "events": [
     {
       "id": "festival_mikoshi",
+      "months": [9, 10, 11],
       "weight": 3,
       "title": "秋祭りの神輿",
       "text": "地元の秋祭りで、町内会長から「今年は神輿を担いでみないか」と声をかけられた。",
@@ -157,6 +158,7 @@
     },
     {
       "id": "heavy_snow",
+      "months": [12, 1, 2],
       "weight": 1,
       "title": "大雪",
       "text": "記録的な大雪で、地元の高齢者の家が雪に埋もれていると連絡が入った。",
@@ -300,6 +302,7 @@
     },
     {
       "id": "farmer_visit",
+      "months": [4, 5, 6],
       "weight": 1,
       "title": "農家の手伝い",
       "text": "田植えの時期、支援者の農家から「人手が足りない」と電話があった。",

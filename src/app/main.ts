@@ -7,15 +7,15 @@ import { createWorld } from "../game/roster.js";
 import type { Member, MemberFactory } from "../game/roster.js";
 import { formInitialGovernment } from "../game/cabinet.js";
 import type { Appointment } from "../game/cabinet.js";
-import { chooseEvent, govAction, startCareer, takeTurn, upgradeAbility } from "../game/career.js";
+import { chooseEvent, govAction, raceForecast, startCareer, takeTurn, upgradeAbility } from "../game/career.js";
 import type { CareerState, CareerWorld, OriginId, RouteId } from "../game/career.js";
 import type { Ability } from "../game/tables.js";
 import { deserializeCareer, parseSave, saveLabel, serializeCareer } from "../game/save.js";
 import type { NameData } from "../data/nameData.js";
 import { partyById } from "../game/parties.js";
 import { PREFECTURES, renderJapanMap } from "../map/japanMap.js";
-import { FX, activityIds, activityView, cabinetView, memberDetail, partyView, selfView, setupView, statusBar } from "./views.js";
-import type { SetupChoice } from "./views.js";
+import { FX, activityIds, activityView, cabinetView, helpView, logView, memberDetail, partyView, selfView, setupView, statusBar } from "./views.js";
+import type { LogFilter, SetupChoice } from "./views.js";
 import { chip, esc, icon, pct } from "./ui.js";
 
 type Tab = "act" | "map" | "party" | "cabinet" | "self";
@@ -35,7 +35,7 @@ interface App {
   world?: CareerWorld;
   tab: Tab;
   selected?: string;
-  last?: { text: string; fx: string };
+  last?: { text: string; fx: string; note?: string };
   busy: boolean;
   /** 見せた総選挙の数（新しい総選挙があれば結果を出す） */
   electionsShown: number;
@@ -48,6 +48,11 @@ interface App {
   names?: NameData;
   /** 最後に自動保存した時刻（表示用） */
   savedAt?: string;
+  /** 記録か遊び方のポップアップ */
+  overlay?: "log" | "help";
+  logFilter: LogFilter;
+  /** 出来事の結果（閉じるまで出しておく） */
+  result?: { title: string; choice: string; text: string };
 }
 
 // ---------- セーブ ----------
@@ -154,12 +159,14 @@ const app: App = {
   busy: false,
   electionsShown: 0,
   setupStep: 0,
+  logFilter: "all",
 };
 const root = document.querySelector<HTMLDivElement>("#app")!;
 
 // ---------- 描画 ----------
 
 function render(): void {
+  hideTip();
   const { state, world } = app;
   if (state && world && !app.busy) autosave();
   if (!state || !world) {
@@ -177,7 +184,7 @@ function render(): void {
   root.innerHTML = `<div class="shell">
     <header class="topbar">
       <div class="crumb"><div class="diamond"></div><div><span class="crumb-sub">議員人生 ― ${esc(world.player.name.displayName)}・当選${world.player.terms}回</span><span class="crumb-main">${tab.title}</span></div></div>
-      <nav class="tabs" aria-label="画面の切り替え">${TABS.map((t, i) => `<button class="tab${t.id === app.tab ? " is-active" : ""}" data-tab="${t.id}">${icon(t.icon, 20, t.label)}${t.label}<kbd>${i + 1}</kbd></button>`).join("")}</nav>
+      <nav class="tabs" aria-label="画面の切り替え">${TABS.map((t, i) => `<button class="tab${t.id === app.tab ? " is-active" : ""}" data-tab="${t.id}">${icon(t.icon, 20)}${t.label}<kbd aria-hidden="true">${i + 1}</kbd></button>`).join("")}</nav>
     </header>
     <main class="view${app.tab === "act" ? " is-act" : ""}">${body}</main>
     <footer class="status">${statusBar(state, world)}</footer>
@@ -196,7 +203,15 @@ function mapViewShell(): string {
   const info = holder
     ? `<b>${esc(PREFECTURES[pref - 1].name)}</b>：${chip(holder.party)} <button class="name-btn" data-member="${holder.id}">${esc(holder.name.displayName)}</button>（${esc(partyById(holder.party).short)}・当選${holder.terms}回・地盤${holder.jiban}）${pr.length ? `　比例：${pr.map((m) => `<button class="name-btn" data-member="${m.id}">${esc(m.name.displayName)}</button>`).join("、")}` : ""}`
     : "";
-  return `<div class="page"><section class="cut box"><div id="map"></div><p style="margin:8px 0 0">${info}</p><p class="muted" style="margin:4px 0 0">県を押すと、その県の議員を表示します。枠の太い県が自分の地元です。</p></section></div>`;
+  return `<div class="page"><section class="cut box"><div id="map"></div><p style="margin:8px 0 0">${info}</p><p class="muted" style="margin:4px 0 0">県を押すと、その県の議員を表示します。赤い太枠の県が自分の地元です。</p>${mapLegend(w.roster)}</section></div>`;
+}
+
+/** 地図の凡例：県の色は小選挙区の議席を持つ政党 */
+function mapLegend(roster: Member[]): string {
+  const counts = new Map<string, number>();
+  for (const m of roster) if (m.seat === "小選挙区") counts.set(m.party, (counts.get(m.party) ?? 0) + 1);
+  const items = [...counts].sort((a, b) => b[1] - a[1]).map(([p, n]) => `<span class="legend-item">${chip(p)}${esc(partyById(p).short)} ${n}</span>`);
+  return `<div class="legend"><span class="muted">県の色＝小選挙区の議席を持つ政党</span>${items.join("")}</div>`;
 }
 
 function mountMap(): void {
@@ -225,6 +240,13 @@ function modalHtml(): string {
   const { state, world } = app;
   if (!state || !world) return "";
   if (app.memberId !== undefined) return memberDetail(state, world, app.memberId);
+  if (app.overlay === "log") return logView(state, app.logFilter);
+  if (app.overlay === "help") return helpView();
+  if (app.result) {
+    const r = app.result;
+    return `<div class="overlay"><div class="cut dialog" role="dialog" aria-modal="true"><h2>${esc(r.title)}</h2><p class="muted" style="margin:0 0 6px">選んだこと：${esc(r.choice)}</p><p>${esc(r.text)}</p>
+      <button class="btn primary" data-action="close-result">閉じる</button></div></div>`;
+  }
   // 総選挙の結果
   if (state.elections.length > app.electionsShown) {
     const e = state.elections[state.elections.length - 1];
@@ -284,18 +306,69 @@ async function start(): Promise<void> {
   render();
 }
 
+/** 月の前後で見比べる値 */
+function snapshotNumbers() {
+  const { state, world } = app;
+  // 比例名簿の道では小選挙区の見込みがない
+  const me = state!.setup.route === "pr" ? undefined : raceForecast(state!, world!).find((x) => x.isPlayer)?.share;
+  return { approval: state!.gov.approval, share: me, maxStamina: state!.maxStamina, ruling: state!.gov.ruling.party };
+}
+
+/** 月の前後の変化を短い文にする（情勢と内閣支持率が動いた理由の手がかりも添える） */
+function describeChanges(before: ReturnType<typeof snapshotNumbers>, after: ReturnType<typeof snapshotNumbers>): string | undefined {
+  const state = app.state!;
+  const parts: string[] = [];
+  const da = Math.round((after.approval - before.approval) * 10) / 10;
+  if (Math.abs(da) >= 0.5) parts.push(`内閣支持率 ${before.approval}→${after.approval}%`);
+  if (before.share !== undefined && after.share !== undefined) {
+    const ds = after.share - before.share;
+    if (Math.abs(ds) >= 0.003) {
+      // 内閣支持率は与党に追い風（または向かい風）として党の支持を動かす。動いた向きが合えばそれを理由として示す
+      const mine = after.ruling === state.setup.party || state.gov.ruling.partners.includes(state.setup.party);
+      const windUp = (da > 0) === mine;
+      const reason =
+        Math.abs(da) >= 0.5 && before.ruling === after.ruling && windUp === ds > 0
+          ? `（支持率の変化で${mine ? "与党の自党" : "野党の自党"}に${windUp ? "追い風" : "向かい風"}）`
+          : ds < 0
+            ? "（相手の陣営の動きや関係の変化）"
+            : "";
+      parts.push(`情勢の見込み ${pct(before.share)}→${pct(after.share)}${reason}`);
+    }
+  }
+  if (after.maxStamina !== before.maxStamina) parts.push(`体力の上限が${after.maxStamina}になった`);
+  return parts.length ? parts.join("　") : undefined;
+}
+
 async function doActivity(id: string): Promise<void> {
   const { state, world } = app;
   if (!state || !world || app.busy) return;
   app.busy = true;
+  const before = snapshotNumbers();
   const r = await takeTurn(state, world, id);
   app.busy = false;
   if (!r.ok) {
     showToast(r.message);
     return;
   }
-  app.last = { text: r.message, fx: FX[id] ?? "" };
+  app.last = { text: r.message, fx: FX[id] ?? "", note: describeChanges(before, snapshotNumbers()) };
   app.selected = undefined;
+  render();
+}
+
+function choose(index: number): void {
+  const state = app.state!;
+  const pe = state.pendingEvent;
+  if (!pe) return;
+  const before = state.maxStamina;
+  const r = chooseEvent(state, app.world!, index);
+  if (!r.ok) {
+    showToast(r.message);
+    return;
+  }
+  // 結果の文は「題名：選んだこと → 結果（変化）」の形
+  const text = r.message.split(" → ").slice(1).join(" → ") || r.message;
+  const extra = state.maxStamina !== before ? `　体力の上限が${state.maxStamina}になった` : "";
+  app.result = { title: pe.title, choice: pe.choices[index], text: text + extra };
   render();
 }
 
@@ -316,6 +389,11 @@ root.addEventListener("click", (ev) => {
   }
   const target = ev.target as HTMLElement;
   // ポップアップの外側を押したら閉じる
+  if (target.classList.contains("overlay") && target.dataset.action === "close-overlay") {
+    app.overlay = undefined;
+    render();
+    return;
+  }
   if (target.classList.contains("overlay") && target.dataset.action === "close-member") {
     app.memberId = undefined;
     render();
@@ -367,9 +445,19 @@ root.addEventListener("click", (ev) => {
     for (let i = 0; i < Number(d.times ?? 1); i++) if (upgradeAbility(app.state!, app.world!, d.up as Ability)) n++;
     if (n) showToast(`${d.up}を${n}上げた`);
     else render();
-  } else if (d.choose !== undefined) {
-    const r = chooseEvent(app.state!, app.world!, Number(d.choose));
-    showToast(r.message);
+  } else if (d.choose !== undefined) choose(Number(d.choose));
+  else if (d.action === "close-result") {
+    app.result = undefined;
+    render();
+  } else if (d.action === "open-log" || d.action === "open-help") {
+    app.overlay = d.action === "open-log" ? "log" : "help";
+    render();
+  } else if (d.action === "close-overlay") {
+    app.overlay = undefined;
+    render();
+  } else if (d.log) {
+    app.logFilter = d.log as LogFilter;
+    render();
   } else if (d.action === "close-election") {
     app.electionsShown = app.state!.elections.length;
     render();
@@ -399,16 +487,18 @@ root.addEventListener("click", (ev) => {
 // 数字キーで画面を切り替え、活動の画面では左右キーで選び Enter で実行する。出来事は数字キーで選ぶ
 window.addEventListener("keydown", (e) => {
   if (!app.state || !app.world || app.busy || e.altKey || e.ctrlKey || e.metaKey) return;
-  if (app.memberId !== undefined) {
+  if (app.memberId !== undefined || app.overlay || app.result) {
     if (e.key === "Escape" || e.key === "Enter") {
-      app.memberId = undefined;
+      if (app.memberId !== undefined) app.memberId = undefined;
+      else if (app.overlay) app.overlay = undefined;
+      else app.result = undefined;
       render();
     }
     return;
   }
   if (app.state.pendingEvent) {
     const n = Number(e.key);
-    if (n >= 1 && n <= app.state.pendingEvent.choices.length) showToast(chooseEvent(app.state, app.world, n - 1).message);
+    if (n >= 1 && n <= app.state.pendingEvent.choices.length) choose(n - 1);
     return;
   }
   if (app.state.elections.length > app.electionsShown) {
@@ -443,7 +533,7 @@ document.body.appendChild(tipEl);
 let suppressClick = false;
 let pressTimer: number | undefined;
 
-function showTip(el: HTMLElement, x: number, y: number): void {
+function showTip(el: HTMLElement, x: number, _y: number): void {
   const text = el.dataset.tip;
   if (!text) return;
   tipEl.innerHTML = text
@@ -452,8 +542,11 @@ function showTip(el: HTMLElement, x: number, y: number): void {
     .join("");
   tipEl.classList.add("is-open");
   const r = tipEl.getBoundingClientRect();
-  const left = Math.min(Math.max(8, x + 14), window.innerWidth - r.width - 8);
-  const top = y + 18 + r.height > window.innerHeight ? y - r.height - 14 : y + 18;
+  // 指している要素の下に出し、入らなければ上に出す（要素そのものと隣の行に重ねない）
+  const box = el.getBoundingClientRect();
+  const left = Math.min(Math.max(8, x - r.width / 2), window.innerWidth - r.width - 8);
+  const below = box.bottom + 6;
+  const top = below + r.height <= window.innerHeight - 8 ? below : box.top - r.height - 6;
   tipEl.style.left = `${left}px`;
   tipEl.style.top = `${Math.max(8, top)}px`;
 }
@@ -543,6 +636,9 @@ async function boot(): Promise<void> {
     }
     if (params.get("select")) app.selected = params.get("select")!;
     if (months) app.electionsShown = params.get("showElection") ? 0 : app.state?.elections.length ?? 0;
+    // 確認用：?overlay=log または help で記録か遊び方を開く
+    const overlay = params.get("overlay");
+    if (overlay === "log" || overlay === "help") app.overlay = overlay;
     // 確認用：?member=rival で選挙区の相手、数字でその議員の詳しい情報を開く
     const member = params.get("member");
     if (member && app.state && app.world) {

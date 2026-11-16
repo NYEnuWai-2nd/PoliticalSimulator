@@ -53,7 +53,7 @@ const HELP = `議員人生モード（CLI 版）
   costs                            能力を1上げるのに使う経験点の一覧
   up <能力> [回数]                 経験点で能力を上げる（例: up 知名度 3）。月は進まない
   choose <番号>                    出来事の選択肢を選ぶ（1から）。選ぶまで月を進められない
-  log [件数]                       記録
+  log [件数] [self|gov|all]        記録（既定は自分の記録。gov は政局、all は両方）
   do duty                          公務（役職に就いているとき。役職ごとに効果が違う）
   run on|off                       次の党首選に立候補する／しない（当選3回以上・党の幹部との関係50以上）
 
@@ -257,7 +257,9 @@ async function handle(s: Session, line: string): Promise<Reply | "quit"> {
       return govAction(s.state, s.world, args[0] ?? "", args[1]);
     case "log": {
       const n = Number(args[0] ?? 15) || 15;
-      return { ok: true, message: s.state.log.slice(-n).map((l) => `${l.date} ${l.text}`).join("\n") };
+      const which = args[1] ?? "self";
+      const list = s.state.log.filter((l) => which === "all" || (which === "gov" ? l.kind === "gov" : l.kind !== "gov"));
+      return { ok: true, message: list.slice(-n).map((l) => `${l.date} ${l.kind === "gov" ? "［政局］" : ""}${l.text}`).join("\n") };
     }
     default:
       return { ok: false, message: `「${cmd}」というコマンドはありません。help で一覧を見てください。` };

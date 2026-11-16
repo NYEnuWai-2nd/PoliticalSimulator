@@ -356,6 +356,99 @@
   gap: 4px;
 }
 
+/* ===== PC：活動の画面を縦いっぱいに使い、カードは全部並べる ===== */
+
+@media (min-width: 761px) {
+  .shell {
+    height: 100vh;
+    min-height: 0;
+    grid-template-rows: auto minmax(0, 1fr) auto;
+  }
+
+  .view {
+    overflow-y: auto;
+  }
+
+  .view.is-act {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .view.is-act .arena {
+    flex: 1;
+    grid-template-rows: auto minmax(0, 1fr) auto;
+  }
+
+  .cards-wrap .cards {
+    flex-wrap: wrap;
+    justify-content: center;
+    overflow: visible;
+    padding-top: 22px;
+    row-gap: 22px;
+  }
+
+  .cards-wrap .card {
+    flex: 1 1 92px;
+    max-width: 118px;
+  }
+
+  .cards-wrap .scroll-hint,
+  .cards-wrap::before,
+  .cards-wrap::after {
+    display: none;
+  }
+}
+
+/* ===== 実行ボタン、経験点の見込み ===== */
+
+.run-btn {
+  margin-top: 10px;
+  min-height: 48px;
+  padding: 6px 28px;
+  font-size: 16px;
+}
+
+.exp-add {
+  padding: 0 6px;
+  border: 1px dashed rgba(255, 229, 72, 0.7);
+  border-radius: 6px;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.exp-add:empty {
+  display: none;
+}
+
+.scroll-hint svg {
+  display: block;
+}
+
+/* ===== 目的の説明、地図の凡例 ===== */
+
+.goal {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.6;
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+  margin-top: 8px;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
 /* ===== スマホ縦：縦スクロールなしで収める ===== */
 
 @media (max-width: 760px) {
@@ -465,6 +558,17 @@
     font-size: 11px;
   }
 
+  .run-btn {
+    margin-top: 6px;
+    min-height: 44px;
+    padding: 4px 20px;
+    font-size: 14px;
+  }
+
+  .goal {
+    font-size: 12px;
+  }
+
   /* 活動は1列に並べて横にスクロールする */
   .cards-wrap {
     margin: 0 -10px;
@@ -474,6 +578,7 @@
 
   .cards-wrap .cards {
     display: flex;
+    flex-wrap: nowrap;
     gap: 10px;
     overflow-x: auto;
     margin: 0;
@@ -564,4 +669,201 @@
   align-items: center;
   gap: 8px 12px;
   margin-bottom: 12px;
+}
+
+/* ===== 状態の帯：警告、記録と遊び方のボタン ===== */
+
+.sys-btns {
+  display: flex;
+  gap: 6px;
+}
+
+.sys-btn {
+  min-width: 40px;
+  height: 36px;
+  padding: 0 10px;
+  border: 2px solid #fff;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #2f7fd0, #164d8e);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.money.warn {
+  --bd: #ff5a5a;
+  color: #ffb3b3;
+}
+
+.money small {
+  margin-left: 4px;
+  font-size: 11px;
+  color: #ff8a8a;
+}
+
+.tired {
+  color: #ff9a9a;
+}
+
+.gauge.low .fill {
+  background: linear-gradient(90deg, #ff3b3b 0%, #ff9f1a 100%);
+}
+
+/* ===== 議員の一覧：ランクの列の見出し ===== */
+
+.rank-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 10px;
+  font-size: 11px;
+  font-weight: 900;
+  color: var(--muted);
+}
+
+.rank-head .grow {
+  flex: 1;
+}
+
+.rank-h {
+  min-width: 24px;
+  text-align: center;
+}
+
+/* ===== 記録と遊び方（縦に長いポップアップ） ===== */
+
+.dialog.sheet {
+  width: min(640px, calc(100vw - 24px));
+  max-height: calc(100dvh - 40px);
+  display: flex;
+  flex-direction: column;
+}
+
+.sheet-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  margin-bottom: 8px;
+}
+
+.sheet-head h2 {
+  margin: 0;
+  color: var(--ink);
+}
+
+.sheet-head .close {
+  margin-left: auto;
+}
+
+.sheet-body {
+  overflow-y: auto;
+  min-height: 0;
+  padding-right: 4px;
+}
+
+.log-date {
+  margin: 10px 0 4px;
+  font-size: 14px;
+  color: var(--ink);
+}
+
+.log-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 4px;
+}
+
+.log-list li {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 8px;
+  align-items: start;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.log-kind {
+  padding: 0 6px;
+  border-radius: 4px;
+  background: #2b7bc4;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.log-list li.gov .log-kind {
+  background: #7a5bb5;
+}
+
+.help section h3 {
+  margin: 12px 0 2px;
+  font-size: 15px;
+  color: var(--ink);
+}
+
+.help section p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+/* ===== そのほか ===== */
+
+.option .lean {
+  color: #2b6aa8;
+}
+
+.msg .note {
+  display: block;
+  margin-top: 2px;
+  font-size: 12px;
+  color: #2b6aa8;
+}
+
+@media (max-width: 760px) {
+  .status .hp-block {
+    flex: 1 1 calc(100% - 96px);
+    flex-basis: calc(100% - 96px);
+  }
+
+  .status .sys-btns {
+    order: 6;
+  }
+
+  .sys-btn {
+    min-width: 40px;
+    height: 32px;
+    padding: 0 8px;
+    font-size: 12px;
+  }
+
+  .msg .note {
+    font-size: 11px;
+  }
+
+  /* 議員の行：名前と肩書きの下にランクを置く */
+  .member-row {
+    flex-wrap: wrap;
+  }
+
+  .member-row .grow {
+    flex-basis: calc(100% - 50px);
+  }
+
+  .member-row .ranks {
+    margin-left: 46px;
+  }
+
+  .rank-head {
+    padding-left: 56px;
+  }
+
+  .rank-head .grow {
+    display: none;
+  }
 }

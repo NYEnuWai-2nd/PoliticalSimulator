@@ -146,7 +146,7 @@
     {
       "id": "kosei",
       "name": "公正党",
-      "short": "公正",
+      "short": "公正党",
       "color": "#d6336c",
       "lineage_profile": "その他",
       "ideology_center": {
@@ -216,7 +216,7 @@
     {
       "id": "sankaku",
       "name": "参画党",
-      "short": "参画",
+      "short": "参画党",
       "color": "#ef6c00",
       "lineage_profile": "その他",
       "ideology_center": {
@@ -231,7 +231,7 @@
     {
       "id": "shahei",
       "name": "社会平和党",
-      "short": "社平",
+      "short": "社平党",
       "color": "#00897b",
       "lineage_profile": "その他",
       "ideology_center": {

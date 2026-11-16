@@ -2,7 +2,8 @@
 // HTML を返すだけで、操作は main.ts が受け取る。
 // data-tip を付けた要素は、マウスを乗せるか長押しするとツールチップが出る（main.ts）。
 // data-member を付けた要素は、押すとその人物の詳しい情報が出る。
-import { ACTIVITIES, EXP_TYPES, ORIGINS, RELATIONS, ROUTE_NAMES, canRunForLeader, canUpgrade, careerSummary, govBills, isPrimeMinister, postCategory, prRank, raceForecast, startOptions, upgradeCost } from "../game/career.js";
+import { ACTIVITIES, EXP_TYPES, ORIGINS, RELATIONS, ROUTE_NAMES, canRunForLeader, canUpgrade, careerSummary, govBills, isPrimeMinister, moneyOutlook, postCategory, prRank, raceForecast, startOptions, upgradeCost } from "../game/career.js";
+import type { Party } from "../game/parties.js";
 import type { CareerState, CareerWorld, OriginId, RouteId } from "../game/career.js";
 import { IDEOLOGY_AXES, PARTIES, partyById } from "../game/parties.js";
 import { ABILITIES, TABLES, rankOf } from "../game/tables.js";
@@ -58,7 +59,7 @@ export function setupView(roster: Member[], c: SetupChoice, step: number, saved?
     title = "政党を選ぶ";
     const seated = PARTIES.filter((p) => !p.is_independent && roster.some((m) => m.party === p.id));
     body = `<div class="options cols-2">${seated
-      .map((p) => `<button class="option${c.party === p.id ? " is-active" : ""}" data-setup="party" data-value="${p.id}"><b>${chip(p.id)} ${esc(p.short)}</b><small>${esc(p.name)}・${roster.filter((m) => m.party === p.id).length}議席</small></button>`)
+      .map((p) => `<button class="option${c.party === p.id ? " is-active" : ""}" data-setup="party" data-value="${p.id}"><b>${chip(p.id)} ${esc(p.short)}</b><small>${esc(p.name)}・${roster.filter((m) => m.party === p.id).length}議席</small><small class="lean">${esc(partyLean(p))}</small></button>`)
       .join("")}</div>`;
   } else if (step === 2) {
     title = "出馬の道と地元の県を選ぶ";
@@ -94,9 +95,21 @@ export function setupView(roster: Member[], c: SetupChoice, step: number, saved?
       <p style="text-align:center"><button class="btn primary big" data-action="start">この条件で始める</button></p>`;
   }
   return `<div class="setup">
-    <div class="setup-head"><h1>議員人生</h1><div class="steps">${progress}</div></div>
+    <div class="setup-head"><h1>議員人生</h1>${step === 0 ? `<p class="goal">一人の新人候補として総選挙での初当選を目指し、地盤を固めて役職を上っていく。党首選に勝って与党の党首になれば首相にもなれる。75歳になるか、30年たつと引退して終わる。</p>` : ""}<div class="steps">${progress}</div></div>
     <section class="cut box step-box"><div class="step-title">${back}<h2>${title}</h2><span></span></div>${body}</section>
   </div>`;
+}
+
+/** 政党の思想の傾き（中心からの離れが大きい軸を3つまで） */
+export function partyLean(p: Party): string {
+  return (
+    IDEOLOGY_AXES.map((x) => ({ x, v: p.ideology_center[x.id] }))
+      .filter((a) => Math.abs(a.v) >= 1)
+      .sort((a, b) => Math.abs(b.v) - Math.abs(a.v))
+      .slice(0, 3)
+      .map((a) => (a.v < 0 ? a.x.minus : a.x.plus))
+      .join("・") || "中道"
+  );
 }
 
 // ---------- 状態の帯 ----------
@@ -104,12 +117,17 @@ export function setupView(roster: Member[], c: SetupChoice, step: number, saved?
 export function statusBar(state: CareerState, world: CareerWorld): string {
   const s = careerSummary(state, world);
   const [cur, max] = s.stamina.split("/").map(Number);
+  const mo = moneyOutlook(state);
+  const moneyWarn = mo.monthsLeft < 6 || (mo.monthsToElection <= 12 && state.money < mo.electionCost / 2);
+  const moneyTip = `手元の資金 ${state.money}万円\n毎月の経費 ${mo.expense}万円。今の資金で約${mo.monthsLeft}か月もつ\n任期満了の総選挙まで${mo.monthsToElection}か月。選挙費用は最大${mo.electionCost}万円で、多く使えるほど票が上乗せされる\n資金集めの活動で増やせる`;
+  const tired = cur < 30;
   return `<div class="pill-party">${chip(state.setup.party)}${esc(partyById(state.setup.party).short)}・${esc(s.post || s.status)}<span ${tip(`やる気 ${state.mood} / 5\n活動で得る経験点が ${[0.7, 0.85, 1, 1.15, 1.3][state.mood - 1]} 倍になる`)}>${moodIcon(state.mood, 24)}</span></div>
     <div class="cut date">${icon("st-calendar", 20)}<span>${state.year}年</span><b>${state.month}月</b></div>
-    <div class="cut money" ${tip("手元の資金\n毎月の経費と総選挙の費用に使う。選挙資金が多いほど票が上乗せされる")}>${icon("ab-fund", 20)}${state.money}万円</div>
+    <div class="cut money${moneyWarn ? " warn" : ""}" ${tip(moneyTip)}>${icon("ab-fund", 20)}${state.money}万円${moneyWarn ? `<small>${mo.monthsLeft < 6 ? `あと${mo.monthsLeft}か月` : "選挙費用が足りない"}</small>` : ""}</div>
+    <span class="sys-btns"><button class="sys-btn" data-action="open-log">記録</button><button class="sys-btn" data-action="open-help" aria-label="遊び方">？</button></span>
     <div class="hp-block">
-      <div class="hp-meta"><span ${tip(`内閣支持率 ${s.approval}%\n与党 ${s.ruling}　首相 ${s.primeMinister}\n次の総選挙 ${s.nextElection}\n与党の党首選 ${s.leaderElection}`)}>支持率 <b>${s.approval}%</b>　与党 ${esc(s.ruling)}　総選挙 ${state.gov.termEnd.year}年${state.gov.termEnd.month}月まで</span><span>${icon("st-stamina", 14)} 体力</span></div>
-      <div class="cut gauge" ${tip(`体力 ${cur} / ${max}\n20未満で無理をすると倒れることがある`)}><span class="fill" style="width:${Math.round((cur / max) * 100)}%"></span><span class="val">${cur} / ${max}</span></div>
+      <div class="hp-meta"><span ${tip(`内閣支持率 ${s.approval}%\n与党 ${s.ruling}　首相 ${s.primeMinister}\n次の総選挙 ${s.nextElection}\n与党の党首選 ${s.leaderElection}`)}>支持率 <b>${s.approval}%</b>　与党 ${esc(s.ruling)}　総選挙 ${state.gov.termEnd.year}年${state.gov.termEnd.month}月まで</span><span class="${tired ? "tired" : ""}">${icon("st-stamina", 14)} 体力${tired ? "が少ない（休養を）" : ""}</span></div>
+      <div class="cut gauge${tired ? " low" : ""}" ${tip(`体力 ${cur} / ${max}\n20未満で無理をすると倒れることがある。休養と趣味の時間で戻る`)}><span class="fill" style="width:${Math.round((cur / max) * 100)}%"></span><span class="val">${cur} / ${max}</span></div>
     </div>`;
 }
 
@@ -171,11 +189,11 @@ export function activityIds(state: CareerState, world: CareerWorld): string[] {
   return activityList(state, world).map((a) => a.id);
 }
 
-export function activityView(state: CareerState, world: CareerWorld, selected: string | undefined, last: { text: string; fx: string } | undefined): string {
+export function activityView(state: CareerState, world: CareerWorld, selected: string | undefined, last: { text: string; fx: string; note?: string } | undefined): string {
   const acts = activityList(state, world);
   const sel = acts.find((a) => a.id === selected);
   const exp = EXP_TYPES.map(
-    (e) => `<div class="cut exp-row" ${tip(`${e.name}の経験点 ${state.exp[e.id]}\n「自分」の画面で能力を上げるのに使う`)}>${icon(e.icon, 22)}<span class="exp-name">${e.name}</span><span class="exp-val">${state.exp[e.id]}</span><span class="exp-add">${sel?.exp[e.id] ? `+${sel.exp[e.id]}` : ""}</span></div>`,
+    (e) => `<div class="cut exp-row" ${tip(`${e.name}の経験点 ${state.exp[e.id]}\n「自分」の画面で能力を上げるのに使う`)}>${icon(e.icon, 22)}<span class="exp-name">${e.name}</span><span class="exp-val">${state.exp[e.id]}</span><span class="exp-add">${sel?.exp[e.id] ? `見込み+${sel.exp[e.id]}` : ""}</span></div>`,
   ).join("");
   const cards = acts
     .map(
@@ -186,9 +204,9 @@ export function activityView(state: CareerState, world: CareerWorld, selected: s
     )
     .join("");
   const msg = sel
-    ? `${esc(sel.name)}：${esc(sel.description)}<small>${Object.entries(sel.exp).map(([k, v]) => `${expName(k)}+${v}`).join("　")}　体力${sel.stamina > 0 ? "+" : ""}${sel.stamina}　もう一度押すと実行</small>`
+    ? `${esc(sel.name)}：${esc(sel.description)}<small>${Object.entries(sel.exp).map(([k, v]) => `${expName(k)}+${v}`).join("　")}　体力${sel.stamina > 0 ? "+" : ""}${sel.stamina}　下のボタンかカードをもう一度押すと実行</small>`
     : last
-      ? `${esc(last.text)}<small>次の活動を選んでください</small>`
+      ? `${esc(last.text)}${last.note ? `<span class="note">${esc(last.note)}</span>` : ""}<small>次の活動を選んでください</small>`
       : `今月の活動を選んでください<small>カードを押すと説明が出て、もう一度押すと実行します</small>`;
   return `<div class="arena">
     <div class="race-panel">${racePanel(state, world)}</div>
@@ -198,8 +216,9 @@ export function activityView(state: CareerState, world: CareerWorld, selected: s
       <div class="fx">${sel ? FX[sel.id] ?? "" : last?.fx ?? ""}</div>
       <button class="hero-btn" data-member="${world.player.id}" aria-label="自分の詳しい情報">${face(world.player.name.surname, state.setup.party, "hero")}</button>
       <div class="cut msg">${msg}</div>
+      ${sel ? `<button class="btn primary run-btn" data-act="${sel.id}">${esc(sel.name)}を実行する</button>` : ""}
     </div>
-    <div class="cards-wrap"><div class="cards" role="list">${cards}</div><span class="scroll-hint left" aria-hidden="true">◀</span><span class="scroll-hint right" aria-hidden="true">▶</span></div>
+    <div class="cards-wrap"><div class="cards" role="list">${cards}</div><span class="scroll-hint left" aria-hidden="true"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M10 3 L5 8 L10 13" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="scroll-hint right" aria-hidden="true"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M6 3 L11 8 L6 13" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
   </div>`;
 }
 
@@ -238,6 +257,21 @@ export function memberDetail(state: CareerState, world: CareerWorld, id: number)
 
 // ---------- 自分（能力アップ） ----------
 
+/** 経験点が n 回分足りるか（上げるほど必要な経験点が増えるのも含めて数える） */
+function canUpgradeTimes(state: CareerState, p: Member, a: (typeof ABILITIES)[number], n: number): boolean {
+  const exp = { ...state.exp };
+  for (let i = 0; i < n; i++) {
+    const v = p.abilities[a] + i;
+    if (v >= 100) return false;
+    const cost = upgradeCost({ ...p, abilities: { ...p.abilities, [a]: v } }, a);
+    for (const [k, c] of Object.entries(cost)) {
+      exp[k as keyof typeof exp] -= c as number;
+      if (exp[k as keyof typeof exp] < 0) return false;
+    }
+  }
+  return true;
+}
+
 /** savedAt：最後に自動保存した時刻（保存できなかったら undefined） */
 export function selfView(state: CareerState, world: CareerWorld, savedAt?: string): string {
   const p = world.player;
@@ -247,17 +281,16 @@ export function selfView(state: CareerState, world: CareerWorld, savedAt?: strin
     const r = rankOf(v);
     const cost = Object.entries(upgradeCost(p, a)).map(([k, n]) => `${expName(k)}${n}`).join(" ");
     const can = canUpgrade(state, p, a);
+    const can5 = canUpgradeTimes(state, p, a, 5);
     return `<div class="cut stat-row" style="--rc:var(--rank-${r})">
       <span class="stat-label">${a}</span><span class="stat-rank">${r}</span><span class="stat-num">${v}</span>
       <span><span class="bar"><i style="width:${v}%"></i></span><span class="cost-line">${v >= 100 ? "最大" : `次：${cost}`}</span></span>
-      <span class="ups"><button class="btn small" data-up="${a}" ${can ? "" : "disabled"}>+1</button><button class="btn small" data-up="${a}" data-times="5" ${can ? "" : "disabled"}>+5</button></span></div>`;
+      <span class="ups"><button class="btn small" data-up="${a}" ${can ? "" : "disabled"}>+1</button><button class="btn small" data-up="${a}" data-times="5" ${can5 ? "" : "disabled"}>+5</button></span></div>`;
   }).join("");
   const exp = EXP_TYPES.map((e) => `<div class="cut exp-row">${icon(e.icon, 22)}<span class="exp-name">${e.name}</span><span class="exp-val">${state.exp[e.id]}</span></div>`).join("");
   const rel = RELATIONS.map((r) => `<div class="row cut sm" ${tip(REL_TIPS[r.id])}><span class="grow">${esc(r.name)}</span><span class="bar" style="width:40%;--rc:#ff7eb3"><i style="width:${state.relations[r.id]}%"></i></span><b>${state.relations[r.id]}</b></div>`).join("");
   const pips = [1, 2, 3, 4].map((i) => `<i class="${i <= p.jiban ? "on" : ""}"></i>`).join("");
-  const leader = canRunForLeader(state, world)
-    ? `<button class="btn ${state.runForLeader ? "is-active" : ""}" data-action="toggle-run">${state.runForLeader ? "党首選に立候補する（取り消す）" : "次の党首選に立候補する"}</button>`
-    : `<p class="muted" style="margin:0">当選3回以上で党の幹部との関係が50以上なら立候補できる（党首は生涯3期まで）。</p>`;
+  const leader = leaderSection(state, world);
   const ach = state.achievements.length ? state.achievements.map((a) => `<li>${esc(a)}</li>`).join("") : "<li class='muted'>まだない</li>";
   return `<div class="page">
     <div class="page-head"><button class="name-btn big" data-member="${p.id}">${face(p.name.surname, p.party)} ${esc(p.name.displayName)}</button><span class="muted">${s.age}歳・${esc(p.archetype)}・${esc(s.origin)}・当選${p.terms}回</span></div>
@@ -277,7 +310,27 @@ export function selfView(state: CareerState, world: CareerWorld, savedAt?: strin
   </div>`;
 }
 
+// ---------- 党首選（自分と党内の画面で共通） ----------
+
+function leaderSection(state: CareerState, world: CareerWorld): string {
+  const party = state.setup.party;
+  const leaderId = state.leaders[party];
+  const leader = leaderId !== undefined ? findMember(world, leaderId) : undefined;
+  const ruling = state.gov.ruling.party === party;
+  const when = ruling
+    ? `次の党首選：<b>${state.leaderTermEnd.year}年${state.leaderTermEnd.month}月</b>（党首の任期切れ）`
+    : "次の党首選：総選挙で敗れたときや、党首が落選したときに行う";
+  const run = canRunForLeader(state, world)
+    ? `<button class="btn ${state.runForLeader ? "is-active" : ""}" data-action="toggle-run">${state.runForLeader ? "立候補を届け出た（押すと取り消す）" : "次の党首選に立候補する"}</button>`
+    : `<p class="muted" style="margin:0">当選3回以上で、党の幹部との関係が50以上なら立候補できる（党首は生涯3期まで）。今は当選${world.player.terms}回・党の幹部 ${state.relations.party}。</p>`;
+  return `<p style="margin:0 0 6px">党首：${leader ? `<button class="name-btn" data-member="${leader.id}">${esc(leader.name.displayName)}</button>` : "不在"}　${when}</p>${run}`;
+}
+
 // ---------- 党内 ----------
+
+/** 議員の一覧の上に置く、能力のランクの列の見出し */
+const rankHead = () =>
+  `<div class="rank-head"><span class="grow"></span><span class="ranks">${ABILITIES.map((a) => `<span class="rank-h" ${tip(a)}>${a.slice(0, 1)}</span>`).join("")}</span></div>`;
 
 function memberRow(m: Member, extra: string, isPlayer: boolean): string {
   return `<button class="cut row member-row" data-member="${m.id}" ${isPlayer ? 'style="--bd:#e61919;--bg:#fff7e0"' : ""}>${face(m.name.surname, m.party)}
@@ -296,7 +349,8 @@ export function partyView(state: CareerState, world: CareerWorld): string {
   return `<div class="page">
     <section class="cut box"><h2>議席の構成（定数${world.roster.length}・過半数${MAJORITY}）</h2><div class="race-bar" style="height:20px">${bar}</div>
       <p class="muted" style="margin:6px 0 0">${seats.map(({ p, n }) => `${chip(p.id)} ${esc(p.short)} ${n}`).join("　")}</p></section>
-    <section class="cut box"><h2>${chip(party)} ${esc(partyById(party).name)}の議員（${members.length}人）</h2><div class="rows">${rows || "<p class='muted'>議席がない</p>"}</div></section>
+    <section class="cut box"><h2>党首選</h2>${leaderSection(state, world)}</section>
+    <section class="cut box"><h2>${chip(party)} ${esc(partyById(party).name)}の議員（${members.length}人）</h2><div class="rows">${rows ? rankHead() + rows : "<p class='muted'>議席がない</p>"}</div></section>
   </div>`;
 }
 
@@ -323,12 +377,66 @@ export function cabinetView(state: CareerState, world: CareerWorld): string {
       .map(([p, v]) => `<div class="cut row">${chip(p)}<span class="grow">${esc(partyById(p).short)}${g.ruling.partners.includes(p) ? "（連立）" : ""}</span><span class="bar" style="width:30%;--rc:${partyColor(p)}"><i style="width:${v}%"></i></span><b>${v}</b><button class="btn small" data-gov="talk" data-arg="${p}">協議</button></div>`)
       .join("");
     gov = `<section class="cut box"><h2>政権の行動（今月あと${g.actionPoints}回）</h2>
-      <p class="btn-row"><button class="btn" data-gov="nemawashi">${icon("gov-nemawashi", 22)}根回し</button><button class="btn" data-gov="press">${icon("gov-press", 22)}記者会見</button><button class="btn primary" data-gov="dissolve">${icon("gov-dissolve", 22)}解散</button></p>
+      <p class="btn-row"><button class="btn" data-gov="nemawashi">${icon("gov-nemawashi", 22)}根回し</button><button class="btn" data-gov="press">${icon("gov-press", 22)}記者会見</button><button class="btn" data-gov="dissolve">${icon("gov-dissolve", 22)}解散</button></p>
       <p class="muted">与党の結束 ${Math.round(g.cohesion * 100)}%。行動を選び終えたら、活動の画面で今月の活動を選ぶと月末になります。</p>
       <h2>法案</h2><div class="rows">${bills}</div><h2 style="margin-top:12px">各党の協力度</h2><div class="rows">${talks}</div></section>`;
   }
   return `<div class="page">
-    <section class="cut box"><h2>与党 ${esc(careerSummary(state, world).ruling)}　内閣支持率 ${g.approval}%</h2><div class="rows">${rows}</div></section>
+    <section class="cut box"><h2>与党 ${esc(careerSummary(state, world).ruling)}　内閣支持率 ${g.approval}%</h2><div class="rows">${rankHead()}${rows}</div></section>
     ${gov}
   </div>`;
+}
+
+// ---------- 記録 ----------
+
+export type LogFilter = "all" | "self" | "gov";
+
+export function logView(state: CareerState, filter: LogFilter): string {
+  const list = state.log
+    .filter((l) => filter === "all" || (filter === "gov" ? l.kind === "gov" : l.kind !== "gov"))
+    .slice(-400)
+    .reverse();
+  let html = "";
+  let date = "";
+  for (const l of list) {
+    if (l.date !== date) {
+      if (date) html += "</ul>";
+      date = l.date;
+      html += `<h3 class="log-date">${esc(date)}</h3><ul class="log-list">`;
+    }
+    html += `<li class="${l.kind === "gov" ? "gov" : "self"}"><span class="log-kind">${l.kind === "gov" ? "政局" : "自分"}</span><span>${esc(l.text)}</span></li>`;
+  }
+  if (date) html += "</ul>";
+  const tabs = (
+    [
+      ["all", "すべて"],
+      ["self", "自分"],
+      ["gov", "政局"],
+    ] as const
+  )
+    .map(([id, name]) => `<button class="btn small${filter === id ? " is-active" : ""}" data-log="${id}">${name}</button>`)
+    .join("");
+  return `<div class="overlay" data-action="close-overlay"><div class="cut dialog light sheet" role="dialog" aria-modal="true" aria-label="記録">
+    <div class="sheet-head"><h2>記録</h2><span class="route-tabs">${tabs}</span><button class="btn small close" data-action="close-overlay" aria-label="閉じる">✕</button></div>
+    <div class="sheet-body">${html || "<p class='muted'>まだ記録がない</p>"}</div></div></div>`;
+}
+
+// ---------- 遊び方 ----------
+
+const HELP: [string, string][] = [
+  ["目的", "一人の候補者として総選挙での当選を目指す。当選を重ねて大臣や党の役職に就き、与党の党首選に勝てば首相になれる。落選しても浪人として続けられる。75歳になるか、30年たつと引退して終わる。"],
+  ["1か月の流れ", "活動を1つ選ぶと1か月が進む。カードを押すと説明と効果の見込みが出て、「実行する」ボタンかカードをもう一度押すと実行する。月末に経費が引かれ、日常の出来事が起きることがある。出来事は選択肢を選ぶと結果が出る。"],
+  ["総選挙", "任期満了か解散で行う。小選挙区では、党への支持（内閣支持率による風を含む）に、本人の地盤、知名度、後援会・地元紙・県議団との関係、選挙資金が上乗せされる。活動の画面の情勢の棒で見込みが分かる。比例名簿の道では、党の幹部との関係で名簿の順位が決まる。"],
+  ["経験点と能力", "活動で5種類の経験点が貯まる。「自分」の画面で経験点を使って6つの能力を上げる。能力が高いほど、上げるのに必要な経験点が増える。"],
+  ["地盤と関係", "地盤（1〜4）は地元回り、地域行事、県議と連携で固まり、半年何もしないと1段下がる。関係（秘書、党の幹部、後援会、地元紙、県議団）は放っておくと40に戻っていく。数字や棒にマウスを乗せるか長押しすると、何に効くかが出る。"],
+  ["党首選と首相", "当選3回以上で党の幹部との関係が50以上なら、党内の画面で党首選への立候補を届け出られる。与党の党首選は党首の任期切れのときに行う。与党の党首になると首相になり、内閣の画面で法案や解散などの政権の行動を選べる。"],
+  ["記録", "状態の帯（日付や資金の並び）の「記録」で、自分に起きたことと政局の動き（政権の行動、採決、政界の出来事）を月ごとに振り返れる。"],
+  ["保存", "状態はこのブラウザに自動で保存され、始め方の画面の「続きから」で再開できる。「自分」の画面からファイルへの書き出しと読み込みができる。"],
+  ["キー操作", "1〜5：画面の切り替え。活動の画面では ← → で選んで Enter で実行。出来事は数字キーで選ぶ。Esc でポップアップを閉じる。"],
+];
+
+export function helpView(): string {
+  return `<div class="overlay" data-action="close-overlay"><div class="cut dialog light sheet" role="dialog" aria-modal="true" aria-label="遊び方">
+    <div class="sheet-head"><h2>遊び方</h2><button class="btn small close" data-action="close-overlay" aria-label="閉じる">✕</button></div>
+    <div class="sheet-body help">${HELP.map(([t, b]) => `<section><h3>${t}</h3><p>${b}</p></section>`).join("")}</div></div></div>`;
 }
