@@ -1,7 +1,7 @@
 // 毎月の助言（通常モードで秘書が話す。CLI の hint でも使う）。
 // 今の数値を条件の表に当てはめ、優先度の高いものから数個を返す。画面には依存しない。
 import careerRaw from "../../data/game/career.json";
-import { ACTIVITIES, breakdownChance, canLearnSkill, canRunForLeader, canUpgrade, isPrimeMinister, moneyOutlook, postCategory, prRank, raceForecast } from "./career.js";
+import { ACTIVITIES, breakdownChance, canLearnSkill, isOppositionLeader, canRunForLeader, canUpgrade, isPrimeMinister, moneyOutlook, postCategory, prRank, raceForecast } from "./career.js";
 import type { CareerState, CareerWorld } from "./career.js";
 import { ABILITIES } from "./tables.js";
 import { SKILLS, neglectShift, skillById } from "./skills.js";
@@ -40,6 +40,14 @@ export function adviseMonth(state: CareerState, world: CareerWorld, max = 3): Ad
   // 首相：政権の行動が残っている
   if (isPrimeMinister(state, world) && state.gov.actionPoints > 0)
     add({ text: `総理、今月の政権の行動があと${state.gov.actionPoints}回残っています。内閣の画面で法案や根回しを進めましょう。`, tab: "cabinet", priority: 95 });
+
+  // 野党の党首：党首の行動が残っている。選挙協力を結べる相手がいる
+  if (isOppositionLeader(state, world) && state.opp && state.opp.actionPoints > 0) {
+    add({ text: `党首の行動があと${state.opp.actionPoints}回残っています。党内の画面で、ほかの野党との会談や党首討論を進めましょう。`, tab: "party", priority: 74 });
+    const ready = Object.entries(state.opp.cooperation).filter(([p, c]) => c >= 60 && !state.opp!.pacts.includes(p) && world.roster.some((m) => m.party === p) && p !== state.gov.ruling.party && !state.gov.ruling.partners.includes(p));
+    if (ready.length && mo.monthsToElection <= 18)
+      add({ text: `総選挙まであと${mo.monthsToElection}か月です。協力度の高い党と選挙協力を結べば、小選挙区で候補者を一本化できます。`, tab: "party", priority: 76 });
+  }
 
   // 体力
   if (state.stamina < 30)
@@ -142,7 +150,7 @@ export function adviseMonth(state: CareerState, world: CareerWorld, max = 3): Ad
     add({ text: "党首選に立候補できる立場になりました。党内の画面で届け出ておけば、次の党首選に出られます。", tab: "party", priority: 77 });
 
   // 公務
-  if (postCategory(state, world)) add({ text: `${state.post}としての公務をこなすと、党や世論の評価が上がります。`, act: "duty", priority: 50 });
+  if (postCategory(state, world)) add({ text: `${state.post ? `${state.post}としての` : ""}公務をこなすと、党や世論の評価が上がります。`, act: "duty", priority: 50 });
 
   // 何もなければ地盤づくり
   if (!out.some((a) => a.act)) {

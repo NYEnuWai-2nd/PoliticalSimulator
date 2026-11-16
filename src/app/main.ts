@@ -7,8 +7,9 @@ import { createWorld } from "../game/roster.js";
 import type { Member, MemberFactory } from "../game/roster.js";
 import { formInitialGovernment } from "../game/cabinet.js";
 import type { Appointment } from "../game/cabinet.js";
-import { chooseEvent, govAction, learnSkill, raceForecast, startCareer, takeTurn, upgradeAbility } from "../game/career.js";
+import { chooseEvent, govAction, learnSkill, oppAction, raceForecast, startCareer, takeTurn, upgradeAbility } from "../game/career.js";
 import type { AdviceLevel } from "../game/advice.js";
+import type { OppActionId } from "../game/career.js";
 import type { CareerState, CareerWorld, OriginId, RouteId } from "../game/career.js";
 import type { Ability } from "../game/tables.js";
 import { deserializeCareer, parseSave, saveLabel, serializeCareer } from "../game/save.js";
@@ -505,6 +506,10 @@ root.addEventListener("click", (ev) => {
     if (d.gov === "dissolve" && !window.confirm("衆議院を解散して、月末に総選挙を行いますか？")) return;
     const r = govAction(app.state!, app.world!, d.gov, d.arg);
     showToast(r.message);
+  } else if (d.opp) {
+    if (d.opp === "noconfidence" && !window.confirm("内閣不信任案を提出しますか？　否決されると、党への追い風が弱まり、反対した党との協力度が下がります。")) return;
+    const r = oppAction(app.state!, app.world!, d.opp as OppActionId, d.arg);
+    showToast(r.message);
   } else if (d.action === "close-highlight") {
     app.highlightsShown++;
     render();
@@ -696,6 +701,15 @@ async function boot(): Promise<void> {
     for (let i = 0; i < months && app.state && !app.state.over; i++) {
       if (app.state.pendingEvent) chooseEvent(app.state, app.world!, 0);
       await takeTurn(app.state, app.world!, i % 3 === 2 ? "rest" : "local");
+    }
+    // 確認用：&leader=1 で、当選5回の議員として自分の党の党首にして1か月進める（野党の党首の画面を見る）
+    if (params.get("leader") && app.state && app.world) {
+      app.state.status = "議員";
+      app.world.player = { ...app.world.player, terms: 5 };
+      app.state.leaders[app.world.player.party] = app.world.player.id;
+      if (app.state.pendingEvent) chooseEvent(app.state, app.world, 0);
+      await takeTurn(app.state, app.world, "rest");
+      if (app.state.pendingEvent) chooseEvent(app.state, app.world, 0);
     }
     if (params.get("select")) app.selected = params.get("select")!;
     if (months) app.electionsShown = params.get("showElection") ? 0 : app.state?.elections.length ?? 0;

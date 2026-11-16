@@ -30,8 +30,11 @@ import {
   govAction,
   govBills,
   electionComments,
+  isOppositionLeader,
   isPrimeMinister,
   learnSkill,
+  OPP_ACTIONS,
+  oppAction,
   postCategory,
   upgradeAbility,
   upgradeCost,
@@ -60,6 +63,8 @@ const HELP = `議員人生モード（CLI 版） ${VERSION_LABEL}
   choose <番号>                    出来事の選択肢を選ぶ（1から）。選ぶまで月を進められない
   log [件数] [self|gov|all]        記録（既定は自分の記録。gov は政局、all は両方）
   learn <特殊能力>                 コツをつかんだ特殊能力を、経験点を払って覚える（status のコツの行に費用）
+  opp                              野党の様子（協力度、選挙協力、追い風、対案の準備）
+  opp <行動> [政党]                 野党の党首の行動：summit（会談）、debate（党首討論）、pursue（追及）、proposal（対案）、pact（選挙協力）、noconfidence（不信任案）。summit と pact は政党を付ける
   hint                             秘書の助言（今月やるとよいこと。おすすめの活動は do の後ろに書く id）
   do duty                          公務（役職に就いているとき。役職ごとに効果が違う）
   run on|off                       次の党首選に立候補する／しない（当選3回以上・党の幹部との関係50以上）
@@ -306,6 +311,23 @@ async function handle(s: Session, line: string): Promise<Reply | "quit"> {
       if (!sk) return { ok: false, message: `「${args[0] ?? ""}」という特殊能力はありません。` };
       return learnSkill(s.state, s.world!, sk.id);
     }
+    case "opp": {
+      const sum = careerSummary(s.state, s.world!).opposition;
+      if (!sum) return { ok: false, message: "自分の党は今、与党側です。" };
+      if (!args[0]) {
+        const coop = Object.entries(sum.cooperation)
+          .filter(([p]) => s.world!.roster.some((m) => m.party === p) && p !== s.state!.gov.ruling.party && !s.state!.gov.ruling.partners.includes(p))
+          .map(([p, c]) => `${partyById(p).short}${c}${sum.pacts.includes(p) ? "（選挙協力）" : ""}`)
+          .join(" ");
+        return {
+          ok: true,
+          message: [`野党 協力度 ${coop}`, `追い風 ${sum.momentum.toFixed(1)}　対案の準備 ${sum.proposals}`, sum.isLeader ? `党首の行動 あと${sum.actionPoints}回：${OPP_ACTIONS.map((a) => a.id).join(" ")}` : "党首になると opp <行動> が使える"].join("\n"),
+          data: sum,
+        };
+      }
+      const party = args[1] ? PARTIES.find((p) => p.short === args[1] || p.id === args[1] || p.name === args[1])?.id : undefined;
+      return oppAction(s.state, s.world!, args[0] as (typeof OPP_ACTIONS)[number]["id"], party);
+    }
     case "hint": {
       const advice = adviseMonth(s.state, s.world!, 5);
       return {
@@ -334,7 +356,7 @@ function available(s: Session): string[] {
   if (postCategory(s.state, s.world!)) extra.push("do duty");
   if (canRunForLeader(s.state, s.world!)) extra.push(s.state.runForLeader ? "run off" : "run on");
   if (isPrimeMinister(s.state, s.world!) && s.state.gov.actionPoints > 0) extra.push("bills", "gov draft <法案>", "gov submit <法案>", "gov talk <政党>", "gov nemawashi", "gov press", "gov dissolve");
-  return [...ACTIVITIES.map((a) => `do ${a.id}`), ...extra, "status", "costs", "up <能力> [回数]", ...(Object.keys(s.state.skillHints ?? {}).length ? ["learn <特殊能力>"] : []), "log", "hint", "quit"];
+  return [...ACTIVITIES.map((a) => `do ${a.id}`), ...extra, "status", "costs", "up <能力> [回数]", ...(Object.keys(s.state.skillHints ?? {}).length ? ["learn <特殊能力>"] : []), ...(isOppositionLeader(s.state, s.world!) && (s.state.opp?.actionPoints ?? 0) > 0 ? ["opp <行動> [政党]"] : []), "opp", "log", "hint", "quit"];
 }
 
 /** type は "ready"（起動直後の1行。コマンドへの応答ではない）か "response"（コマンド1つへの応答） */

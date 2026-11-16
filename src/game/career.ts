@@ -26,6 +26,10 @@ import { BILLS, billName, createGame, endTurn, nemawashi, pressConference, start
 import type { GameState } from "./game.js";
 import { aiGovernmentActions, aiWantsDissolution } from "./ai.js";
 import { estimateDistrict, partiesRunning, runElection } from "./election.js";
+import { OPP, OPP_POSTS, assignOppositionPosts, countNoConfidence, initialCooperation, isFirstOpposition, isOppositionParty, newOppositionState, otherOppositionParties, pactTransfer } from "./opposition.js";
+import type { OppDuty, OppositionState, Pact } from "./opposition.js";
+import { inSession } from "./game.js";
+import { partyDistance } from "./vote.js";
 
 const C = careerRaw;
 const PL = politicsRaw;
@@ -229,6 +233,10 @@ export interface CareerState {
   skillHints?: Record<string, number>;
   /** 山場の場面（新しいものが後ろ。画面で見せたかどうかは画面の側で数える） */
   highlights?: Highlight[];
+  /** 野党でのプレイヤーの状態（協力度、選挙協力、追い風、対案、党首の行動） */
+  opp?: OppositionState;
+  /** 野党の役職（党首を除く）。人事のときに決まる */
+  oppPost?: { id: string; name: string; field?: string };
   /** 月末ごとの数値の推移（助言で「この3か月で下がった」と言うのに使う。最新6か月分） */
   history?: { turn: number; approval: number; money: number; share?: number }[];
   /** 政権の記録（gov.log）のうち、自分の記録に写し終えた数 */
@@ -331,6 +339,7 @@ export function postCategory(state: CareerState, world: CareerWorld): string {
   const a = world.government.find((x) => x.member.id === world.player.id);
   if (a) return a.post.id === "pm" ? "pm" : a.post.field ? "minister" : a.post.id;
   if (state.leaders[world.player.party] === world.player.id) return "leader";
+  if (state.oppPost) return state.oppPost.id;
   return "";
 }
 
@@ -339,11 +348,12 @@ function postTitle(state: CareerState, world: CareerWorld): string {
   const a = world.government.find((x) => x.member.id === world.player.id);
   if (a) return a.post.name;
   if (state.leaders[world.player.party] === world.player.id) return `${partyById(world.player.party).short}の党首`;
+  if (state.oppPost) return `${partyById(world.player.party).short}の${state.oppPost.name}`;
   return "";
 }
 
 const partyExec = new Set(["secretary_general", "policy_chief", "general_council_chair"]);
-const postKind = (c: string) => (partyExec.has(c) ? "party_exec" : c === "chief_cabinet_secretary" ? "minister" : c);
+const postKind = (c: string) => (partyExec.has(c) ? "party_exec" : c === "chief_cabinet_secretary" ? "minister" : c.startsWith("opp_") ? "opp_exec" : c);
 
 /** 党首選に立候補できるか（与党・野党どちらの党でも） */
 export function canRunForLeader(state: CareerState, world: CareerWorld): boolean {
@@ -369,12 +379,54 @@ function rebuildGovernment(state: CareerState, world: CareerWorld, ruling: Rulin
   world.government = formGovernment(world.roster, {
     ruling,
     pmId: state.leaders[ruling.party],
-    adjust: (m) => (m.id !== world.player.id ? 0 : state.relations.party < R.party_exclude ? null : (state.relations.party - 50) * R.party_score),
+    adjust: (m, post) =>
+      m.id !== world.player.id
+        ? 0
+        : state.relations.party < R.party_exclude
+          ? null
+          : (state.relations.party - 50) * R.party_score + (state.oppPost?.field && post.field === state.oppPost.field ? OPP.posts.shadow.cabinet_bonus : 0),
   });
   updatePost(state, world);
 }
 
+/** 野党なら党の役職を決め直す（党首は除く）。与党になったら外す */
+function assignOppPost(state: CareerState, world: CareerWorld): void {
+  const p = world.player;
+  const party = p.party;
+  if (state.status !== "議員" || !isOppositionParty(party, state.gov.ruling) || state.leaders[party] === p.id) {
+    state.oppPost = undefined;
+    return;
+  }
+  const R = C.relation_effects;
+  const members = world.roster.filter((m) => m.party === party);
+  const posts = assignOppositionPosts(members, state.leaders[party], (m) =>
+    m.id !== p.id ? 0 : state.relations.party < R.party_exclude ? null : (state.relations.party - 50) * R.party_score,
+  );
+  const mine = [...posts].find(([, m]) => m.id === p.id)?.[0];
+  const S = OPP.posts.shadow;
+  if (mine) state.oppPost = { id: mine, name: OPP_POSTS.find((x) => x.id === mine)!.name };
+  else if (p.terms >= S.min_terms && state.relations.party >= S.min_party_relation && p.specialties[0])
+    state.oppPost = { id: "opp_shadow", name: `影の大臣（${p.specialties[0]}）`, field: p.specialties[0] };
+  else state.oppPost = undefined;
+}
+
+/** 野党の党の役職に就いている人（自分の党。党首を除く。画面で見せる） */
+export function oppositionLineup(state: CareerState, world: CareerWorld): { post: string; member: Member }[] {
+  const party = world.player.party;
+  if (!isOppositionParty(party, state.gov.ruling)) return [];
+  const members = world.roster.filter((m) => m.party === party && m.id !== world.player.id);
+  const posts = assignOppositionPosts(members, state.leaders[party], () => 0);
+  const out = [...posts].map(([id, m]) => ({ post: OPP_POSTS.find((x) => x.id === id)!.name, member: m }));
+  // プレイヤーの役職を、同じ役職のほかの議員に代えて入れる
+  if (state.oppPost && state.oppPost.id !== "opp_shadow") {
+    const i = out.findIndex((x) => x.post === state.oppPost!.name);
+    if (i >= 0) out[i] = { post: state.oppPost.name, member: world.player };
+  }
+  return out;
+}
+
 function updatePost(state: CareerState, world: CareerWorld): void {
+  assignOppPost(state, world);
   const title = postTitle(state, world);
   if (title && title !== state.post) {
     log(state, `${title}に就いた。`);
@@ -468,6 +520,7 @@ export function govBills(state: CareerState) {
 /** 公務：役職ごとの仕事をする */
 function doDuty(state: CareerState, world: CareerWorld): string {
   const cat = postCategory(state, world);
+  if (cat.startsWith("opp_")) return oppDuty(state, world, cat);
   const D = PL.duties as unknown as Record<string, { exp?: Partial<Exp>; approval?: number; bill_progress?: number; all_progress?: number; cooperation?: number; cohesion?: number; relations?: Partial<Record<RelationId, number>> }>;
   const d = D[cat];
   if (!d) return "";
@@ -494,6 +547,215 @@ function doDuty(state: CareerState, world: CareerWorld): string {
     out.push(`党の結束${Math.round(g.cohesion * 100)}%`);
   }
   return `公務（${state.post}）：${out.join("、")}`;
+}
+
+/** 野党の役職の公務 */
+function oppDuty(state: CareerState, world: CareerWorld, cat: string): string {
+  const d: OppDuty = cat === "opp_shadow" ? OPP.posts.shadow.duty : (OPP_POSTS.find((p) => p.id === cat)?.duty ?? {});
+  const opp = ensureOpp(state, world);
+  const out = applyEffects(state, world, {
+    stamina: PL.duties.stamina,
+    exp: scaleExp(d.exp as Partial<Exp> | undefined, expMultiplier(world.player.skills, "duty")),
+    relations: d.relations as Effects["relations"],
+  });
+  const others = otherOppositionParties(world.roster, world.player.party, state.gov.ruling);
+  if (d.coop_top && others.length) {
+    const top = [...others].sort((a, b) => world.roster.filter((m) => m.party === b).length - world.roster.filter((m) => m.party === a).length)[0];
+    opp.cooperation[top] = Math.min(100, (opp.cooperation[top] ?? 0) + d.coop_top);
+    out.push(`${partyById(top).short}との協力度+${d.coop_top}`);
+  }
+  if (d.coop_all) {
+    for (const p of others) opp.cooperation[p] = Math.min(100, (opp.cooperation[p] ?? 0) + d.coop_all);
+    out.push(`野党各党との協力度+${d.coop_all}`);
+  }
+  if (d.proposals) {
+    opp.proposals = Math.min(100, opp.proposals + d.proposals);
+    out.push(`対案の準備+${d.proposals}`);
+  }
+  if (d.diet) {
+    opp.diet = Math.min(40, opp.diet + d.diet);
+    out.push(`不信任案の根回し+${d.diet}`);
+  }
+  if (d.momentum) {
+    opp.momentum = Math.min(OPP.momentum.max, opp.momentum + d.momentum);
+    out.push("党に追い風");
+  }
+  state.activityCounts = { ...state.activityCounts, duty: (state.activityCounts?.duty ?? 0) + 1 };
+  return `公務（${state.post}）：${out.join("、")}`;
+}
+
+function ensureOpp(state: CareerState, world: CareerWorld): OppositionState {
+  state.opp ??= newOppositionState(world.player.party);
+  return state.opp;
+}
+
+/** プレイヤーが野党の党首か */
+export function isOppositionLeader(state: CareerState, world: CareerWorld): boolean {
+  const party = world.player.party;
+  return state.status === "議員" && state.leaders[party] === world.player.id && isOppositionParty(party, state.gov.ruling);
+}
+
+/** 選挙協力を結んだ党を、総選挙の計算に渡す形にする（今も野党どうしのものだけ） */
+function currentPacts(state: CareerState, world: CareerWorld): Pact[] {
+  const party = world.player.party;
+  if (!state.opp || !isOppositionParty(party, state.gov.ruling)) return [];
+  return state.opp.pacts.filter((p) => isOppositionParty(p, state.gov.ruling)).map((p) => ({ keep: party, partner: p, transfer: pactTransfer(party, p) }));
+}
+
+function partyBonusOf(state: CareerState, world: CareerWorld): Record<string, number> {
+  const party = world.player.party;
+  return state.opp && isOppositionParty(party, state.gov.ruling) ? { [party]: state.opp.momentum } : {};
+}
+
+/** 月末の野党の処理：協力度を基準に戻し、追い風を弱め、党首なら行動の回数を戻して対案を少し準備する */
+function oppositionMonth(state: CareerState, world: CareerWorld): void {
+  const party = world.player.party;
+  if (!isOppositionParty(party, state.gov.ruling)) return;
+  const opp = ensureOpp(state, world);
+  const D = OPP.cooperation.drift;
+  for (const p of Object.keys(opp.cooperation)) {
+    const base = initialCooperation(party, p);
+    const v = opp.cooperation[p];
+    opp.cooperation[p] = v > base ? Math.max(base, v - D) : Math.min(base, v + D);
+  }
+  opp.momentum = Math.round(opp.momentum * OPP.momentum.decay * 100) / 100;
+  if (isOppositionLeader(state, world)) {
+    opp.actionPoints = isFirstOpposition(world.roster, party, state.gov.ruling) ? OPP.actions.points_first : OPP.actions.points_other;
+    opp.proposals = Math.min(100, opp.proposals + OPP.leader_proposals.per_month);
+  } else opp.actionPoints = 0;
+}
+
+export type OppActionId = "summit" | "debate" | "pursue" | "proposal" | "pact" | "noconfidence";
+
+export const OPP_ACTIONS: { id: OppActionId; name: string; needsParty?: boolean; description: string }[] = [
+  { id: "summit", name: "野党党首会談", needsParty: true, description: "ほかの野党の党首と会い、協力度を上げる。思想が近いほど上がりやすい。" },
+  { id: "debate", name: "党首討論", description: "国会の会期中、首相と論戦する。弁舌と政策で上回れば、内閣支持率が下がり自党に追い風。" },
+  { id: "pursue", name: "失政の追及", description: "政権の失政や不祥事を追及する。長期政権ほど通りやすいが、失敗すると自分に返ってくる。" },
+  { id: "proposal", name: "対案の発表", description: "準備した対案（政調会長がためる）を発表し、政権を担える党だと示す。" },
+  { id: "pact", name: "選挙協力の締結", needsParty: true, description: "協力度の高い野党と、小選挙区の候補者を一本化する約束をする。総選挙まで有効。" },
+  { id: "noconfidence", name: "内閣不信任案の提出", description: "野党の票と与党の造反で過半数を取れば可決。支持率が高ければ解散、低ければ総辞職になる。" },
+];
+
+/** 野党の党首の行動を1つ使う */
+export function oppAction(state: CareerState, world: CareerWorld, action: OppActionId, arg?: string): TurnResult {
+  if (!isOppositionLeader(state, world)) return { ok: false, message: "野党の党首のときだけ使えます。" };
+  const opp = ensureOpp(state, world);
+  if (opp.actionPoints <= 0) return { ok: false, message: "今月の党首の行動はもう残っていません。" };
+  const A = OPP.actions;
+  const p = world.player;
+  const party = p.party;
+  const g = state.gov;
+  const others = otherOppositionParties(world.roster, party, g.ruling);
+  const pm = world.government.find((a) => a.post.id === "pm")?.member;
+  let message = "";
+  switch (action) {
+    case "summit": {
+      if (!arg || !others.includes(arg)) return { ok: false, message: `会談の相手を選んでください（${others.map((x) => partyById(x).short).join("、")}）。` };
+      const S = A.summit;
+      const dist = partyDistance(party, arg);
+      const chance = S.base_chance + (p.abilities.調整 - 50) * S.per_ability - dist * S.per_distance;
+      applyEffects(state, world, { stamina: S.stamina });
+      if (rand(state) < chance) {
+        const gain = Math.round(S.gain + Math.max(0, 3 - dist) * S.gain_per_closeness);
+        opp.cooperation[arg] = Math.min(100, (opp.cooperation[arg] ?? 0) + gain);
+        message = `${partyById(arg).short}の党首と会談し、協力で一致した（協力度${opp.cooperation[arg]}、+${gain}）。`;
+      } else {
+        opp.cooperation[arg] = Math.max(0, (opp.cooperation[arg] ?? 0) - S.fail_loss);
+        message = `${partyById(arg).short}との会談は、政策の違いが表に出て物別れに終わった（協力度${opp.cooperation[arg]}）。`;
+      }
+      break;
+    }
+    case "debate": {
+      if (!inSession(state)) return { ok: false, message: "党首討論は国会の会期中だけです。" };
+      if (opp.debatedTurn === state.turn) return { ok: false, message: "党首討論は月に1回です。" };
+      const D = A.debate;
+      const mine = (p.abilities.弁舌 + p.abilities.政策) / 2 + riskBonus(p.skills, "弁舌") / 2;
+      const theirs = pm ? (pm.abilities.弁舌 + pm.abilities.政策) / 2 : 50;
+      const chance = Math.min(D.max_chance, Math.max(D.min_chance, 0.5 + (mine - theirs) * D.per_diff));
+      opp.debatedTurn = state.turn;
+      applyEffects(state, world, { stamina: D.stamina });
+      if (rand(state) < chance) {
+        applyEffects(state, world, { approval: D.win_approval, relations: { press: D.win_press } });
+        opp.momentum = Math.min(OPP.momentum.max, opp.momentum + D.win_momentum);
+        message = `党首討論で${pm?.name.displayName ?? "首相"}首相を追い込んだ（内閣支持率${D.win_approval}、自党に追い風）。`;
+      } else {
+        applyEffects(state, world, { approval: D.lose_approval });
+        opp.momentum = Math.max(-OPP.momentum.max, opp.momentum + D.lose_momentum);
+        message = `党首討論で「批判ばかりで対案がない」と切り返された（内閣支持率+${D.lose_approval}）。`;
+      }
+      break;
+    }
+    case "pursue": {
+      const P = A.pursue;
+      if (state.money < -P.money) return { ok: false, message: `調査の費用（${-P.money}万円）が足りません。` };
+      // 直近2か月に政権の不祥事や失言があれば通りやすい
+      const recent = g.log.some((l) => l.kind === "出来事" && /疑惑|失言|辞任|便宜/.test(l.text) && g.turn - l.turn <= 2);
+      const chance = P.base_chance + (g.fatigue ?? 0) * P.per_fatigue + (p.abilities.政策 - 50) * P.per_ability + (recent ? P.recent_scandal : 0);
+      applyEffects(state, world, { stamina: P.stamina, money: P.money });
+      if (rand(state) < chance) {
+        applyEffects(state, world, { approval: P.win_approval });
+        g.cohesion = Math.max(0, Math.round((g.cohesion + P.win_cohesion) * 100) / 100);
+        opp.momentum = Math.min(OPP.momentum.max, opp.momentum + P.win_momentum);
+        message = `政権の失政を追及し、世論が動いた（内閣支持率${P.win_approval}、与党の結束${Math.round(g.cohesion * 100)}%）。`;
+      } else {
+        applyEffects(state, world, { relations: { press: P.lose_press } });
+        opp.momentum = Math.max(-OPP.momentum.max, opp.momentum + P.lose_momentum);
+        message = "追及は空振りに終わり、「根拠が薄い」と逆に批判された。";
+      }
+      break;
+    }
+    case "proposal": {
+      const P = A.proposal;
+      if (opp.proposals < P.cost) return { ok: false, message: `対案の準備が足りません（${opp.proposals}/${P.cost}）。政調会長が毎月ためてくれます。` };
+      opp.proposals -= P.cost;
+      applyEffects(state, world, { stamina: P.stamina });
+      const gain = Math.round(P.momentum * (g.approval >= P.high_approval ? P.high_approval_factor : 1) * 100) / 100;
+      opp.momentum = Math.min(OPP.momentum.max, opp.momentum + gain);
+      message = `独自の対案を発表した。政権を担える党だと訴えた（自党に追い風+${gain}）。`;
+      break;
+    }
+    case "pact": {
+      const P = A.pact;
+      if (!arg || !others.includes(arg)) return { ok: false, message: "選挙協力の相手を選んでください。" };
+      if (opp.pacts.includes(arg)) return { ok: false, message: `${partyById(arg).short}とはもう選挙協力を結んでいます。` };
+      if ((opp.cooperation[arg] ?? 0) < P.min_cooperation) return { ok: false, message: `協力度が${P.min_cooperation}以上の党とだけ結べます（今は${opp.cooperation[arg] ?? 0}）。` };
+      const t = g.termEnd;
+      const monthsLeft = (t.year - state.year) * 12 + (t.month - state.month);
+      if (monthsLeft > P.months_before) return { ok: false, message: `選挙協力は、任期満了まで${P.months_before}か月を切ってから結べます（あと${monthsLeft}か月）。` };
+      if (rand(state) < ((opp.cooperation[arg] ?? 0) - 50) * P.chance_per_cooperation) {
+        opp.pacts.push(arg);
+        message = `${partyById(arg).short}と選挙協力を結んだ。小選挙区では候補者を一本化する（票の移り方 ${Math.round(pactTransfer(party, arg) * 100)}%）。`;
+      } else {
+        opp.cooperation[arg] = Math.max(0, (opp.cooperation[arg] ?? 0) - P.fail_loss);
+        message = `${partyById(arg).short}との選挙協力の協議は、候補者の調整で折り合わなかった。`;
+      }
+      break;
+    }
+    case "noconfidence": {
+      const N = A.noconfidence;
+      if (opp.lastNoConfidence !== undefined && state.turn - opp.lastNoConfidence < N.cooldown_months)
+        return { ok: false, message: `不信任案は${N.cooldown_months}か月に1回までです。` };
+      opp.lastNoConfidence = state.turn;
+      const r = countNoConfidence(world.roster, { party, ruling: g.ruling, cooperation: opp.cooperation, govCooperation: g.cooperation, cohesion: g.cohesion, approval: g.approval, diet: opp.diet }, () => rand(state));
+      opp.diet = 0;
+      if (r.passed) {
+        opp.noConfidencePassed = true;
+        opp.momentum = Math.min(OPP.momentum.max, opp.momentum + N.win_momentum);
+        message = `内閣不信任案を提出し、賛成${r.yes}・反対${r.no}で可決された！（与党からの造反${r.defectors}人）。月末に内閣の進退が決まる。`;
+        log(state, message, "major");
+      } else {
+        opp.momentum = Math.max(-OPP.momentum.max, opp.momentum + N.lose_momentum);
+        for (const o of others) if ((r.byParty[o] ?? 0) * 2 < world.roster.filter((m) => m.party === o).length) opp.cooperation[o] = Math.max(0, (opp.cooperation[o] ?? 0) - N.lose_cooperation);
+        message = `内閣不信任案を提出したが、賛成${r.yes}・反対${r.no}で否決された（与党からの造反${r.defectors}人）。`;
+      }
+      break;
+    }
+    default:
+      return { ok: false, message: "その行動はありません。" };
+  }
+  opp.actionPoints--;
+  if (action !== "noconfidence") log(state, message);
+  return { ok: true, message };
 }
 
 /** 議員人生モードを始める。world.player を作り、政権の状態も用意する */
@@ -649,7 +911,7 @@ export function raceForecast(
     if (rival && rival.party === p) return { party: p, member: rival, incumbent: true };
     return { party: p, incumbent: false };
   });
-  return estimateDistrict(pref, state.gov.approval, entries)
+  return estimateDistrict(pref, state.gov.approval, entries, state.gov.ruling, { bonus: partyBonusOf(state, world), pacts: currentPacts(state, world) })
     .map((e) => ({
       name: e.member ? e.member.name.displayName : `${partyById(e.party).short}の候補`,
       party: e.party,
@@ -987,6 +1249,11 @@ async function endMonth(state: CareerState, world: CareerWorld): Promise<void> {
   state.gov.scenes = [];
   copyGovLog(state);
   const g = state.gov;
+  // 野党の党首が出した不信任案が可決されていれば、AI の不信任案と同じように内閣の進退を決める
+  if (state.opp?.noConfidencePassed) {
+    state.opp.noConfidencePassed = false;
+    g.over ??= "内閣不信任案が可決された";
+  }
   const termEnded = g.over?.startsWith("任期満了") ?? false;
   let dissolve = false;
   if (g.over && !termEnded) {
@@ -1025,6 +1292,9 @@ async function endMonth(state: CareerState, world: CareerWorld): Promise<void> {
   } else {
     maybeLifeEvent(state, world);
   }
+  oppositionMonth(state, world);
+  // 野党の人事は年に1回見直す
+  if (state.month === OPP.posts.reshuffle_month && isOppositionParty(world.player.party, state.gov.ruling)) updatePost(state, world);
   detectHighlights(state, world, politicsBefore);
   const share = state.setup.route === "pr" || state.over ? undefined : raceForecast(state, world).find((x) => x.isPlayer)?.share;
   state.history = [...(state.history ?? []), { turn: state.turn, approval: state.gov.approval, money: state.money, share }].slice(-6);
@@ -1066,6 +1336,8 @@ async function holdElection(state: CareerState, world: CareerWorld): Promise<voi
     ruling: state.gov.ruling,
     factory: world.factory,
     forced: isPr ? [] : [{ pref: state.setup.pref, party: state.setup.party, member: world.player, bonus: playerBonus(state) }],
+    partyBonus: partyBonusOf(state, world),
+    pacts: currentPacts(state, world),
     forcedPr: isPr ? [{ party: state.setup.party, member: world.player, rank }] : [],
     retireIds: state.parentId !== undefined ? [state.parentId] : [],
   });
@@ -1091,6 +1363,12 @@ async function holdElection(state: CareerState, world: CareerWorld): Promise<voi
     prevShare,
   } satisfies ElectionSummary;
   state.elections.push(summary);
+  // 選挙協力は選挙ごとに結び直す。追い風は弱まる
+  if (state.opp) {
+    if (state.opp.pacts.length) log(state, `選挙協力（${state.opp.pacts.map((x) => partyById(x).short).join("、")}）で、小選挙区の候補者を一本化して戦った。`);
+    state.opp.pacts = [];
+    state.opp.momentum = Math.round(state.opp.momentum * OPP.momentum.after_election * 100) / 100;
+  }
   world.roster = result.roster;
   world.ronin = result.ronin.filter((m) => m.id !== world.player.id);
   const first = state.elections.length === 1;
@@ -1274,6 +1552,16 @@ export function careerSummary(state: CareerState, world: CareerWorld) {
     abilities: p.abilities,
     skills: p.skills,
     skillHints: state.skillHints ?? {},
+    opposition: isOppositionParty(p.party, state.gov.ruling)
+      ? {
+          isLeader: isOppositionLeader(state, world),
+          actionPoints: state.opp?.actionPoints ?? 0,
+          cooperation: (state.opp ?? newOppositionState(p.party)).cooperation,
+          pacts: state.opp?.pacts ?? [],
+          momentum: state.opp?.momentum ?? 0,
+          proposals: state.opp?.proposals ?? 0,
+        }
+      : undefined,
     exp: state.exp,
     relations: state.relations,
     approval: state.gov.approval,

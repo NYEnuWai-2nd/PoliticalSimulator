@@ -9,6 +9,8 @@ import { PR_SEATS, SMD_SEATS, dhondt, prefStrength, prefWeight } from "./distric
 import type { PrefCode } from "./districts.js";
 import { TABLES } from "./tables.js";
 import { skillVote } from "./skills.js";
+import { applyPacts } from "./opposition.js";
+import type { Pact } from "./opposition.js";
 
 const E = rulesRaw.election;
 /** 選挙協力をする小さい連立相手（全国の支持が小さく、現職の県だけで候補を立てる） */
@@ -69,13 +71,18 @@ export interface ElectionInput {
   forcedPr?: { party: string; member: Member; rank: number }[];
   /** 今回の選挙で引退させる議員（プレイヤーに地盤を譲る親など） */
   retireIds?: number[];
+  /** 党ごとに全国の支持に足すポイント（野党の追い風） */
+  partyBonus?: Record<string, number>;
+  /** 野党の選挙協力（候補者の一本化） */
+  pacts?: Pact[];
 }
 
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
 const ageAt = (m: Member, year: number) => year - m.birthYear;
 
 /** 全国の政党支持（%）。合計100 */
-export function nationalSupport(approval: number, rand: () => number, ruling: Ruling = INITIAL_RULING): Record<string, number> {
+/** bonus は党ごとに全国の支持に足すポイント（野党の追い風など） */
+export function nationalSupport(approval: number, rand: () => number, ruling: Ruling = INITIAL_RULING, bonus: Record<string, number> = {}): Record<string, number> {
   const base = E.support_base as unknown as Record<string, number>;
   const out: Record<string, number> = {};
   for (const p of PARTIES) {
@@ -94,7 +101,7 @@ export function nationalSupport(approval: number, rand: () => number, ruling: Ru
   const othersTotal = others.reduce((a, id) => a + out[id], 0);
   for (const id of Object.keys(shift)) out[id] += shift[id];
   for (const id of others) out[id] -= (moved * out[id]) / othersTotal;
-  for (const id of Object.keys(out)) out[id] = Math.max(E.support_floor * 0.5, out[id] + (rand() - 0.5) * 2 * E.support_noise);
+  for (const id of Object.keys(out)) out[id] = Math.max(E.support_floor * 0.5, out[id] + (bonus[id] ?? 0) + (rand() - 0.5) * 2 * E.support_noise);
   const t2 = Object.values(out).reduce((a, b) => a + b, 0);
   for (const id of Object.keys(out)) out[id] = Math.round((out[id] / t2) * 1000) / 10;
   return out;
@@ -146,7 +153,7 @@ export async function runElection(input: ElectionInput): Promise<ElectionResult>
   const { factory, year } = input;
   const rand = factory.rand;
   const ruling = input.ruling ?? INITIAL_RULING;
-  const support = nationalSupport(input.approval, rand, ruling);
+  const support = nationalSupport(input.approval, rand, ruling, input.partyBonus);
 
   // 引退：高齢の議員は立候補しない（首相などの固定キャラクターは引退させない）
   const forcedRetire = new Set(input.retireIds ?? []);
@@ -171,13 +178,15 @@ export async function runElection(input: ElectionInput): Promise<ElectionResult>
   const smd: DistrictResult[] = [];
   for (const pref of PREFS) {
     const incumbent = sitting.find((m) => m.seat === "小選挙区" && m.district === pref);
-    const running = partiesRunning(pref, incumbent?.party, ruling);
+    let running = partiesRunning(pref, incumbent?.party, ruling);
     // 決まった候補者の党は、その県で必ず候補を立てる
     for (const f of input.forced ?? []) if (f.pref === pref && !running.includes(f.party)) running.push(f.party);
     const local: Record<string, number> = {};
     for (const p of running) local[p] = (support[p] ?? 0) * (E.regional_base + E.regional_strength * prefStrength(pref, p));
     // 選挙協力：与党第一党が立てない県では、その票の一部が連立相手に流れる
     addPartnerTransfer(local, running, support, pref, ruling);
+    // 野党の選挙協力（候補者の一本化）：相手が候補を降ろし、票の一部が移る
+    running = applyPacts(local, running, input.pacts ?? []);
     const localTotal = Object.values(local).reduce((a, b) => a + b, 0) || 1;
     const entries: { member: Member; raw: number }[] = [];
     for (const p of running) {
@@ -270,12 +279,15 @@ export function estimateDistrict(
   approval: number,
   entries: { party: string; member?: Member; incumbent: boolean; bonus?: number }[],
   ruling: Ruling = INITIAL_RULING,
+  extra: { bonus?: Record<string, number>; pacts?: Pact[] } = {},
 ): { party: string; member?: Member; share: number }[] {
-  const support = nationalSupport(approval, () => 0.5, ruling);
-  const running = entries.map((e) => e.party);
+  const support = nationalSupport(approval, () => 0.5, ruling, extra.bonus);
   const local: Record<string, number> = {};
-  for (const p of running) local[p] = (support[p] ?? 0) * (E.regional_base + E.regional_strength * prefStrength(pref, p));
-  addPartnerTransfer(local, running, support, pref, ruling);
+  for (const p of entries.map((e) => e.party)) local[p] = (support[p] ?? 0) * (E.regional_base + E.regional_strength * prefStrength(pref, p));
+  addPartnerTransfer(local, entries.map((e) => e.party), support, pref, ruling);
+  // 選挙協力で候補を降ろした党は、見込みの一覧から外す
+  const running = applyPacts(local, entries.map((e) => e.party), extra.pacts ?? []);
+  entries = entries.filter((e) => running.includes(e.party));
   const localTotal = Object.values(local).reduce((a, b) => a + b, 0) || 1;
   const raw = entries.map((e) => Math.max(0.01, local[e.party] / localTotal + (e.member ? personalVote(e.member, e.incumbent, () => 0.5) : 0) + (e.bonus ?? 0)));
   const sum = raw.reduce((a, b) => a + b, 0);

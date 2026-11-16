@@ -79,7 +79,7 @@ export interface GovernmentOptions {
   ruling?: Ruling;
   /** 首相にする議員（与党の党首）。なければ固定キャラクター、それもいなければ与党の有力議員 */
   pmId?: number;
-  adjust?: (m: Member) => number | null;
+  adjust?: (m: Member, post: Post) => number | null;
 }
 
 /** 内閣と与党の党役員を組む。連立相手がいなければ、連立枠の大臣も与党から選ぶ */
@@ -102,8 +102,8 @@ export function formGovernment(roster: Member[], opts: GovernmentOptions = {}): 
     } else {
       const partnerPool = ruling.partners.filter((p) => roster.some((m) => m.party === p));
       const parties = post.party === "ruling_coalition_partner" && partnerPool.length ? partnerPool : [ruling.party];
-      const pool = roster.filter((m) => parties.includes(m.party) && !taken.has(m.id) && !m.fixedRole && (adjust?.(m) ?? 0) !== null);
-      const score = (m: Member) => postScore(post, m) + (adjust?.(m) ?? 0);
+      const pool = roster.filter((m) => parties.includes(m.party) && !taken.has(m.id) && !m.fixedRole && (adjust?.(m, post) ?? 0) !== null);
+      const score = (m: Member) => postScore(post, m) + (adjust?.(m, post) ?? 0);
       // 当選回数の条件を満たす人がいなければ、条件を外して選ぶ
       const eligible = pool.filter((m) => m.terms >= (post.min_terms ?? 1));
       const candidates = eligible.length ? eligible : pool;

@@ -1,0 +1,78 @@
+{
+  "note": "野党での遊び（設計は docs/design.md の「野党」）。プレイヤーの党が野党（与党でも連立相手でもない）のときに使う。数値は試作用の仮の値。",
+  "posts": {
+    "note": "野党の役職。党首が当選回数と能力で任命する（プレイヤーは党の幹部との関係も効く）。weights は能力の重み、min_terms は当選回数の下限。duty は公務の効果：exp は経験点、relations は関係、coop_top は議席の多い野党1つとの協力度、coop_all は全部の野党との協力度、proposals は対案の準備、diet は不信任案の根回し、momentum は自党への追い風。",
+    "list": [
+      {
+        "id": "opp_secretary_general",
+        "name": "幹事長",
+        "min_terms": 3,
+        "weights": { "調整": 0.5, "組織": 0.3, "資金": 0.2 },
+        "duty": { "exp": { "network": 14, "money": 6 }, "relations": { "party": 3 }, "coop_top": 5 }
+      },
+      {
+        "id": "opp_policy_chief",
+        "name": "政調会長",
+        "min_terms": 2,
+        "weights": { "政策": 0.7, "弁舌": 0.3 },
+        "duty": { "exp": { "policy": 16 }, "relations": { "party": 2 }, "proposals": 25 }
+      },
+      {
+        "id": "opp_diet_affairs",
+        "name": "国対委員長",
+        "min_terms": 2,
+        "weights": { "調整": 0.6, "弁舌": 0.4 },
+        "duty": { "exp": { "network": 10, "media": 4 }, "relations": { "party": 2 }, "diet": 10 }
+      },
+      {
+        "id": "opp_election_chief",
+        "name": "選対委員長",
+        "min_terms": 2,
+        "weights": { "組織": 0.6, "調整": 0.4 },
+        "duty": { "exp": { "election": 14, "network": 4 }, "coop_all": 2, "momentum": 0.2 }
+      }
+    ],
+    "shadow": {
+      "note": "影の大臣。当選 min_terms 回以上で党の幹部との関係が min_party_relation 以上なら、得意分野の影の大臣になる。政権交代で与党になったとき、その分野の大臣の人事に cabinet_bonus が足される。",
+      "name": "影の大臣",
+      "min_terms": 2,
+      "min_party_relation": 40,
+      "cabinet_bonus": 40,
+      "duty": { "exp": { "policy": 10, "media": 8 }, "relations": { "press": 2 } }
+    },
+    "reshuffle_month": 9
+  },
+  "cooperation": {
+    "note": "プレイヤーの党と、ほかの野党との協力度（0〜100）。最初は base + (3 − 思想の距離) × per_closeness。毎月 drift ずつ最初の値に戻っていく。",
+    "base": 25,
+    "per_closeness": 8,
+    "drift": 0.5
+  },
+  "momentum": {
+    "note": "自党への追い風（総選挙の全国の支持に足すポイント）。毎月 decay 倍になり、max を超えない。総選挙のあとは after_election 倍。",
+    "decay": 0.92,
+    "max": 6,
+    "after_election": 0.5
+  },
+  "actions": {
+    "note": "野党の党首が毎月使える行動。points_first は野党第一党、points_other はそれ以外の野党の、ひと月の回数。",
+    "points_first": 3,
+    "points_other": 2,
+    "summit": { "stamina": -6, "base_chance": 0.55, "per_ability": 0.006, "per_distance": 0.08, "gain": 8, "gain_per_closeness": 2, "fail_loss": 3 },
+    "debate": { "stamina": -10, "per_diff": 0.0125, "min_chance": 0.15, "max_chance": 0.85, "win_approval": -2.5, "win_momentum": 1.0, "win_press": 4, "lose_approval": 1.5, "lose_momentum": -0.8 },
+    "pursue": { "stamina": -8, "money": -20, "base_chance": 0.3, "per_fatigue": 0.03, "per_ability": 0.005, "recent_scandal": 0.2, "win_approval": -3.5, "win_cohesion": -0.05, "win_momentum": 0.6, "lose_momentum": -1.0, "lose_press": -6 },
+    "proposal": { "stamina": -6, "cost": 30, "momentum": 1.2, "high_approval": 45, "high_approval_factor": 0.5 },
+    "pact": { "min_cooperation": 60, "months_before": 18, "chance_per_cooperation": 0.025, "fail_loss": 5 },
+    "noconfidence": { "cooldown_months": 6, "party_yes_base": 0.55, "per_cooperation": 0.008, "cooperation_center": 40, "ruling_defect_per_loyalty": 0.05, "diet_per_point": 0.004, "win_momentum": 1.0, "lose_momentum": -0.5, "lose_cooperation": 3 }
+  },
+  "leader_proposals": {
+    "note": "プレイヤーが党首のとき、党の政調会長（ほかの議員）が毎月準備してくれる対案の量",
+    "per_month": 8
+  },
+  "pact": {
+    "note": "選挙協力（候補者の一本化）。協力した党どうしは小選挙区で一方が候補を降ろし、その党の票の transfer の割合が残った党に移る。transfer = base − per_distance × 思想の距離（min を下回らない）。思想が遠いと「野合」と見られて移る票が減る。総選挙のあとは結び直す。",
+    "transfer_base": 0.8,
+    "transfer_per_distance": 0.12,
+    "transfer_min": 0.3
+  }
+}

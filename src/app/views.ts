@@ -2,10 +2,12 @@
 // HTML を返すだけで、操作は main.ts が受け取る。
 // data-tip を付けた要素は、マウスを乗せるか長押しするとツールチップが出る（main.ts）。
 // data-member を付けた要素は、押すとその人物の詳しい情報が出る。
-import { ACTIVITIES, EXP_TYPES, electionComments, ORIGINS, RELATIONS, ROUTE_NAMES, canLearnSkill, canRunForLeader, canUpgrade, careerSummary, govBills, isPrimeMinister, moneyOutlook, postCategory, prRank, raceForecast, startOptions, upgradeCost } from "../game/career.js";
+import { ACTIVITIES, EXP_TYPES, OPP_ACTIONS, electionComments, isOppositionLeader, oppositionLineup, ORIGINS, RELATIONS, ROUTE_NAMES, canLearnSkill, canRunForLeader, canUpgrade, careerSummary, govBills, isPrimeMinister, moneyOutlook, postCategory, prRank, raceForecast, startOptions, upgradeCost } from "../game/career.js";
 import type { Party } from "../game/parties.js";
 import { COLOR_NAMES, SKILLS, conditionProgress, learnCost, sortSkills } from "../game/skills.js";
 import { adviseMonth, filterAdvice, recommendedActivity } from "../game/advice.js";
+import { OPP, isOppositionParty, otherOppositionParties, pactTransfer } from "../game/opposition.js";
+import { inSession } from "../game/game.js";
 import type { AdviceLevel } from "../game/advice.js";
 
 /** 画面のモード。通常は秘書の助言とおすすめを出して数字を絞り、プロは全部の数字を出す */
@@ -441,6 +443,43 @@ function memberRow(m: Member, extra: string, isPlayer: boolean): string {
     <span class="ranks">${ABILITIES.map((a) => rankBadge(m.abilities[a])).join("")}</span></button>`;
 }
 
+/** 野党のとき：党の役職、ほかの野党との協力度と選挙協力、追い風、党首の行動 */
+function oppositionSection(state: CareerState, world: CareerWorld): string {
+  const party = world.player.party;
+  if (!isOppositionParty(party, state.gov.ruling)) return "";
+  const opp = state.opp;
+  const lineup = oppositionLineup(state, world)
+    .map((x) => `<span class="lineup-item"><small class="muted">${esc(x.post)}</small><button class="name-btn" data-member="${x.member.id}">${esc(x.member.name.displayName)}${x.member.id === world.player.id ? "（自分）" : ""}</button></span>`)
+    .join("");
+  const shadow = state.oppPost?.id === "opp_shadow" ? `<p class="muted" style="margin:6px 0 0">自分は${esc(state.oppPost.name)}。政権を取ったら、この分野の大臣に就きやすい。</p>` : "";
+  const others = otherOppositionParties(world.roster, party, state.gov.ruling);
+  const leader = isOppositionLeader(state, world);
+  const points = opp?.actionPoints ?? 0;
+  const rows = others
+    .map((p) => {
+      const c = opp?.cooperation[p] ?? 0;
+      const pact = opp?.pacts.includes(p);
+      const btns = leader
+        ? `<button class="btn small" data-opp="summit" data-arg="${p}" ${points ? "" : "disabled"}>会談</button><button class="btn small" data-opp="pact" data-arg="${p}" ${points && !pact && c >= OPP.actions.pact.min_cooperation ? "" : "disabled"}>選挙協力</button>`
+        : "";
+      return `<div class="cut row sm opp-row" ${tip(`${partyById(p).name}との協力度 ${c}\n${OPP.actions.pact.min_cooperation}以上で選挙協力を結べる。不信任案に賛成するかにも効く\n選挙協力をしたときに相手の票が移る割合 ${Math.round(pactTransfer(party, p) * 100)}%`)}>${chip(p)}<span class="grow">${esc(partyById(p).short)} <span class="muted">${world.roster.filter((m) => m.party === p).length}議席</span>${pact ? ' <span class="post">選挙協力</span>' : ""}</span><span class="bar" style="width:28%;--rc:${partyColor(p)}"><i style="width:${c}%"></i></span><b>${c}</b>${btns ? `<span class="opp-btns">${btns}</span>` : ""}</div>`;
+    })
+    .join("");
+  const momentum = opp?.momentum ?? 0;
+  const status = `<p class="opp-stats"><span ${tip(`自党への追い風\n総選挙で全国の支持に ${momentum.toFixed(1)} ポイント足される。党首討論、追及、対案で増え、毎月少しずつ弱まる`)}>追い風 <b>${momentum >= 0 ? "+" : ""}${momentum.toFixed(1)}</b></span><span ${tip(`対案の準備\n${OPP.actions.proposal.cost}たまると「対案の発表」ができる。政調会長が毎月ためる`)}>対案の準備 <b>${opp?.proposals ?? 0}</b></span><span ${tip(`不信任案の根回し\n国対委員長の公務でたまり、不信任案で与党から造反が出やすくなる`)}>根回し <b>${opp?.diet ?? 0}</b></span></p>`;
+  const actions = leader
+    ? `<h3 class="sub-h">党首の行動（今月あと${points}回）</h3><div class="opp-actions">${OPP_ACTIONS.filter((a) => !a.needsParty)
+        .map((a) => {
+          const off = !points || (a.id === "debate" && !inSession(state)) || (a.id === "proposal" && (opp?.proposals ?? 0) < OPP.actions.proposal.cost);
+          return `<button class="btn${a.id === "noconfidence" ? " danger-soft" : ""}" data-opp="${a.id}" ${off ? "disabled" : ""} ${tip(`${a.name}\n${a.description}`)}>${esc(a.name)}</button>`;
+        })
+        .join("")}</div><p class="muted" style="margin:6px 0 0;font-size:12px">会談と選挙協力は、下の各党の行から選ぶ。行動を選び終えたら、活動の画面で今月の活動を選ぶと月末になる。</p>`
+    : `<p class="muted" style="margin:6px 0 0;font-size:12px">党首になると、ほかの野党との会談、党首討論、追及、対案、選挙協力、不信任案を自分で動かせる。</p>`;
+  return `<section class="cut box"><h2>野党として（与党 ${esc(partyById(state.gov.ruling.party).short)}${state.gov.ruling.partners.length ? "・" + state.gov.ruling.partners.map((x) => esc(partyById(x).short)).join("・") : ""}）</h2>
+    <div class="lineup">${lineup}</div>${shadow}${status}${actions}
+    <h3 class="sub-h">ほかの野党</h3><div class="rows">${rows || "<p class='muted'>ほかに野党はない</p>"}</div></section>`;
+}
+
 export function partyView(state: CareerState, world: CareerWorld): string {
   const party = state.setup.party;
   const members = world.roster.filter((m) => m.party === party).sort((a, b) => b.terms - a.terms);
@@ -453,6 +492,7 @@ export function partyView(state: CareerState, world: CareerWorld): string {
     <section class="cut box"><h2>議席の構成（定数${world.roster.length}・過半数${MAJORITY}）</h2><div class="race-bar" style="height:20px">${bar}</div>
       <p class="muted" style="margin:6px 0 0">${seats.map(({ p, n }) => `${chip(p.id)} ${esc(p.short)} ${n}`).join("　")}</p></section>
     <section class="cut box"><h2>党首選</h2>${leaderSection(state, world)}</section>
+    ${oppositionSection(state, world)}
     <section class="cut box"><h2>${chip(party)} ${esc(partyById(party).name)}の議員（${members.length}人）</h2><div class="rows">${rows ? rankHead() + rows : "<p class='muted'>議席がない</p>"}</div></section>
   </div>`;
 }
@@ -534,6 +574,7 @@ const HELP: [string, string][] = [
   ["経験点と能力", "活動で5種類の経験点が貯まる。「自分」の画面で経験点を使って6つの能力を上げる。能力が高いほど、上げるのに必要な経験点が増える。"],
   ["地盤と関係", "地盤（1〜4）は地元回り、地域行事、県議と連携で固まり、半年何もしないと1段下がる。関係（秘書、党の幹部、後援会、地元紙、県議団）は放っておくと40に戻っていく。数字や棒にマウスを乗せるか長押しすると、何に効くかが出る。"],
   ["党首選と首相", "当選3回以上で党の幹部との関係が50以上なら、党内の画面で党首選への立候補を届け出られる。与党の党首選は党首の任期切れのときに行う。与党の党首になると首相になり、内閣の画面で法案や解散などの政権の行動を選べる。"],
+  ["野党", "自分の党が野党のときは、当選を重ねると幹事長、政調会長、国対委員長、選対委員長、影の大臣に就き、公務でほかの野党との協力度や対案の準備をためる。野党の党首になると、党内の画面で、ほかの野党との会談、党首討論、失政の追及、対案の発表、選挙協力（候補者の一本化）、内閣不信任案の提出を毎月使える。選挙協力を結んだ党とは、小選挙区で一方が候補を降ろし、票の一部が移る。"],
   ["特殊能力とコツ", "活動の回数などの条件を満たすと、月末に特殊能力が身につく。活動のあとにときどき「コツ」をつかみ、コツがあれば回数が足りなくても「自分」の画面で経験点を払って覚えられる。"],
   ["記録", "状態の帯（日付や資金の並び）の「記録」で、自分に起きたことと政局の動き（政権の行動、採決、政界の出来事）を月ごとに振り返れる。「大事なこと」では、総選挙や就任、政権交代などの山場と、出来事の結果だけを出す。"],
   ["画面のモード", "通常モードでは、秘書が毎月の助言とおすすめの活動を教えてくれ、細かい数字は省かれる。プロモードでは、経験点や関係などのすべての数字が出る。始め方の最初の画面と「自分」の画面で切り替えられる。"],

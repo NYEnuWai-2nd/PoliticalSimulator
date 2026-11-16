@@ -1364,3 +1364,58 @@
   -webkit-text-stroke: 0;
   text-shadow: none;
 }
+
+/* ===== 野党 ===== */
+
+.lineup {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+}
+
+.lineup-item {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.opp-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 18px;
+  margin: 10px 0 0;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.opp-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.btn.danger-soft {
+  border-color: #d4302f;
+  color: #b3202c;
+}
+
+.opp-btns {
+  display: inline-flex;
+  gap: 6px;
+}
+
+@media (max-width: 760px) {
+  .opp-row {
+    flex-wrap: wrap;
+  }
+
+  .opp-row .grow {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+
+  .opp-row .opp-btns {
+    flex-basis: 100%;
+    justify-content: flex-end;
+  }
+}
