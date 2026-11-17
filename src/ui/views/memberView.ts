@@ -76,12 +76,12 @@ export function renderMemberView(root: HTMLElement, state: AppState, id: number 
           <h3>信念の固さ・党への忠誠</h3>
           <p class="pips"><span class="pip-label">信念</span>${pips(m.conviction)}<span class="pip-label">忠誠</span>${pips(m.loyalty)}</p>
           <h3>経歴</h3>
-          <p>${escapeHtml(m.archetype)}${m.lineage === "なし" ? "" : `　<span class="tag lineage">${escapeHtml(m.lineage)}</span>`}</p>
+          <p>${escapeHtml(m.archetype)}${m.lineage === "一般" ? "" : `　<span class="tag lineage">${escapeHtml(m.lineage)}</span>`}</p>
           <h3>得意分野</h3>
           <p>${chips(m.specialties, "specialty")}</p>
           <h3>性格</h3>
           <p>${chips(m.traits, "trait")}</p>
-          <h3>特殊能力</h3>
+          <h3>持ち味</h3>
           <p class="note">（未実装）</p>
         </section>
       </div>

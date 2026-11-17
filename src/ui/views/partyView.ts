@@ -1,4 +1,4 @@
-// 党内の画面：政党の切り替え、党の概要、所属議員の一覧（列見出しで並べ替え）
+// 自党の画面：政党の切り替え、党の概要、所属議員の一覧（列見出しで並べ替え）
 import { IDEOLOGY_AXES, PARTIES, partyById } from "../../game/parties.js";
 import { ABILITIES } from "../../game/tables.js";
 import type { Ability } from "../../game/tables.js";
@@ -54,7 +54,7 @@ export function renderPartyView(root: HTMLElement, state: AppState, rerender: ()
       <td>${ageOf(m)}</td>
       <td>${m.terms}回</td>
       <td>${escapeHtml(m.archetype)}</td>
-      <td>${m.lineage === "なし" ? "" : escapeHtml(m.lineage)}</td>
+      <td>${m.lineage === "一般" ? "" : escapeHtml(m.lineage)}</td>
       ${ABILITIES.map((a) => `<td class="ab">${rankBadge(m.abilities[a])}</td>`).join("")}
       <td class="jiban">${m.jiban}</td>
       <td>${m.specialties.map(escapeHtml).join("、")}</td>
@@ -64,7 +64,7 @@ export function renderPartyView(root: HTMLElement, state: AppState, rerender: ()
   root.innerHTML = `<nav class="party-tabs">${tabs}</nav>
     ${summary(party, members)}
     <div class="table-wrap"><table class="roster">
-      <thead><tr>${header("id", "番号")}<th>役職</th><th>氏名</th><th>選挙区</th>${header("age", "年齢")}${header("terms", "当選")}<th>経歴類型</th><th>家系</th>${ABILITIES.map((a) => header(a, a, "ab")).join("")}${header("jiban", "地盤")}<th>得意分野</th></tr></thead>
+      <thead><tr>${header("id", "番号")}<th>役職</th><th>氏名</th><th>選挙区</th>${header("age", "年齢")}${header("terms", "当選")}<th>経歴</th><th>家系</th>${ABILITIES.map((a) => header(a, a, "ab")).join("")}${header("jiban", "地盤")}<th>得意分野</th></tr></thead>
       <tbody>${rows}</tbody>
     </table></div>`;
   root.querySelectorAll<HTMLElement>("th.sortable").forEach((th) =>

@@ -1,4 +1,4 @@
-// 毎月の助言（通常モードで秘書が話す。CLI の hint でも使う）。
+// 毎月の助言（標準モードで秘書が話す。CLI の hint でも使う）。
 // 今の数値を条件の表に当てはめ、優先度の高いものから数個を返す。画面には依存しない。
 import careerRaw from "../../data/game/career.json";
 import { ACTIVITIES, breakdownChance, canLearnSkill, isOppositionLeader, canRunForLeader, canUpgrade, isPrimeMinister, moneyOutlook, postCategory, prRank, raceForecast } from "./career.js";
@@ -11,7 +11,7 @@ const C = careerRaw;
 export interface Advice {
   /** 秘書の台詞（「先生、」で始まる短い文） */
   text: string;
-  /** すすめる活動の id（"duty" は公務） */
+  /** すすめる活動の id（"duty" は職務） */
   act?: string;
   /** 見に行くとよい画面 */
   tab?: "self" | "party" | "cabinet";
@@ -27,7 +27,7 @@ export type AdviceLevel = "all" | "warn" | "off";
 /** 警告とみなす優先度の下限 */
 const WARN_PRIORITY = 75;
 
-const actName = (id: string) => (id === "duty" ? "公務" : (ACTIVITIES.find((a) => a.id === id)?.name ?? id));
+const actName = (id: string) => (id === "duty" ? "職務" : (ACTIVITIES.find((a) => a.id === id)?.name ?? id));
 
 /** 今月の助言を、優先度の高い順に最大 max 個返す。すすめる活動は最初のものが今月のおすすめ */
 export function adviseMonth(state: CareerState, world: CareerWorld, max = 3): Advice[] {
@@ -43,7 +43,7 @@ export function adviseMonth(state: CareerState, world: CareerWorld, max = 3): Ad
 
   // 野党の党首：党首の行動が残っている。選挙協力を結べる相手がいる
   if (isOppositionLeader(state, world) && state.opp && state.opp.actionPoints > 0) {
-    add({ text: `党首の行動があと${state.opp.actionPoints}回残っています。党内の画面で、ほかの野党との会談や党首討論を進めましょう。`, tab: "party", priority: 74 });
+    add({ text: `党首の行動があと${state.opp.actionPoints}回残っています。自党の画面で、ほかの野党との会談や党首討論を進めましょう。`, tab: "party", priority: 74 });
     const ready = Object.entries(state.opp.cooperation).filter(([p, c]) => c >= 60 && !state.opp!.pacts.includes(p) && world.roster.some((m) => m.party === p) && p !== state.gov.ruling.party && !state.gov.ruling.partners.includes(p));
     if (ready.length && mo.monthsToElection <= 18)
       add({ text: `総選挙まであと${mo.monthsToElection}か月です。協力度の高い党と選挙協力を結べば、小選挙区で候補者を一本化できます。`, tab: "party", priority: 76 });
@@ -112,10 +112,10 @@ export function adviseMonth(state: CareerState, world: CareerWorld, max = 3): Ad
     }
   }
 
-  // コツで覚えられる特殊能力
+  // きっかけで身につけられる持ち味
   for (const [id, lv] of Object.entries(state.skillHints ?? {})) {
     if (!canLearnSkill(state, world, id).ok) continue;
-    add({ text: `「${skillById(id)?.name}」のコツ（Lv${lv}）をつかんでいます。「自分」の画面で経験点を使って覚えられます。`, tab: "self", priority: 72 });
+    add({ text: `「${skillById(id)?.name}」のきっかけ（Lv${lv}）をつかんでいます。「能力」の画面で経験点を使って身につけられます。`, tab: "self", priority: 72 });
     break;
   }
 
@@ -123,7 +123,7 @@ export function adviseMonth(state: CareerState, world: CareerWorld, max = 3): Ad
   const upgradable = ABILITIES.filter((a) => canUpgrade(state, p, a));
   if (upgradable.length) {
     const low = [...upgradable].sort((a, b) => p.abilities[a] - p.abilities[b])[0];
-    add({ text: `経験点がたまっています。「自分」の画面で能力を上げられます（たとえば${low}）。`, tab: "self", priority: 70 });
+    add({ text: `経験点がたまっています。「能力」の画面で能力を上げられます（たとえば${low}）。`, tab: "self", priority: 70 });
   }
 
   // 関係
@@ -132,12 +132,12 @@ export function adviseMonth(state: CareerState, world: CareerWorld, max = 3): Ad
   if (state.relations.kengi >= 48 && state.relations.kengi < C.kengi.threshold)
     add({ text: `県議団との関係があと${C.kengi.threshold - state.relations.kengi}で${C.kengi.threshold}です。そこまで行けば、県議が毎月地盤を固めてくれます。`, act: "kengi", priority: 60 });
   if (state.relations.supporters < 35)
-    add({ text: `後援会との関係が${state.relations.supporters}と冷えています。選挙の票に響くので、地域行事に顔を出しましょう。`, act: "festival", priority: 55 });
+    add({ text: `後援会との関係が${state.relations.supporters}まで冷えています。選挙の票に響くので、地域行事に顔を出しましょう。`, act: "festival", priority: 55 });
 
   // やる気
   if (state.mood <= 2) add({ text: "やる気が落ちています。経験点の伸びが鈍るので、趣味の時間で気分転換をしてください。", act: "hobby", priority: 65 });
 
-  // 特殊能力まであと少し（条件が活動の回数だけ残っているとき）
+  // 持ち味まであと少し（条件が活動の回数だけ残っているとき）
   const counts = state.activityCounts ?? {};
   for (const sk of SKILLS) {
     if (!sk.acquire || p.skills.includes(sk.id) || SKILLS.some((x) => x.replaces?.includes(sk.id) && p.skills.includes(x.id))) continue;
@@ -149,15 +149,15 @@ export function adviseMonth(state: CareerState, world: CareerWorld, max = 3): Ad
     if (!otherOk) continue;
     const rest = Object.entries(c.activity ?? {}).map(([a, n]) => ({ a, n: (n as number) - (counts[a] ?? 0) })).filter((x) => x.n > 0);
     if (rest.length === 1 && rest[0].n <= 4)
-      add({ text: `あと${rest[0].n}回の${actName(rest[0].a)}で、特殊能力「${sk.name}」が身につきそうです。`, act: rest[0].a, priority: 58 });
+      add({ text: `あと${rest[0].n}回の${actName(rest[0].a)}で、持ち味「${sk.name}」が身につきそうです。`, act: rest[0].a, priority: 58 });
   }
 
   // 党首選
   if (canRunForLeader(state, world) && !state.runForLeader)
-    add({ text: "党首選に立候補できる立場になりました。党内の画面で届け出ておけば、次の党首選に出られます。", tab: "party", priority: 77 });
+    add({ text: "党首選に立候補できる立場になりました。自党の画面で届け出ておけば、次の党首選に出られます。", tab: "party", priority: 77 });
 
-  // 公務
-  if (postCategory(state, world)) add({ text: `${state.post ? `${state.post}としての` : ""}公務をこなすと、党や世論の評価が上がります。`, act: "duty", priority: 50 });
+  // 職務
+  if (postCategory(state, world)) add({ text: `${state.post ? `${state.post}としての` : ""}職務をこなすと、党や世論の評価が上がります。`, act: "duty", priority: 50 });
 
   // 何もなければ地盤づくり
   if (!out.some((a) => a.act)) {

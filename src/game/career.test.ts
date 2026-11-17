@@ -10,7 +10,7 @@ import { createWorld } from "./roster.js";
 import { formInitialGovernment } from "./cabinet.js";
 import {
   canUpgrade,
-  chooseEvent,
+  chooseEvent, chooseStory,
   raceForecast,
   startCareer,
   startOptions,
@@ -33,6 +33,7 @@ async function begin(origin: OriginId = "newcomer", party = "minsei", seed = 3, 
 async function play(state: CareerState, world: CareerWorld, months: number, pick: (t: number) => string) {
   for (let t = 0; t < months && !state.over; t++) {
     if (state.pendingEvent) chooseEvent(state, world, 0);
+    if (state.pendingStory) chooseStory(state, world, 0);
     await takeTurn(state, world, pick(t));
   }
 }
@@ -127,7 +128,7 @@ describe("日常の出来事", () => {
   });
 
   it("出来事の効果はすべて決まった項目だけを使い、恋愛の出来事はない", () => {
-    const keys = new Set(["approval", "stamina", "max_stamina", "mood", "money", "exp", "relations", "jiban_progress", "abilities", "skills_add", "skills_remove"]);
+    const keys = new Set(["approval", "stamina", "max_stamina", "mood", "money", "exp", "relations", "jiban_progress", "abilities", "skills_add", "skills_remove", "bonds"]);
     const rel = new Set(career.relations.map((r) => r.id));
     for (const e of lifeEvents.events) {
       expect(e.choices.length).toBeGreaterThanOrEqual(2);

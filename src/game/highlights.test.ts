@@ -7,7 +7,7 @@ import exclusion from "../../data/names/exclude_real_politicians.json";
 import type { NameData } from "../data/nameData.js";
 import { createWorld } from "./roster.js";
 import { formInitialGovernment } from "./cabinet.js";
-import { canLearnSkill, chooseEvent, learnSkill, startCareer, startOptions, takeTurn } from "./career.js";
+import { canLearnSkill, chooseEvent, chooseStory, learnSkill, startCareer, startOptions, takeTurn } from "./career.js";
 import type { CareerState, CareerWorld, OriginId } from "./career.js";
 import { adviseMonth } from "./advice.js";
 
@@ -23,6 +23,7 @@ async function play(state: CareerState, world: CareerWorld, months: number) {
   const acts = ["local", "kengi", "festival", "speech", "rest"];
   for (let t = 0; t < months && !state.over; t++) {
     if (state.pendingEvent) chooseEvent(state, world, 0);
+    if (state.pendingStory) chooseStory(state, world, 0);
     await takeTurn(state, world, state.stamina < 30 ? "rest" : acts[t % acts.length]);
   }
 }
@@ -73,7 +74,7 @@ describe("コツ", () => {
   it("活動を続けると、ときどきコツをつかむ", async () => {
     const { state, world } = await begin(5);
     await play(state, world, 40);
-    expect(state.log.some((l) => l.text.includes("【コツ】"))).toBe(true);
+    expect(state.log.some((l) => l.text.includes("【きっかけ】"))).toBe(true);
   }, 60_000);
 
   it("金特は、コツがあっても能力などの条件を満たさないと覚えられない", async () => {

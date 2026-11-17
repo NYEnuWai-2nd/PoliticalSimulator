@@ -7,8 +7,8 @@ import { createWorld } from "../game/roster.js";
 import type { Member, MemberFactory } from "../game/roster.js";
 import { formInitialGovernment } from "../game/cabinet.js";
 import type { Appointment } from "../game/cabinet.js";
-import { chooseEvent, findStartOption, govAction, learnSkill, oppAction, raceForecast, startCareer, takeTurn, upgradeAbility } from "../game/career.js";
-import { districtName, prefLeadingParty, smdMembersOf } from "../game/districts.js";
+import { chooseEvent, chooseStory, currentStoryScene, findStartOption, govAction, learnSkill, oppAction, raceForecast, startCareer, takeTurn, upgradeAbility } from "../game/career.js";
+import { districtName, localizeAssembly, prefLeadingParty, smdMembersOf } from "../game/districts.js";
 import type { AdviceLevel } from "../game/advice.js";
 import type { OppActionId } from "../game/career.js";
 import type { CareerState, CareerWorld, OriginId, RouteId } from "../game/career.js";
@@ -18,7 +18,8 @@ import { skillById } from "../game/skills.js";
 import type { NameData } from "../data/nameData.js";
 import { partyById } from "../game/parties.js";
 import { PREFECTURES, renderJapanMap } from "../map/japanMap.js";
-import { FX, activityIds, activityView, cabinetView, electionView, helpView, highlightView, logView, memberDetail, partyView, selfView, setupView, statusBar } from "./views.js";
+import { FX, activityIds, activityView, cabinetView, electionView, helpView, highlightView, logView, memberDetail, partyView, selfView, setupView, statusBar, storyResultView, storyView } from "./views.js";
+import type { StoryViewState } from "./views.js";
 import type { LogFilter, SetupChoice, UiMode } from "./views.js";
 import { chip, esc, icon, pct } from "./ui.js";
 
@@ -26,9 +27,9 @@ type Tab = "act" | "map" | "party" | "cabinet" | "self";
 const TABS: { id: Tab; label: string; icon: string; title: string }[] = [
   { id: "act", label: "活動", icon: "tab-activity", title: "今月の活動" },
   { id: "map", label: "地図", icon: "tab-map", title: "全国の情勢" },
-  { id: "party", label: "党内", icon: "tab-party", title: "党内" },
+  { id: "party", label: "自党", icon: "tab-party", title: "自党" },
   { id: "cabinet", label: "内閣", icon: "tab-cabinet", title: "内閣" },
-  { id: "self", label: "自分", icon: "tab-self", title: "能力と経歴" },
+  { id: "self", label: "能力", icon: "tab-self", title: "能力と経歴" },
 ];
 
 interface App {
@@ -57,14 +58,18 @@ interface App {
   logFilter: LogFilter;
   /** 出来事の結果（閉じるまで出しておく） */
   result?: { title: string; choice: string; text: string; changes: string[] };
-  /** 画面のモード（このブラウザに覚えておく） */
+  /** 表示モード（このブラウザに覚えておく） */
   mode: UiMode;
   /** 秘書の助言の出し方（このブラウザに覚えておく） */
   adviceLevel: AdviceLevel;
-  /** 見せた山場の場面の数 */
+  /** 見せた節目の場面の数 */
   highlightsShown: number;
   /** 画面の中の確認（「はい」で run を実行する）。ブラウザ標準の確認は自動操作で必ず「いいえ」になる環境があるため使わない */
   confirm?: { text: string; ok: string; run: () => void | Promise<void> };
+  /** 物語の場面の見せ方（今のセリフ、選んだ選択肢、履歴）。key が変われば新しい章として最初から */
+  story: StoryViewState & { key?: string };
+  /** 物語の選択肢を選んだ結果（閉じるまで出しておく） */
+  storyResult?: { title: string; label: string; result: string; changes: string[]; ending?: { title: string; text: string } };
 }
 
 /** 確認のポップアップを出す */
@@ -160,7 +165,7 @@ function autosave(): void {
     app.savedAt = undefined;
     if (!saveWarned) {
       saveWarned = true;
-      window.setTimeout(() => showToast("このブラウザに保存できませんでした。「自分」の画面からファイルに書き出してください。"), 0);
+      window.setTimeout(() => showToast("このブラウザに保存できませんでした。「能力」の画面からファイルに書き出してください。"), 0);
     }
   }
 }
@@ -227,6 +232,7 @@ const app: App = {
   mode: loadMode(),
   adviceLevel: loadAdviceLevel(),
   highlightsShown: 0,
+  story: { line: 0, history: false },
 };
 const root = document.querySelector<HTMLDivElement>("#app")!;
 
@@ -248,7 +254,8 @@ function render(): void {
   else if (app.tab === "party") body = partyView(state, world);
   else if (app.tab === "cabinet") body = cabinetView(state, world);
   else body = mapViewShell();
-  root.innerHTML = `<div class="shell mode-${app.mode}">
+  // 県議の表記は地元に合わせる（東京なら都議、北海道なら道議、大阪・京都なら府議）
+  root.innerHTML = localizeAssembly(`<div class="shell mode-${app.mode}">
     <header class="topbar">
       <div class="crumb"><div class="diamond"></div><div><span class="crumb-sub">議員人生 ― ${esc(world.player.name.displayName)}・当選${world.player.terms}回</span><span class="crumb-main">${tab.title}</span></div></div>
       <nav class="tabs" aria-label="画面の切り替え">${TABS.map((t, i) => `<button class="tab${t.id === app.tab ? " is-active" : ""}" data-tab="${t.id}">${icon(t.icon, 20)}${t.label}<kbd aria-hidden="true">${i + 1}</kbd></button>`).join("")}</nav>
@@ -257,7 +264,7 @@ function render(): void {
     <footer class="status">${statusBar(state, world, app.mode)}</footer>
   </div>
   ${modalHtml()}
-  ${app.toast ? `<div class="cut toast" role="status">${esc(app.toast)}</div>` : ""}`;
+  ${app.toast ? `<div class="cut toast" role="status">${esc(app.toast)}</div>` : ""}`, state.setup.pref);
   if (app.tab === "map") mountMap();
   if (app.tab === "act") setupCardScroll();
 }
@@ -272,7 +279,7 @@ function mapViewShell(): string {
     .map((m) => `<div class="map-row${m.district === mine ? " me" : ""}"><span class="map-dist">${esc(districtName(m.district!).replace(/^.*?(d+区)$/, "$1"))}</span>${chip(m.party)}<button class="name-btn" data-member="${m.id}">${esc(m.name.displayName)}</button><small class="muted">${esc(partyById(m.party).short)}・当選${m.terms}回・地盤${m.jiban}</small></div>`)
     .join("");
   const info = `<b>${esc(PREFECTURES[pref - 1].name)}</b>（小選挙区${smd.length}）<div class="map-rows">${rows}</div>${pr.length ? `<p style="margin:6px 0 0">比例：${pr.map((m) => `<button class="name-btn" data-member="${m.id}">${esc(m.name.displayName)}</button>`).join("、")}</p>` : ""}`;
-  return `<div class="page"><section class="cut box"><div id="map"></div><div style="margin:8px 0 0">${info}</div><p class="muted" style="margin:4px 0 0">県を押すと、その県の議員を表示します。県の色はその県で小選挙区の議席が最も多い党、赤い太枠の県が自分の地元です。</p>${mapLegend(w.roster)}</section></div>`;
+  return `<div class="page"><section class="cut box"><div id="map"></div><div style="margin:8px 0 0">${info}</div><p class="muted" style="margin:4px 0 0">都道府県を押すと、そこの議員を表示します。色はその都道府県で小選挙区の議席が最も多い党、赤い太枠が自分の地元です。</p>${mapLegend(w.roster)}</section></div>`;
 }
 
 /** 地図の凡例：県の色は小選挙区の議席を持つ政党 */
@@ -314,15 +321,23 @@ function modalHtml(): string {
   if (app.overlay === "help") return helpView();
   if (app.result) {
     const r = app.result;
-    return `<div class="overlay"><div class="cut dialog" role="dialog" aria-modal="true"><h2>${esc(r.title)}</h2><p class="muted" style="margin:0 0 6px">選んだこと：${esc(r.choice)}</p><p>${esc(r.text)}</p>
+    return `<div class="overlay"><div class="cut dialog" role="dialog" aria-modal="true"><h2>${esc(r.title)}</h2><p class="muted" style="margin:0 0 6px">選択：${esc(r.choice)}</p><p>${esc(r.text)}</p>
       ${r.changes.length ? `<p class="change-tags">${r.changes.map((c) => `<span class="change-tag ${/[-−]|下がった/.test(c) ? "down" : "up"}">${esc(c)}</span>`).join("")}</p>` : ""}
       <button class="btn primary wide" data-action="close-result">閉じる</button></div></div>`;
   }
   // 総選挙の結果
   if (state.elections.length > app.electionsShown) return electionView(state, state.elections[state.elections.length - 1]);
-  // 山場の場面（政権交代、首相交代、自分の就任）
+  // 節目の場面（政権交代、首相交代、自分の就任）
   const hl = state.highlights ?? [];
   if (hl.length > app.highlightsShown) return highlightView(hl[app.highlightsShown]);
+  // 物語の結果と、選択待ちの章（全画面）
+  if (app.storyResult) return storyResultView(app.storyResult);
+  const scene = currentStoryScene(state, world);
+  if (scene) {
+    const key = `${scene.storyId}:${scene.chapter}:${state.turn}`;
+    if (app.story.key !== key) app.story = { key, line: 0, history: false };
+    return storyView(state, world, scene, app.story, app.mode);
+  }
   // 出来事の選択肢
   if (state.pendingEvent) {
     const pe = state.pendingEvent;
@@ -333,7 +348,7 @@ function modalHtml(): string {
   if (state.over) {
     return `<div class="overlay"><div class="cut dialog" role="dialog" aria-modal="true"><h2>${icon("st-rose", 32)} 議員人生の終わり</h2><p>${esc(state.over)}</p>
       <ul>${state.achievements.map((a) => `<li>${esc(a)}</li>`).join("")}</ul>
-      <p class="btn-row"><button class="btn primary" data-action="restart-same">同じ世界でもう一度</button><button class="btn" data-action="restart">新しい世界で遊ぶ</button></p></div></div>`;
+      <p class="btn-row"><button class="btn primary" data-action="restart-same">同じ顔ぶれでもう一度</button><button class="btn" data-action="restart">新しい顔ぶれで遊ぶ</button></p></div></div>`;
   }
   return "";
 }
@@ -357,7 +372,7 @@ async function start(): Promise<void> {
   // 続きのデータがあれば、消えることを確かめる（確認用の ?start= では聞かない）
   const saved = params.has("start") ? undefined : autosaveLabel();
   if (saved) {
-    ask(`このブラウザに保存している続き（${saved}）は消えます。新しく始めますか？\n残すときは、先に「続きから」で開いて「自分」の画面からファイルに書き出してください。`, "新しく始める", () => beginCareer());
+    ask(`このブラウザにセーブデータ（${saved}）は消えます。新しく始めますか？\n残すときは、先に「続きから」で開いて「能力」の画面からファイルに書き出してください。`, "新しく始める", () => beginCareer());
     return;
   }
   await beginCareer();
@@ -383,7 +398,7 @@ async function beginCareer(): Promise<void> {
 /** 月の前後で見比べる値 */
 function snapshotNumbers() {
   const { state, world } = app;
-  // 比例名簿の道では小選挙区の見込みがない
+  // 比例単独では小選挙区の見込みがない
   const me = state!.setup.route === "pr" ? undefined : raceForecast(state!, world!).find((x) => x.isPlayer)?.share;
   return { approval: state!.gov.approval, share: me, maxStamina: state!.maxStamina, ruling: state!.gov.ruling.party, skills: [...world!.player.skills] };
 }
@@ -410,8 +425,8 @@ function describeChanges(before: ReturnType<typeof snapshotNumbers>, after: Retu
     }
   }
   if (after.maxStamina !== before.maxStamina) parts.push(`体力の上限が${after.maxStamina}になった`);
-  for (const id of after.skills.filter((x) => !before.skills.includes(x))) parts.push(`特殊能力「${skillById(id)?.name}」を身につけた！`);
-  for (const id of before.skills.filter((x) => !after.skills.includes(x))) parts.push(`特殊能力「${skillById(id)?.name}」が外れた`);
+  for (const id of after.skills.filter((x) => !before.skills.includes(x))) parts.push(`持ち味「${skillById(id)?.name}」を身につけた！`);
+  for (const id of before.skills.filter((x) => !after.skills.includes(x))) parts.push(`持ち味「${skillById(id)?.name}」が外れた`);
   return parts.length ? parts.join("　") : undefined;
 }
 
@@ -447,6 +462,33 @@ function choose(index: number): void {
   render();
 }
 
+/** 物語のセリフを1つ進める（最後まで来たら選択肢） */
+function storyNext(): void {
+  const scene = currentStoryScene(app.state!, app.world!);
+  if (!scene) return;
+  app.story.line = Math.min(scene.lines.length, app.story.line + 1);
+  render();
+}
+
+/** 物語の選択肢：1回押すと選び、同じものをもう1回押すと決める */
+function storyChoice(i: number): void {
+  if (app.story.selected !== i) {
+    app.story.selected = i;
+    render();
+    return;
+  }
+  const state = app.state!;
+  const scene = currentStoryScene(state, app.world!);
+  const r = chooseStory(state, app.world!, i);
+  if (!r.ok) {
+    showToast(r.message);
+    return;
+  }
+  app.story = { line: 0, history: false };
+  app.storyResult = { title: scene?.title ?? "", label: r.label ?? "", result: r.result ?? "", changes: r.changes ?? [], ending: r.ending };
+  render();
+}
+
 function selectActivity(id: string): void {
   if (app.selected === id) void doActivity(id);
   else {
@@ -474,8 +516,10 @@ root.addEventListener("click", (ev) => {
     render();
     return;
   }
-  const t = target.closest<HTMLElement>("button, [data-tab], [data-member]");
+  const t = target.closest<HTMLElement>("button, [data-tab], [data-member], .st-talk, .st-history");
   if (!t || app.busy) return;
+  // 会話の履歴の枠の中を押しても閉じない（外側の暗い所を押すと閉じる）
+  if (t.classList.contains("st-history") && target.closest("[data-stop]")) return;
   const d = t.dataset;
   if (d.action === "close-member") {
     app.memberId = undefined;
@@ -489,9 +533,9 @@ root.addEventListener("click", (ev) => {
   }
   if (d.setup) {
     const key = d.setup as keyof SetupChoice;
-    // 1つ選ぶと次の画面に進む（出馬の道の切り替えだけは同じ画面のまま）
+    // 1つ選ぶと次の画面に進む（出馬方法の切り替えだけは同じ画面のまま）
     if (key === "pref") {
-      // 比例名簿は県で決まる。小選挙区の道は県を選ぶと、その県の区の一覧が開く
+      // 比例名簿は県で決まる。小選挙区は県を選ぶと、その県の区の一覧が開く
       app.setup.pref = Number(d.value);
       app.setup.route = d.route as RouteId;
       app.setup.district = undefined;
@@ -532,6 +576,21 @@ root.addEventListener("click", (ev) => {
     if (n) showToast(`${d.up}を${n}上げた`);
     else render();
   } else if (d.choose !== undefined) choose(Number(d.choose));
+  else if (d.action === "story-next") storyNext();
+  else if (d.storyChoice !== undefined) storyChoice(Number(d.storyChoice));
+  else if (d.action === "story-history") {
+    app.story.history = !app.story.history;
+    render();
+  } else if (d.action === "story-skip") {
+    ask("この章のセリフを飛ばして、選択肢に進みますか？", "飛ばす", () => {
+      app.story.line = 999;
+      app.confirm = undefined;
+      render();
+    });
+  } else if (d.action === "story-result-close") {
+    app.storyResult = undefined;
+    render();
+  }
   else if (d.action === "close-result") {
     app.result = undefined;
     render();
@@ -590,7 +649,7 @@ root.addEventListener("click", (ev) => {
     else go();
   } else if (d.action === "delete-save") {
     const label = autosaveLabel();
-    ask(`このブラウザに保存している続き（${label ?? "セーブデータ"}）を消しますか？\n消すと元に戻せません。`, "消す", () => {
+    ask(`このブラウザにセーブデータ（${label ?? "セーブデータ"}）を消しますか？\n消すと元に戻せません。`, "消す", () => {
       removeAutosave();
       showToast("セーブデータを消しました");
     });
@@ -636,6 +695,34 @@ window.addEventListener("keydown", (e) => {
       app.highlightsShown++;
       render();
     }
+    return;
+  }
+  if (app.storyResult) {
+    if (e.key === "Enter" || e.key === " " || e.key === "Escape") {
+      e.preventDefault();
+      app.storyResult = undefined;
+      render();
+    }
+    return;
+  }
+  if (app.state.pendingStory) {
+    const scene = currentStoryScene(app.state, app.world);
+    if (!scene) return;
+    if (app.story.history) {
+      if (e.key === "Escape" || e.key === "Enter") {
+        app.story.history = false;
+        render();
+      }
+      return;
+    }
+    const n = Number(e.key);
+    if (app.story.line < scene.lines.length) {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        storyNext();
+      }
+    } else if (n >= 1 && n <= scene.choices.length) storyChoice(n - 1);
+    else if (e.key === "Enter" && app.story.selected !== undefined) storyChoice(app.story.selected);
     return;
   }
   if (app.state.pendingEvent) {
@@ -770,6 +857,7 @@ async function boot(): Promise<void> {
     const months = Number(params.get("months") ?? 0);
     for (let i = 0; i < months && app.state && !app.state.over; i++) {
       if (app.state.pendingEvent) chooseEvent(app.state, app.world!, 0);
+      if (app.state.pendingStory) chooseStory(app.state, app.world!, 0);
       await takeTurn(app.state, app.world!, i % 3 === 2 ? "rest" : "local");
     }
     // 確認用：&leader=1 で、当選5回の議員として自分の党の党首にして1か月進める（野党の党首の画面を見る）
@@ -778,8 +866,29 @@ async function boot(): Promise<void> {
       app.world.player = { ...app.world.player, terms: 5 };
       app.state.leaders[app.world.player.party] = app.world.player.id;
       if (app.state.pendingEvent) chooseEvent(app.state, app.world, 0);
+      if (app.state.pendingStory) chooseStory(app.state, app.world, 0);
       await takeTurn(app.state, app.world, "rest");
       if (app.state.pendingEvent) chooseEvent(app.state, app.world, 0);
+      if (app.state.pendingStory) chooseStory(app.state, app.world, 0);
+    }
+    const storyId = params.get("story");
+    if (storyId && app.state && app.world) {
+      const st = app.state;
+      const w = app.world;
+      st.bonds ??= { people: { secretary: { value: 0 } }, roles: {} };
+      st.story ??= { active: [], flags: [], done: {} };
+      const rival = w.roster.find((m) => m.seat === "小選挙区" && m.district === st.setup.district && m.id !== w.player.id);
+      if (rival) {
+        st.bonds.roles.rival = rival.id;
+        st.bonds.people[String(rival.id)] ??= { value: 10 };
+      }
+      const mates = w.roster.filter((m) => m.party === w.player.party && m.id !== w.player.id);
+      st.bonds.roles.doki ??= mates.find((m) => m.terms <= 2)?.id;
+      st.bonds.roles.senpai ??= mates.find((m) => m.terms >= 5)?.id;
+      st.pendingEvent = undefined;
+      st.pendingStory = { id: storyId, chapter: params.get("chapter") ?? "c1" };
+      app.story = { key: `${storyId}:${st.pendingStory.chapter}:${st.turn}`, line: Number(params.get("line") ?? 0), history: false };
+      if (params.get("pick")) app.story.selected = Number(params.get("pick"));
     }
     if (params.get("select")) app.selected = params.get("select")!;
     if (months) app.electionsShown = params.get("showElection") ? 0 : app.state?.elections.length ?? 0;

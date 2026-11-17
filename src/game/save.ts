@@ -9,7 +9,9 @@ import type { FactorySnapshot, Member } from "./roster.js";
 import type { NameData } from "../data/nameData.js";
 
 /** 2：小選挙区を289区にした（議員の district が県から区の番号に変わった） */
-export const SAVE_VERSION = 2;
+/** 3：物語の連作と人物との関係（story、bonds、pendingStory、voteBonus）を足した。2のデータもそのまま読める */
+/** 4：能力の「資金」を「資金力」に改めた（読み込むときに付け替える） */
+export const SAVE_VERSION = 4;
 /** これより古いセーブデータは形が違うので読めない */
 const MIN_SAVE_VERSION = 2;
 const FORMAT = "seiji-career-save";
@@ -18,7 +20,7 @@ export interface SaveData {
   format: typeof FORMAT;
   version: number;
   savedAt: string;
-  /** 名簿を作ったときのシード（同じ世界でやり直すときに使う） */
+  /** 名簿を作ったときのシード（同じ顔ぶれでやり直すときに使う） */
   worldSeed: number;
   state: CareerState;
   world: {
@@ -69,8 +71,16 @@ export async function deserializeCareer(save: SaveData, names: NameData): Promis
   // 読み込んだデータを書き換えても元に影響しないよう、写しを使う
   const s = structuredClone(save);
   const roster = s.world.roster;
-  // 特殊能力を入れる前のセーブデータには skills がない
-  for (const m of [...roster, ...s.world.ronin, s.world.player]) m.skills ??= [];
+  // 持ち味を入れる前のセーブデータには skills がない
+  for (const m of [...roster, ...s.world.ronin, s.world.player]) {
+    m.skills ??= [];
+    // 版4で能力の「資金」を「資金力」に改めた（それより前のセーブデータの名前を付け替える）
+    const ab = m.abilities as unknown as Record<string, number>;
+    if ("資金" in ab) {
+      ab["資金力"] = ab["資金"];
+      delete ab["資金"];
+    }
+  }
   // 議員のプレイヤーは名簿の中の本人と同じものにする
   const player = roster.find((m) => m.id === s.world.player.id) ?? s.world.player;
   const byId = new Map<number, Member>([...roster, ...s.world.ronin, player].map((m) => [m.id, m]));

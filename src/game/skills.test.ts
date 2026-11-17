@@ -5,13 +5,13 @@ import exclusion from "../../data/names/exclude_real_politicians.json";
 import type { NameData } from "../data/nameData.js";
 import { createWorld } from "./roster.js";
 import { formInitialGovernment } from "./cabinet.js";
-import { chooseEvent, startCareer, startOptions, takeTurn } from "./career.js";
+import { chooseEvent, chooseStory, startCareer, startOptions, takeTurn } from "./career.js";
 import type { OriginId } from "./career.js";
 import { SKILLS, expMultiplier, relationMultiplier, skillById, skillVote, startingSkills, updateSkills } from "./skills.js";
 import type { ConditionContext } from "./skills.js";
 
 const data = { surnames, givenNames, exclusion } as unknown as NameData;
-const ABIL = { 弁舌: 50, 政策: 50, 調整: 50, 知名度: 50, 組織: 50, 資金: 50 };
+const ABIL = { 弁舌: 50, 政策: 50, 調整: 50, 知名度: 50, 組織: 50, 資金力: 50 };
 const ctx = (over: Partial<ConditionContext> = {}): ConditionContext => ({ activityCounts: {}, abilities: { ...ABIL }, terms: 0, jiban: 1, ...over });
 
 describe("特殊能力のデータ", () => {
@@ -84,6 +84,7 @@ describe("議員人生モードでの特殊能力", () => {
     expect(world.player.skills).toEqual(["dobuita"]);
     for (let t = 0; t < 60 && !world.player.skills.includes("tsuji_seppou"); t++) {
       if (state.pendingEvent) chooseEvent(state, world, 0);
+      if (state.pendingStory) chooseStory(state, world, 0);
       await takeTurn(state, world, t % 2 === 0 ? "speech" : "rest");
     }
     expect(world.player.skills).toContain("tsuji_seppou");
@@ -98,6 +99,7 @@ describe("議員人生モードでの特殊能力", () => {
     let gaffes = 0;
     for (let t = 0; t < 40; t++) {
       if (state.pendingEvent) chooseEvent(state, world, 0);
+      if (state.pendingStory) chooseStory(state, world, 0);
       const r = await takeTurn(state, world, t % 2 === 0 ? "speech" : "rest");
       if (r.message.includes("【失言癖】")) gaffes++;
       if (!world.player.skills.includes("shitsugen")) break;

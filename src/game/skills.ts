@@ -1,12 +1,12 @@
-// 特殊能力（data/game/skills.json）。受け身の効果だけを持ち、活動や選挙の結果を変える。
-// 金特（強力で珍しい）、青特（経歴類型や家系に結び付いた利点）、赤特（欠点）、緑特（利点にも欠点にもなる）の4種類。
+// 持ち味（data/game/skills.json）。受け身の効果だけを持ち、活動や選挙の結果を変える。
+// 金特（強力で珍しい）、青特（経歴や家系に結び付いた利点）、赤特（弱点）、緑特（利点にも弱点にもなる）の4種類。
 import raw from "../../data/game/skills.json";
 import { mulberry32 } from "../lib/nameGenerator.js";
 import type { Ability } from "./tables.js";
 
 export type SkillColor = "gold" | "blue" | "red" | "green";
 
-/** 身につける（または欠点が外れる）条件。書いてあるものをすべて満たすと成り立つ */
+/** 身につける（または弱点が外れる）条件。書いてあるものをすべて満たすと成り立つ */
 export interface SkillCondition {
   /** 活動の id ごとの、行った回数の下限 */
   activity?: Record<string, number>;
@@ -54,7 +54,7 @@ export interface Skill {
   acquire?: SkillCondition;
   cure?: SkillCondition;
   replaces?: string[];
-  /** コツがあるときに経験点を払って覚える費用（経験点の種類ごと） */
+  /** きっかけがあるときに経験点を払って身につける費用（経験点の種類ごと） */
   learn?: { exp: Record<string, number> };
 }
 
@@ -70,7 +70,7 @@ interface SkillData {
 const DATA = raw as unknown as SkillData;
 export const SKILLS = DATA.skills;
 export const HINTS = DATA.hints;
-export const COLOR_NAMES: Record<SkillColor, string> = { gold: "金", blue: "青", red: "赤", green: "緑" };
+export const COLOR_NAMES: Record<SkillColor, string> = { gold: "秀逸", blue: "強み", red: "弱点", green: "気質" };
 const COLOR_ORDER: SkillColor[] = ["gold", "blue", "green", "red"];
 
 export function skillById(id: string): Skill | undefined {
@@ -155,8 +155,8 @@ export function conditionProgress(c: SkillCondition, ctx: ConditionContext, acti
 }
 
 /**
- * 条件を満たした特殊能力を身につけ、条件を満たした欠点を外す。変わったものを返す。
- * 身につけた特殊能力に replaces があれば、それを外す（論破王を身につけたら辻説法は外れる、など）。
+ * 条件を満たした持ち味を身につけ、条件を満たした弱点を外す。変わったものを返す。
+ * 身につけた持ち味に replaces があれば、それを外す（論破王を身につけたら辻説法は外れる、など）。
  */
 export function updateSkills(ids: readonly string[], ctx: ConditionContext): { skills: string[]; gained: Skill[]; lost: Skill[] } {
   let skills = [...ids];
@@ -164,7 +164,7 @@ export function updateSkills(ids: readonly string[], ctx: ConditionContext): { s
   const lost: Skill[] = [];
   for (const s of SKILLS) {
     if (s.acquire && !skills.includes(s.id) && meets(s.acquire, ctx)) {
-      // 上位の特殊能力を持っていれば、下位のものは身につけない
+      // 上位の持ち味を持っていれば、下位のものは身につけない
       if (SKILLS.some((x) => x.replaces?.includes(s.id) && skills.includes(x.id))) continue;
       skills.push(s.id);
       gained.push(s);
@@ -185,7 +185,7 @@ export function updateSkills(ids: readonly string[], ctx: ConditionContext): { s
   return { skills, gained, lost };
 }
 
-/** プレイヤーが始めるときの特殊能力（経歴類型の青特と、出自ごとのもの） */
+/** プレイヤーが始めるときの持ち味（経歴の青特と、出身ごとのもの） */
 export function startingSkills(archetypeId: string, origin: string): string[] {
   const out: string[] = [];
   const a = DATA.archetype_skills.map[archetypeId];
@@ -195,7 +195,7 @@ export function startingSkills(archetypeId: string, origin: string): string[] {
 }
 
 /**
- * ほかの議員の特殊能力。名前や能力の乱数の並びを変えないよう、議員の番号と能力から作った別の乱数を使う。
+ * ほかの議員の持ち味。名前や能力の乱数の並びを変えないよう、議員の番号と能力から作った別の乱数を使う。
  */
 export function rollNpcSkills(opts: { id: number; archetypeId: string; lineageId: string; terms: number; abilitySum: number }): string[] {
   const rand = mulberry32((opts.id * 2_654_435_761) ^ (opts.abilitySum * 40_503) ^ 0x5bd1e995);
@@ -213,27 +213,27 @@ export function rollNpcSkills(opts: { id: number; archetypeId: string; lineageId
   return out;
 }
 
-// ---- コツ（パワプロのコツ、ウマ娘のヒントに当たる） ----
+// ---- きっかけ（パワプロのきっかけ、ウマ娘のヒントに当たる） ----
 
-/** 上位の特殊能力を持っていて、もう身につける意味がないか */
+/** 上位の持ち味を持っていて、もう身につける意味がないか */
 export function superseded(ids: readonly string[], id: string): boolean {
   return SKILLS.some((x) => x.replaces?.includes(id) && ids.includes(x.id));
 }
 
-/** その活動でコツを得られる特殊能力（その活動の回数が身につける条件にあり、まだ持っていないもの） */
+/** その活動できっかけを得られる持ち味（その活動の回数が身につける条件にあり、まだ持っていないもの） */
 export function hintCandidates(ids: readonly string[], activity: string, hints: Record<string, number>): Skill[] {
   return SKILLS.filter(
     (s) => s.learn && s.acquire?.activity?.[activity] !== undefined && !ids.includes(s.id) && !superseded(ids, s.id) && (hints[s.id] ?? 0) < HINTS.max_level,
   );
 }
 
-/** コツの Lv に応じた、覚えるのに使う経験点 */
+/** きっかけの Lv に応じた、覚えるのに使う経験点 */
 export function learnCost(skill: Skill, level: number): Record<string, number> {
   const f = 1 - HINTS.discount_per_level * Math.max(0, level - 1);
   return Object.fromEntries(Object.entries(skill.learn?.exp ?? {}).map(([k, v]) => [k, Math.ceil(v * f)]));
 }
 
-/** 活動の回数以外の条件（能力、当選回数、地盤）を満たしているか。コツで覚えるときに使う */
+/** 活動の回数以外の条件（能力、当選回数、地盤）を満たしているか。きっかけで覚えるときに使う */
 export function meetsExceptActivity(c: SkillCondition | undefined, ctx: ConditionContext): boolean {
   if (!c) return true;
   return meets({ ...c, activity: undefined }, ctx);

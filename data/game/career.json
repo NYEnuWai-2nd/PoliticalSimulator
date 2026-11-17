@@ -3,7 +3,7 @@
   "origins": [
     {
       "id": "newcomer",
-      "name": "新人",
+      "name": "一般",
       "difficulty": "難しい",
       "description": "後援会も地盤もない一般家庭の出身。他党の現職に挑む。",
       "lineage": "none",
@@ -28,7 +28,7 @@
       "money": 800,
       "bonus": {
         "組織": 10,
-        "資金": 8,
+        "資金力": 8,
         "知名度": 4
       },
       "relations": {
@@ -49,7 +49,7 @@
       "money": 1500,
       "bonus": {
         "組織": 10,
-        "資金": 13,
+        "資金力": 13,
         "知名度": 10
       },
       "relations": {
@@ -84,7 +84,7 @@
     },
     {
       "id": "money",
-      "name": "資金",
+      "name": "調達",
       "icon": "exp-money"
     }
   ],
@@ -157,7 +157,7 @@
       "id": "fund",
       "name": "資金集め",
       "icon": "act-fund",
-      "description": "支援者の会合を回って献金を集める。資金の能力が高いほど多く集まる。",
+      "description": "支援者の会合を回って献金を集める。能力の「資金力」が高いほど多く集まる。",
       "stamina": -10,
       "exp": {
         "money": 18,
@@ -287,7 +287,7 @@
         "election": 2,
         "network": 1
       },
-      "資金": {
+      "資金力": {
         "money": 3
       }
     },

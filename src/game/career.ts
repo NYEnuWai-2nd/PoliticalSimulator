@@ -30,6 +30,29 @@ import { OPP, OPP_POSTS, assignOppositionPosts, countNoConfidence, initialCooper
 import type { OppDuty, OppositionState, Pact } from "./opposition.js";
 import { inSession } from "./game.js";
 import { partyDistance } from "./vote.js";
+import {
+  advance,
+  applyBondEffects,
+  assignColleagues,
+  assignRival,
+  bondVoteBonus,
+  dueChapter,
+  fillText,
+  leaderVoteBias,
+  monthlyBondExp,
+  newBondState,
+  newStoryState,
+  resolveChoice,
+  rivalTypeOf,
+  startStories,
+  storyById,
+  storyScene,
+  availableChoices,
+  BOND_RULES,
+  roleAvailable,
+  roleMember,
+} from "./story.js";
+import type { BondRole, BondState, PendingStory, StoryContext, StoryEffects, StoryEnding, StoryScene, StoryState } from "./story.js";
 
 const C = careerRaw;
 const PL = politicsRaw;
@@ -77,9 +100,11 @@ interface Effects {
   relations?: Partial<Record<RelationId, number>>;
   jiban_progress?: number;
   abilities?: Partial<Record<Ability, number>>;
-  /** 特殊能力を身につける／外す（id の配列） */
+  /** 持ち味を身につける／外す（id の配列） */
   skills_add?: string[];
   skills_remove?: string[];
+  /** 人物との関係の増減（ライバル、同期、先輩、秘書） */
+  bonds?: Partial<Record<BondRole, number>>;
 }
 
 interface LifeEvent {
@@ -94,6 +119,8 @@ interface LifeEvent {
   post?: string[];
   /** 季節の出来事。書いてあればその月だけ起きる */
   months?: number[];
+  /** その人物がいるときだけ起きる */
+  needs?: BondRole;
   choices: {
     label: string;
     result: string;
@@ -109,17 +136,17 @@ export const EXP_TYPES = C.exp_types as { id: ExpId; name: string; icon: string 
 export const RELATIONS = C.relations as { id: RelationId; name: string }[];
 const LIFE_EVENTS = lifeRaw.events as LifeEvent[];
 
-export const ROUTE_NAMES: Record<RouteId, string> = { smd: "小選挙区", successor: "引退する現職の後継", pr: "比例名簿" };
+export const ROUTE_NAMES: Record<RouteId, string> = { smd: "小選挙区", successor: "現職の後継", pr: "比例単独" };
 
 export interface CareerSetup {
   origin: OriginId;
   party: string;
-  /** 地元の県（比例名簿の道でも地元は持つ） */
+  /** 地元の都道府県（比例単独でも地元は持つ） */
   pref: PrefCode;
-  /** 出馬する小選挙区（小選挙区と後継の道）。比例名簿の道にはない */
+  /** 出馬する小選挙区（小選挙区と後継）。比例単独にはない */
   district?: DistrictId;
   route: RouteId;
-  /** 経歴類型の id（character_tables.json） */
+  /** 経歴の id（character_tables.json） */
   archetype: string;
 }
 
@@ -135,7 +162,7 @@ export interface CareerLog {
   count?: number;
 }
 
-/** 山場の場面（政権交代、首相交代、自分の就任）。画面ではポップアップで見せる */
+/** 節目の場面（政権交代、首相交代、自分の就任）。画面ではポップアップで見せる */
 export interface Highlight {
   turn: number;
   kind: string;
@@ -150,9 +177,9 @@ export interface ElectionSummary {
   month: number;
   won: boolean;
   route: RouteId;
-  /** 小選挙区の得票（得票率の高い順）。比例名簿の道なら空 */
+  /** 小選挙区の得票（得票率の高い順）。比例単独なら空 */
   district: { name: string; party: string; share: number; isPlayer: boolean }[];
-  /** 比例名簿の道のとき：名簿の順位（1から）と党の比例の当選者数 */
+  /** 比例単独のとき：名簿の順位（1から）と党の比例の当選者数 */
   pr?: { rank: number; seats: number };
   /** 政党ごとの議席 */
   seats: { party: string; total: number }[];
@@ -161,6 +188,8 @@ export interface ElectionSummary {
   /** 前回の総選挙での自分の得票率（同じ小選挙区で戦ったとき） */
   prevShare?: number;
   support: Record<string, number>;
+  /** ライバル（人物との関係の相手）の一言。人物像の型による（なければ総選挙の一言の表から選ぶ） */
+  rivalLine?: string;
 }
 
 export interface PendingEvent {
@@ -174,7 +203,7 @@ export interface CareerState {
   seed: number;
   setup: CareerSetup;
   playerId: number;
-  /** 地盤を譲って次の総選挙で引退する現職（世襲・名門の親、後継の道の前任者） */
+  /** 地盤を譲って次の総選挙で引退する現職（世襲・名門の親、後継の前任者） */
   parentId?: number;
   secretaryName: string;
   startYear: number;
@@ -222,18 +251,18 @@ export interface CareerState {
   pmMonths: number;
   /** 与党の党首が連続で務めている期数（任期の上限に使う） */
   leaderTermsServed: number;
-  /** 今の与党第一党が政権に就いた年（長期政権の疲れに使う） */
+  /** 今の与党第一党が政権に就いた年（政権疲れに使う） */
   rulingSince: number;
   /** 今の首相が就任した年（首相個人の疲れに使う） */
   pmSince: number;
   /** プレイヤーが与党の党首を務めた期数の通算（生涯の上限に使う） */
   playerLeaderTerms: number;
   rngCounter: number;
-  /** 活動ごとに行った回数（特殊能力を身につける条件に使う） */
+  /** 活動ごとに行った回数（持ち味を身につける条件に使う） */
   activityCounts?: Record<string, number>;
-  /** 特殊能力のコツ（id → Lv1〜3）。コツがあれば経験点を払って覚えられる */
+  /** 持ち味のきっかけ（id → Lv1〜3）。きっかけがあれば経験点を払って身につけられる */
   skillHints?: Record<string, number>;
-  /** 山場の場面（新しいものが後ろ。画面で見せたかどうかは画面の側で数える） */
+  /** 節目の場面（新しいものが後ろ。画面で見せたかどうかは画面の側で数える） */
   highlights?: Highlight[];
   /** 野党でのプレイヤーの状態（協力度、選挙協力、追い風、対案、党首の行動） */
   opp?: OppositionState;
@@ -243,6 +272,14 @@ export interface CareerState {
   history?: { turn: number; approval: number; money: number; share?: number }[];
   /** 政権の記録（gov.log）のうち、自分の記録に写し終えた数 */
   govLogCopied?: number;
+  /** 物語の連作の進み具合（story.ts） */
+  story?: StoryState;
+  /** 人物との関係（ライバル、同期、先輩、秘書） */
+  bonds?: BondState;
+  /** 次の月に進む前に選ぶ必要のある物語の章 */
+  pendingStory?: PendingStory;
+  /** 物語で決まった、次の総選挙の得票率に足すポイント（総選挙が終わると0に戻る） */
+  voteBonus?: number;
   over?: string;
 }
 
@@ -280,14 +317,14 @@ const smdHolder = (roster: Member[], district: DistrictId | undefined) =>
 export interface StartOption {
   route: RouteId;
   pref: PrefCode;
-  /** 小選挙区と後継の道で出る区 */
+  /** 小選挙区と後継で出る区 */
   district?: DistrictId;
   /** 選択肢の説明（相手の現職、継ぐ地盤など） */
   note: string;
 }
 
 /**
- * 出自と政党から、出馬の道と区（比例名簿は県）の組み合わせの一覧を返す。
+ * 出身と政党から、出馬方法と区（比例名簿は県）の組み合わせの一覧を返す。
  * 新人：他党の現職に挑む小選挙区、引退が近い自党の現職の後継、比例名簿（地元はどの県でもよい）。
  * 世襲・名門：自党の現職（固定キャラクターを除く）の地盤を継ぐ小選挙区。そういう区がない党なら、どの区でも親の地盤があるものとする。
  */
@@ -312,7 +349,7 @@ export function startOptions(roster: Member[], party: string, origin: OriginId):
   return out;
 }
 
-/** 小選挙区の道で選べる県（互換用。新人は他党の現職の区がある県、世襲・名門は親の区がある県） */
+/** 小選挙区で選べる県（互換用。新人は他党の現職の区がある県、世襲・名門は親の区がある県） */
 export function availablePrefs(roster: Member[], party: string, origin: OriginId): PrefCode[] {
   return [...new Set(startOptions(roster, party, origin).filter((o) => o.route === "smd").map((o) => o.pref))];
 }
@@ -335,10 +372,10 @@ export function seatPlaceName(setup: { pref: PrefCode; district?: DistrictId }):
   return setup.district ? districtName(setup.district) : prefName(setup.pref);
 }
 
-/** 経歴類型と出自から、新人候補の能力の初期値を決める（個人差は小さく足す） */
+/** 経歴と出身から、新人候補の能力の初期値を決める（個人差は小さく足す） */
 function startingAbilities(archetypeId: string, origin: Origin, r: () => number): Record<Ability, number> {
   const arch = TABLES.archetypes.find((a) => a.id === archetypeId);
-  if (!arch) throw new Error(`未知の経歴類型です：${archetypeId}`);
+  if (!arch) throw new Error(`未知の経歴です：${archetypeId}`);
   const out = {} as Record<Ability, number>;
   for (const a of ABILITIES) out[a] = clamp(Math.round(centerOf(arch.base_ranks[a]) + (origin.bonus[a] ?? 0) + (r() - 0.5) * 6), 1, 100);
   return out;
@@ -361,7 +398,7 @@ export function isPrimeMinister(_state: CareerState, world: CareerWorld): boolea
   return world.government.find((a) => a.post.id === "pm")?.member.id === world.player.id;
 }
 
-/** プレイヤーの役職の種類（公務と出来事に使う）。なければ空 */
+/** プレイヤーの役職の種類（職務と出来事に使う）。なければ空 */
 export function postCategory(state: CareerState, world: CareerWorld): string {
   const a = world.government.find((x) => x.member.id === world.player.id);
   if (a) return a.post.id === "pm" ? "pm" : a.post.field ? "minister" : a.post.id;
@@ -455,11 +492,13 @@ export function oppositionLineup(state: CareerState, world: CareerWorld): { post
 function updatePost(state: CareerState, world: CareerWorld): void {
   assignOppPost(state, world);
   const title = postTitle(state, world);
+  const changed = title !== state.post;
   if (title && title !== state.post) {
     log(state, `${title}に就いた。`);
     state.achievements.push(`${dateOf(state)} ${title}`);
   }
   state.post = title;
+  if (changed && state.story) startStoriesAndLog(state, world, "post_change");
 }
 
 /** 党首選を行う。与党なら首相が替わることがある（keepGov なら政権の状態は保ったまま内閣だけ組み直す） */
@@ -474,9 +513,17 @@ function runLeaderElection(state: CareerState, world: CareerWorld, party: string
     // プレイヤーは自分で立候補したときだけ候補になる（ほかの議員と同じように自動では候補にしない）
     excludeIds: [...(termLimited ? [state.leaders[party]] : []), ...(playerRuns ? [] : [world.player.id])],
     extra: playerRuns ? { member: world.player, bonus: playerLeaderBonus(state, world) } : undefined,
+    bias: playerRuns ? leaderVoteBias(state.bonds) : undefined,
     rand: () => rand(state),
   });
   if (!result) return undefined;
+  if (playerRuns && state.bonds) {
+    const ctx = storyContext(state, world);
+    for (const [role, key] of [["doki", "leader_vs_doki"], ["senpai", "leader_vs_senpai"]] as const) {
+      const id = state.bonds.roles[role];
+      if (id !== undefined && result.candidates.some((c) => c.member.id === id)) bondLog(state, ctx, role, BOND_RULES[key], "党首選で争った");
+    }
+  }
   const before = state.leaders[party];
   state.leaders[party] = result.winner.id;
   const isRuling = state.gov.ruling.party === party;
@@ -499,7 +546,7 @@ function runLeaderElection(state: CareerState, world: CareerWorld, party: string
   return result;
 }
 
-/** 長期政権の疲れ（支持率が戻っていく基準の値をどれだけ下げるか） */
+/** 政権疲れ（支持率が戻っていく基準の値をどれだけ下げるか） */
 function fatigueOf(state: CareerState): number {
   const F = PL.fatigue;
   const party = Math.min(F.cap, Math.max(0, state.year - state.rulingSince) * F.per_year);
@@ -544,7 +591,7 @@ export function govBills(state: CareerState) {
   return BILLS.map((b) => ({ id: b.id, name: billName(state.gov, b), field: b.field, status: state.gov.bills[b.id].status, work: b.work, progress: state.gov.bills[b.id].progress }));
 }
 
-/** 公務：役職ごとの仕事をする */
+/** 職務：役職ごとの仕事をする */
 function doDuty(state: CareerState, world: CareerWorld): string {
   const cat = postCategory(state, world);
   if (cat.startsWith("opp_")) return oppDuty(state, world, cat);
@@ -573,10 +620,10 @@ function doDuty(state: CareerState, world: CareerWorld): string {
     g.cohesion = Math.min(1, Math.round((g.cohesion + d.cohesion) * 100) / 100);
     out.push(`党の結束${Math.round(g.cohesion * 100)}%`);
   }
-  return `公務（${state.post}）：${out.join("、")}`;
+  return `職務（${state.post}）：${out.join("、")}`;
 }
 
-/** 野党の役職の公務 */
+/** 野党の役職の職務 */
 function oppDuty(state: CareerState, world: CareerWorld, cat: string): string {
   const d: OppDuty = cat === "opp_shadow" ? OPP.posts.shadow.duty : (OPP_POSTS.find((p) => p.id === cat)?.duty ?? {});
   const opp = ensureOpp(state, world);
@@ -608,7 +655,7 @@ function oppDuty(state: CareerState, world: CareerWorld, cat: string): string {
     out.push("党に追い風");
   }
   state.activityCounts = { ...state.activityCounts, duty: (state.activityCounts?.duty ?? 0) + 1 };
-  return `公務（${state.post}）：${out.join("、")}`;
+  return `職務（${state.post}）：${out.join("、")}`;
 }
 
 function ensureOpp(state: CareerState, world: CareerWorld): OppositionState {
@@ -658,8 +705,8 @@ export const OPP_ACTIONS: { id: OppActionId; name: string; needsParty?: boolean;
   { id: "summit", name: "野党党首会談", needsParty: true, description: "ほかの野党の党首と会い、協力度を上げる。思想が近いほど上がりやすい。" },
   { id: "debate", name: "党首討論", description: "国会の会期中、首相と論戦する。弁舌と政策で上回れば、内閣支持率が下がり自党に追い風。" },
   { id: "pursue", name: "失政の追及", description: "政権の失政や不祥事を追及する。長期政権ほど成功しやすいが、失敗すると自分に返ってくる。" },
-  { id: "proposal", name: "対案の発表", description: "準備した対案（政調会長がためる）を発表し、政権を担える党だと示す。" },
-  { id: "pact", name: "選挙協力の締結", needsParty: true, description: "協力度の高い野党と小選挙区の候補者を一本化する約束をする。総選挙まで有効。" },
+  { id: "proposal", name: "対案の発表", description: "準備した対案（政調会長が進める）を発表し、政権を担える党だと示す。" },
+  { id: "pact", name: "選挙協力の合意", needsParty: true, description: "協力度の高い野党と小選挙区の候補者を一本化する約束をする。総選挙まで有効。" },
   { id: "noconfidence", name: "内閣不信任案の提出", description: "野党の票と与党の造反で過半数を取れば可決。支持率が高ければ解散、低ければ総辞職になる。" },
 ];
 
@@ -764,7 +811,7 @@ export function oppAction(state: CareerState, world: CareerWorld, action: OppAct
     }
     case "proposal": {
       const P = A.proposal;
-      if (opp.proposals < P.cost) return { ok: false, message: `対案の準備が足りません（${opp.proposals}/${P.cost}）。政調会長が毎月ためてくれます。` };
+      if (opp.proposals < P.cost) return { ok: false, message: `対案の準備が足りません（${opp.proposals}/${P.cost}）。政調会長が毎月進めてくれます。` };
       opp.proposals -= P.cost;
       applyEffects(state, world, { stamina: P.stamina });
       const gain = Math.round(P.momentum * (g.approval >= P.high_approval ? P.high_approval_factor : 1) * 100) / 100;
@@ -823,7 +870,7 @@ export async function startCareer(
   seed: number,
 ): Promise<{ state: CareerState; world: CareerWorld }> {
   const origin = originById(setupIn.origin);
-  // 小選挙区の道で区を書かなかったときは、その県でその道の最初の区にする
+  // 小選挙区で区を書かなかったときは、その県でその道の最初の区にする
   const setup: CareerSetup =
     setupIn.route !== "pr" && setupIn.district === undefined
       ? { ...setupIn, district: findStartOption(base.roster, setupIn.party, setupIn.origin, setupIn.route, String(setupIn.pref))?.district }
@@ -831,7 +878,7 @@ export async function startCareer(
         ? { ...setupIn, district: undefined }
         : setupIn;
   if (!startOptions(base.roster, setup.party, setup.origin).some((o) => o.route === setup.route && o.pref === setup.pref && o.district === setup.district))
-    throw new Error("この出自と政党では、その出馬の道と選挙区からは出馬できません。");
+    throw new Error("この出身と政党では、その出馬方法と選挙区からは出馬できません。");
   const party = partyById(setup.party);
   const generated = await base.factory.create(party, { seat: "なし", home: setup.pref });
   const holder = smdHolder(base.roster, setup.district);
@@ -903,6 +950,8 @@ export async function startCareer(
     rulingSince: START_YEAR - PL.fatigue.initial_years,
     rngCounter: 0,
     activityCounts: {},
+    story: newStoryState(),
+    bonds: newBondState(),
   };
   state.gov.scenes = [];
   const where = prefName(setup.pref);
@@ -960,7 +1009,7 @@ export function prRank(state: CareerState): number {
   return Math.max(0, Math.floor((80 - state.relations.party) / C.routes.pr_rank_step));
 }
 
-/** 総選挙が今あったときの、プレイヤーの選挙区の見込み（揺らぎを除いた得票率の高い順）。比例名簿の道なら空 */
+/** 総選挙が今あったときの、プレイヤーの選挙区の見込み（揺らぎを除いた得票率の高い順）。比例単独なら空 */
 export function raceForecast(
   state: CareerState,
   world: CareerWorld,
@@ -999,7 +1048,8 @@ function playerBonus(state: CareerState): number {
     ((state.relations.kengi - 50) / 50) * C.kengi.election_weight +
     ((state.relations.press - 50) / 50) * C.relation_effects.press_weight -
     (B.origin_penalty as Record<OriginId, number>)[state.setup.origin] -
-    (state.setup.route === "successor" ? C.routes.successor_penalty : 0)
+    (state.setup.route === "successor" ? C.routes.successor_penalty : 0) +
+    ((state.voteBonus ?? 0) + bondVoteBonus(state.bonds)) / 100
   );
 }
 
@@ -1032,7 +1082,7 @@ function applyEffects(state: CareerState, world: CareerWorld, e: Effects): strin
     out.push(`${EXP_TYPES.find((x) => x.id === k)!.name}${v >= 0 ? "+" : ""}${v}`);
   }
   for (const [k, n] of Object.entries(e.relations ?? {})) {
-    // 関係が上がるときは特殊能力（根回しの鬼、調整下手など）の倍率がかかる
+    // 関係が上がるときは持ち味（根回しの鬼、調整下手など）の倍率がかかる
     const v = (n as number) > 0 ? Math.round((n as number) * relationMultiplier(world.player.skills, k)) : (n as number);
     state.relations[k as RelationId] = clamp(state.relations[k as RelationId] + v, 0, 100);
     if (v) out.push(`${RELATIONS.find((r) => r.id === k)?.name ?? k}${v > 0 ? "+" : ""}${v}`);
@@ -1055,14 +1105,14 @@ function applyEffects(state: CareerState, world: CareerWorld, e: Effects): strin
     const sk = skillById(id);
     if (sk && !world.player.skills.includes(id)) {
       setPlayer(world, { ...world.player, skills: [...world.player.skills.filter((x) => !sk.replaces?.includes(x)), id] });
-      out.push(`特殊能力「${sk.name}」を身につけた`);
+      out.push(`持ち味「${sk.name}」を身につけた`);
     }
   }
   for (const id of e.skills_remove ?? []) {
     const sk = skillById(id);
     if (sk && world.player.skills.includes(id)) {
       setPlayer(world, { ...world.player, skills: world.player.skills.filter((x) => x !== id) });
-      out.push(`特殊能力「${sk.name}」が外れた`);
+      out.push(`持ち味「${sk.name}」が外れた`);
     }
   }
   return out;
@@ -1091,18 +1141,18 @@ function flavorLine(state: CareerState, world: CareerWorld, activity: string): s
   return pick.text.replaceAll("{secretary}", state.secretaryName);
 }
 
-/** 条件を満たした特殊能力を身につけ、条件を満たした欠点を外す */
+/** 条件を満たした持ち味を身につけ、条件を満たした弱点を外す */
 function checkSkills(state: CareerState, world: CareerWorld): void {
   const p = world.player;
   const r = updateSkills(p.skills, { activityCounts: state.activityCounts ?? {}, abilities: p.abilities, terms: p.terms, jiban: p.jiban });
   if (!r.gained.length && !r.lost.length) return;
   setPlayer(world, { ...p, skills: r.skills });
   if (state.skillHints) for (const g of r.gained) delete state.skillHints[g.id];
-  for (const g of r.gained) log(state, `特殊能力「${g.name}」を身につけた！ ${g.description}`);
-  for (const l of r.lost) log(state, l.color === "red" ? `欠点「${l.name}」を克服した。` : `特殊能力「${l.name}」は上位の能力に置き換わった。`);
+  for (const g of r.gained) log(state, `持ち味「${g.name}」を身につけた！ ${g.description}`);
+  for (const l of r.lost) log(state, l.color === "red" ? `弱点「${l.name}」を克服した。` : `持ち味「${l.name}」は上位の能力に置き換わった。`);
 }
 
-/** 活動の経験点に特殊能力の倍率をかける */
+/** 活動の経験点に持ち味の倍率をかける */
 function scaleExp(exp: Partial<Exp> | undefined, factor: number): Partial<Exp> | undefined {
   if (!exp || factor === 1) return exp;
   return Object.fromEntries(Object.entries(exp).map(([k, v]) => [k, Math.round((v as number) * factor)])) as Partial<Exp>;
@@ -1131,8 +1181,9 @@ function addJibanProgress(state: CareerState, world: CareerWorld, amount: number
 export async function takeTurn(state: CareerState, world: CareerWorld, activityId: string): Promise<TurnResult> {
   if (state.over) return { ok: false, message: "ゲームは終わっています。" };
   if (state.pendingEvent) return { ok: false, message: `先に出来事「${state.pendingEvent.title}」の選択肢を選んでください。` };
+  if (state.pendingStory) return { ok: false, message: `先に物語「${storyById(state.pendingStory.id)?.title ?? ""}」の選択肢を選んでください。` };
   if (activityId === "duty") {
-    if (!postCategory(state, world)) return { ok: false, message: "公務は役職に就いているときだけできます。" };
+    if (!postCategory(state, world)) return { ok: false, message: "職務は役職に就いているときだけできます。" };
     const message = doDuty(state, world);
     log(state, message, "minor");
     await endMonth(state, world);
@@ -1156,7 +1207,7 @@ export async function takeTurn(state: CareerState, world: CareerWorld, activityI
       jiban_progress: act.jiban_progress,
     });
     if (act.money_per_ability) {
-      const m = Math.round(world.player.abilities.資金 * act.money_per_ability * gainMultiplier(state) * moneyMultiplier(sk));
+      const m = Math.round(world.player.abilities.資金力 * act.money_per_ability * gainMultiplier(state) * moneyMultiplier(sk));
       state.money += m;
       gained.push(`資金+${m}万円`);
     }
@@ -1167,7 +1218,7 @@ export async function takeTurn(state: CareerState, world: CareerWorld, activityI
     const scene = flavorLine(state, world, act.id);
     const nums = gained.join("、") || "体力が戻った";
     message = scene ? `${act.name}：${scene}（${nums}）` : `${act.name}：${nums}`;
-    // 欠点の特殊能力による失敗（失言癖など）
+    // 弱点の持ち味による失敗（失言癖など）
     for (const { skill, mishap } of mishapsFor(sk, act.id)) {
       if (rand(state) >= mishap.chance) continue;
       const lost = applyEffects(state, world, mishap.effects as Effects);
@@ -1175,7 +1226,7 @@ export async function takeTurn(state: CareerState, world: CareerWorld, activityI
     }
   }
   state.activityCounts = { ...state.activityCounts, [act.id]: (state.activityCounts?.[act.id] ?? 0) + 1 };
-  // その活動で身につく特殊能力のコツを、ときどきつかむ
+  // その活動で身につく持ち味のきっかけを、ときどきつかむ
   const hints = state.skillHints ?? {};
   const pl = world.player;
   const hintCtx = { activityCounts: state.activityCounts ?? {}, abilities: pl.abilities, terms: pl.terms, jiban: pl.jiban };
@@ -1183,20 +1234,20 @@ export async function takeTurn(state: CareerState, world: CareerWorld, activityI
   if (candidates.length && rand(state) < HINTS.chance) {
     const sk = candidates[Math.floor(rand(state) * candidates.length)];
     state.skillHints = { ...hints, [sk.id]: (hints[sk.id] ?? 0) + 1 };
-    message += `。【コツ】「${sk.name}」のコツをつかんだ（Lv${state.skillHints[sk.id]}）`;
+    message += `。【きっかけ】「${sk.name}」のきっかけをつかんだ（Lv${state.skillHints[sk.id]}）`;
   }
   log(state, message, "minor");
   await endMonth(state, world);
   return { ok: true, message };
 }
 
-/** コツのある特殊能力を、経験点を払って覚えられるか（理由つき） */
+/** きっかけのある持ち味を、経験点を払って身につけられるか（理由つき） */
 export function canLearnSkill(state: CareerState, world: CareerWorld, id: string): { ok: boolean; reason?: string; cost?: Record<string, number> } {
   const sk = skillById(id);
   const level = state.skillHints?.[id] ?? 0;
-  if (!sk?.learn) return { ok: false, reason: "コツで覚えられる特殊能力ではありません。" };
+  if (!sk?.learn) return { ok: false, reason: "きっかけで身につけられる持ち味ではありません。" };
   if (world.player.skills.includes(id) || superseded(world.player.skills, id)) return { ok: false, reason: "もう持っています。" };
-  if (level < 1) return { ok: false, reason: "まだコツをつかんでいません。" };
+  if (level < 1) return { ok: false, reason: "まだきっかけをつかんでいません。" };
   const p = world.player;
   if (!meetsExceptActivity(sk.acquire, { activityCounts: state.activityCounts ?? {}, abilities: p.abilities, terms: p.terms, jiban: p.jiban }))
     return { ok: false, reason: "能力、当選回数、地盤の条件を満たしていません。" };
@@ -1214,8 +1265,8 @@ export function learnSkill(state: CareerState, world: CareerWorld, id: string): 
   const rest = { ...state.skillHints };
   delete rest[id];
   state.skillHints = rest;
-  log(state, `コツを生かして、特殊能力「${sk.name}」を身につけた！`);
-  return { ok: true, message: `特殊能力「${sk.name}」を身につけた！` };
+  log(state, `きっかけを生かして、持ち味「${sk.name}」を身につけた！`);
+  return { ok: true, message: `持ち味「${sk.name}」を身につけた！` };
 }
 
 /** 体力を使う活動で倒れる確率。体力が threshold を切ると breakdown_chance で、0に近づくほど上がり、0なら必ず倒れる */
@@ -1234,8 +1285,158 @@ export function electionComments(e: ElectionSummary): { self: string; rival?: { 
   const rival = e.won ? others[0] : others.reduce<(typeof others)[number] | undefined>((a, x) => (!a || x.share > a.share ? x : a), undefined);
   return {
     self: pick(e.won ? ELECTION_LINES.won_self : ELECTION_LINES.lost_self, seed),
-    rival: rival ? { name: rival.name, party: rival.party, won: !e.won, text: pick(e.won ? ELECTION_LINES.won_rival : ELECTION_LINES.lost_rival, seed + 1) } : undefined,
+    rival: rival ? { name: rival.name, party: rival.party, won: !e.won, text: e.rivalLine ?? pick(e.won ? ELECTION_LINES.won_rival : ELECTION_LINES.lost_rival, seed + 1) } : undefined,
   };
+}
+
+// ---- 物語の連作（story.ts） ----
+
+/** 物語の計算に渡す状態と道具 */
+function storyContext(state: CareerState, world: CareerWorld): StoryContext {
+  state.story ??= newStoryState();
+  state.bonds ??= newBondState();
+  const last = state.elections.at(-1);
+  const me = last?.district.find((x) => x.isPlayer);
+  const other = last?.district.filter((x) => !x.isPlayer).sort((a, b) => b.share - a.share)[0];
+  return {
+    turn: state.turn,
+    month: state.month,
+    status: state.status,
+    postKind: postKind(postCategory(state, world)) || "none",
+    ruling: state.gov.ruling.party === world.player.party || state.gov.ruling.partners.includes(world.player.party),
+    player: world.player,
+    age: state.year - world.player.birthYear,
+    relations: state.relations,
+    district: state.setup.route === "pr" ? undefined : state.setup.district,
+    pref: state.setup.pref,
+    secretaryName: state.secretaryName,
+    lastElection: last ? { won: last.won, margin: me && other ? Math.round(Math.abs(me.share - other.share) * 1000) / 10 : undefined } : undefined,
+    story: state.story,
+    bonds: state.bonds,
+    findMember: (id) => (world.player.id === id ? world.player : (world.roster.find((m) => m.id === id) ?? world.ronin.find((m) => m.id === id))),
+    rand: () => rand(state),
+  };
+}
+
+function startStoriesAndLog(state: CareerState, world: CareerWorld, trigger: "monthly" | "after_election" | "first_win" | "post_change"): void {
+  if (state.over) return;
+  for (const title of startStories(storyContext(state, world), trigger)) log(state, `【物語】「${title}」が始まった。`, "minor");
+}
+
+function logEnding(state: CareerState, title: string, ending: StoryEnding | undefined, text: string): void {
+  const line = ending ? `【物語】「${title}」の結末「${ending.title}」：${text}` : `【物語】「${title}」は、そのまま立ち消えになった。`;
+  log(state, line, ending ? "major" : "minor");
+  if (ending) state.achievements.push(`${dateOf(state)} 物語「${title}」：${ending.title}`);
+}
+
+/** 物語の効果を当てる（日常の出来事の効果に、人物との関係と次の総選挙の票を足したもの） */
+function applyStoryEffects(state: CareerState, world: CareerWorld, ctx: StoryContext, e: StoryEffects | undefined): string[] {
+  if (!e) return [];
+  const out = applyEffects(state, world, e as Effects);
+  if (e.stamina) out.unshift(`体力${e.stamina > 0 ? "+" : ""}${e.stamina}`);
+  if (e.mood) out.push(e.mood > 0 ? "やる気が上がった" : "やる気が下がった");
+  out.push(...applyBondEffects(ctx, e));
+  if (e.vote_bonus) {
+    state.voteBonus = (state.voteBonus ?? 0) + e.vote_bonus;
+    out.push(`次の総選挙の票${e.vote_bonus > 0 ? "+" : ""}${e.vote_bonus}`);
+  }
+  return out;
+}
+
+/** 月末の物語：関係の札の効果、期限切れの物語、起きる時期になった章 */
+function storyMonth(state: CareerState, world: CareerWorld): void {
+  const ctx = storyContext(state, world);
+  const exp = monthlyBondExp(state.bonds);
+  for (const [k, n] of Object.entries(exp)) state.exp[k as ExpId] += n;
+  const doki = state.bonds?.roles.doki;
+  const flags = state.story!.flags;
+  if (doki !== undefined && !flags.includes("auto_doki_minister_first")) {
+    const dokiPost = world.government.find((a) => a.member.id === doki && a.post.field);
+    const iWasMinister = state.achievements.some((a) => /大臣|官房長官/.test(a));
+    if (dokiPost && !iWasMinister) {
+      flags.push("auto_doki_minister_first");
+      bondLog(state, ctx, "doki", BOND_RULES.doki_minister_first, `同期が先に${dokiPost.post.name}に就いた`);
+    }
+  }
+  const { pending, ended } = dueChapter(ctx);
+  for (const { story, ending } of ended) {
+    const fx = applyStoryEffects(state, world, ctx, ending?.effects);
+    logEnding(state, story.title, ending, ending ? fillText(ctx, ending.text) + (fx.length ? `（${fx.join("、")}）` : "") : "");
+  }
+  if (pending) state.pendingStory = pending;
+}
+
+/** 人物との関係を決まりの量だけ動かし、記録に残す */
+function bondLog(state: CareerState, ctx: StoryContext, role: BondRole, n: number | undefined, why: string): void {
+  if (!n) return;
+  const fx = applyBondEffects(ctx, { bonds: { [role]: n } });
+  if (fx.length) log(state, `${why}（${fx.join("、")}）`, "minor");
+}
+
+/** 総選挙の結果で、ライバル・同期・先輩との関係が動く（data/game/stories.json の election_bond_rules） */
+function electionBondChanges(state: CareerState, world: CareerWorld, retired: number[], ronin: number[], race?: { id: number; won: boolean; margin: number }): void {
+  const ctx = storyContext(state, world);
+  const R = BOND_RULES;
+  const b = state.bonds!;
+  if (race && b.roles.rival === race.id) {
+    const close = race.margin < R.close_margin;
+    const big = race.margin >= R.big_margin;
+    const key = race.won ? (big ? "rival_big_win" : close ? "rival_close_win" : undefined) : big ? "rival_big_loss" : close ? "rival_close_loss" : undefined;
+    const why = { rival_big_win: "ライバルに大差で勝った", rival_close_win: "ライバルとの接戦を制した", rival_big_loss: "ライバルに大差で敗れた", rival_close_loss: "ライバルに僅差で敗れた" } as Record<string, string>;
+    if (key) bondLog(state, ctx, "rival", R[key], why[key]);
+  }
+  const dokiId = b.roles.doki;
+  if (dokiId !== undefined && ronin.includes(dokiId)) bondLog(state, ctx, "doki", R.doki_lost, `同期の${roleMember(ctx, "doki")?.name.surname ?? ""}が落選した`);
+  const senpaiId = b.roles.senpai;
+  if (senpaiId !== undefined && retired.includes(senpaiId)) {
+    // 引退した先輩は名簿にいないので、名前は記録に出さない
+    const v = R.senpai_retired;
+    if (v) {
+      const p = (b.people[String(senpaiId)] ??= { value: 0 });
+      p.value = Math.max(-100, Math.min(100, p.value + v));
+      log(state, `党の先輩が政界を引退した（先輩との関係+${v}）`, "minor");
+    }
+  } else if (senpaiId !== undefined && ronin.includes(senpaiId)) bondLog(state, ctx, "senpai", R.senpai_lost, `党の先輩の${roleMember(ctx, "senpai")?.name.surname ?? ""}が落選した`);
+}
+
+/** 選択待ちの物語の章（画面と CLI に出す）。なければ undefined */
+export function currentStoryScene(state: CareerState, world: CareerWorld): StoryScene | undefined {
+  return state.pendingStory ? storyScene(storyContext(state, world), state.pendingStory) : undefined;
+}
+
+export interface StoryResult extends TurnResult {
+  label?: string;
+  result?: string;
+  /** 物語が終わったときの結末 */
+  ending?: { title: string; text: string };
+}
+
+/** 物語の章の選択肢を選ぶ（index は出せる選択肢の中での位置、0から） */
+export function chooseStory(state: CareerState, world: CareerWorld, index: number): StoryResult {
+  const p = state.pendingStory;
+  if (!p) return { ok: false, message: "選ぶ物語はありません。" };
+  const st = storyById(p.id)!;
+  const ch = st.chapters.find((c) => c.id === p.chapter)!;
+  const ctx = storyContext(state, world);
+  const choices = availableChoices(ctx, ch);
+  const choice = choices[index];
+  if (!choice) return { ok: false, message: `選択肢は1〜${choices.length}です。` };
+  const outcome = resolveChoice(ctx, choice, (a) => riskBonus(world.player.skills, a));
+  const changes = applyStoryEffects(state, world, ctx, outcome.effects);
+  const result = fillText(ctx, outcome.result);
+  const label = fillText(ctx, outcome.label);
+  log(state, `【物語】${st.title}：${label} → ${result}${changes.length ? `（${changes.join("、")}）` : ""}`);
+  state.pendingStory = undefined;
+  const ending = advance(ctx, p, choice, outcome);
+  let endingInfo: StoryResult["ending"];
+  if (ending) {
+    const fx = applyStoryEffects(state, world, ctx, ending.effects);
+    const text = fillText(ctx, ending.text);
+    changes.push(...fx);
+    logEnding(state, st.title, ending, text + (fx.length ? `（${fx.join("、")}）` : ""));
+    endingInfo = { title: ending.title, text };
+  }
+  return { ok: true, message: `${label} → ${result}`, label, result, changes, ending: endingInfo };
 }
 
 /** 出来事の選択肢を選ぶ（index は0から） */
@@ -1250,8 +1451,10 @@ export function chooseEvent(state: CareerState, world: CareerWorld, index: numbe
   const changes = applyEffects(state, world, eff);
   if (eff.stamina) changes.unshift(`体力${eff.stamina > 0 ? "+" : ""}${eff.stamina}`);
   if (eff.mood) changes.push(eff.mood > 0 ? "やる気が上がった" : "やる気が下がった");
+  const sctx = storyContext(state, world);
+  changes.push(...applyBondEffects(sctx, eff as StoryEffects));
   const result = failed ? choice.risk!.fail_result : choice.result;
-  const text = `${pe.title}：${choice.label} → ${result.replaceAll("{secretary}", state.secretaryName)}${changes.length ? `（${changes.join("、")}）` : ""}`;
+  const text = `${pe.title}：${pe.choices[index] ?? choice.label} → ${fillText(sctx, result)}${changes.length ? `（${changes.join("、")}）` : ""}`;
   log(state, text);
   state.pendingEvent = undefined;
   return { ok: true, message: text, changes };
@@ -1260,10 +1463,12 @@ export function chooseEvent(state: CareerState, world: CareerWorld, index: numbe
 function maybeLifeEvent(state: CareerState, world: CareerWorld): void {
   if (rand(state) >= lifeRaw.chance) return;
   const kind = postKind(postCategory(state, world));
+  const sctx = storyContext(state, world);
   const pool = LIFE_EVENTS.filter((e) => {
     if (e.status && !e.status.includes(state.status)) return false;
     if (e.post && !e.post.includes(kind)) return false;
     if (e.months && !e.months.includes(state.month)) return false;
+    if (e.needs && !roleAvailable(sctx, e.needs)) return false;
     const h = state.eventHistory[e.id];
     if (!h) return true;
     if (e.once) return false;
@@ -1278,8 +1483,8 @@ function maybeLifeEvent(state: CareerState, world: CareerWorld): void {
   state.pendingEvent = {
     id: ev.id,
     title: ev.title,
-    text: ev.text.replaceAll("{secretary}", state.secretaryName),
-    choices: ev.choices.map((c) => c.label.replaceAll("{secretary}", state.secretaryName)),
+    text: fillText(sctx, ev.text),
+    choices: ev.choices.map((c) => fillText(sctx, c.label)),
   };
 }
 
@@ -1348,7 +1553,7 @@ async function endMonth(state: CareerState, world: CareerWorld): Promise<void> {
       runLeaderElection(state, world, g.ruling.party, "首相の辞任", true);
     }
   }
-  // 与党の党首の任期切れ
+  // 与党の党首の任期満了
   if (!dissolve && !termEnded && reached(state, state.leaderTermEnd)) runLeaderElection(state, world, g.ruling.party, "任期満了", true);
   if (state.dissolveRequested) {
     state.dissolveRequested = false;
@@ -1362,7 +1567,9 @@ async function endMonth(state: CareerState, world: CareerWorld): Promise<void> {
     if (termEnded) logGov(state, "衆議院議員の任期が満了した。", "major");
     await holdElection(state, world);
   } else {
-    maybeLifeEvent(state, world);
+    storyMonth(state, world);
+    if (!state.pendingStory) maybeLifeEvent(state, world);
+    if (!state.pendingStory && !state.pendingEvent) startStoriesAndLog(state, world, "monthly");
   }
   oppositionMonth(state, world);
   // 野党の人事は年に1回見直す
@@ -1389,6 +1596,7 @@ function checkRetirement(state: CareerState, world: CareerWorld): void {
   const pmYears = state.pmMonths ? `、首相在任${Math.floor(state.pmMonths / 12)}年${state.pmMonths % 12}か月` : "";
   state.over = `政界を引退した（${age}歳、政治家として${years}年）。総選挙${state.elections.length}回で当選${wins}回${pmYears}${state.post ? `、最後の役職は${state.post}` : ""}。`;
   state.pendingEvent = undefined;
+  state.pendingStory = undefined;
   log(state, state.over);
 }
 
@@ -1449,7 +1657,7 @@ async function holdElection(state: CareerState, world: CareerWorld): Promise<voi
     state.status = "議員";
     const how = isPr ? `比例名簿${rank + 1}位（党の比例当選${prSeats}人）` : `得票率${pct(d!.candidates.find((c) => c.member.id === me.id)!.share)}`;
     log(state, `${me.terms === 1 ? "初当選" : `${me.terms}回目の当選`}！ ${how}で${partyById(state.setup.party).name}の衆議院議員に選ばれた。`, "major");
-    // 後継の道で当選したら、次からは自分の選挙区の現職として戦う
+    // 後継で当選したら、次からは自分の選挙区の現職として戦う
     if (route === "successor") state.setup = { ...state.setup, route: "smd" };
   } else {
     world.player = { ...world.player, seat: "なし", district: null };
@@ -1460,6 +1668,22 @@ async function holdElection(state: CareerState, world: CareerWorld): Promise<voi
   }
   if (first) state.parentId = undefined;
   if (me && me.terms === 1) state.achievements.push(`${dateOf(state)} 初当選`);
+  // 人物との関係：自分の区で戦った相手をライバルに、初当選なら同期と先輩を決める
+  state.bonds ??= newBondState();
+  state.story ??= newStoryState();
+  const rivalCand = d?.candidates.filter((c) => c.member.id !== world.player.id).sort((a, b) => b.share - a.share)[0];
+  if (!isPr && rivalCand) {
+    assignRival(state.bonds, rivalCand.member.id);
+    const myShare = d!.candidates.find((c) => c.member.id === world.player.id)?.share ?? 0;
+    const t = rivalTypeOf(rivalCand.member, state.year);
+    const close = Math.abs(myShare - rivalCand.share) < 0.03;
+    const line = close ? t.lines.close_race : me ? t.lines.election_lose : t.lines.election_win;
+    const summaryNow = state.elections.at(-1);
+    if (summaryNow && line) summaryNow.rivalLine = line;
+  }
+  if (me && me.terms === 1) assignColleagues(state.bonds, me, world.roster, () => rand(state));
+  state.voteBonus = 0;
+  electionBondChanges(state, world, result.retired.map((m) => m.id), result.ronin.map((m) => m.id), !isPr && rivalCand ? { id: rivalCand.member.id, won: !!me, margin: Math.abs((d!.candidates.find((c) => c.member.id === world.player.id)?.share ?? 0) - rivalCand.share) * 100 } : undefined);
   // 連立を組み直す（政権交代もありうる）
   const prev = state.gov.ruling;
   const coalition = formCoalition(world.roster, prev);
@@ -1495,6 +1719,8 @@ async function holdElection(state: CareerState, world: CareerWorld): Promise<voi
   state.gov.scenes = [];
   state.gov.fatigue = fatigueOf(state);
   state.govLogCopied = state.gov.log.length;
+  if (me && me.terms === 1) startStoriesAndLog(state, world, "first_win");
+  startStoriesAndLog(state, world, "after_election");
 }
 
 /** 政権の記録のうち新しいものを、政局の記録として自分の記録に写す（総選挙で政権の状態が作り直されても残るように） */
@@ -1520,7 +1746,7 @@ function copyGovLog(state: CareerState): void {
   state.govLogCopied = state.gov.log.length;
 }
 
-// ---- 山場の場面 ----
+// ---- 節目の場面 ----
 
 type HighlightDef = { title: string; text: string; variants: { speaker: string; text: string }[][] };
 const HL = highlightsRaw as unknown as { scenes: Record<string, HighlightDef>; election_lines: Record<string, string[]> };
@@ -1645,13 +1871,14 @@ export function careerSummary(state: CareerState, world: CareerWorld) {
     canDuty: !!postCategory(state, world),
     canRunForLeader: canRunForLeader(state, world),
     runForLeader: state.runForLeader,
-    leaderElection: `${state.leaderTermEnd.year}年${state.leaderTermEnd.month}月（与党の党首の任期切れ）`,
+    leaderElection: `${state.leaderTermEnd.year}年${state.leaderTermEnd.month}月（与党の党首の任期満了）`,
     actionPoints: isPrimeMinister(state, world) ? state.gov.actionPoints : undefined,
     achievements: state.achievements,
     nextElection: `${state.gov.termEnd.year}年${state.gov.termEnd.month}月（解散があれば早まる）`,
     prRank: state.setup.route === "pr" ? prRank(state) + 1 : undefined,
     forecast: raceForecast(state, world).map((f) => ({ ...f, share: pct(f.share) })),
     pendingEvent: state.pendingEvent,
+    pendingStory: state.pendingStory ? storyById(state.pendingStory.id)?.title : undefined,
     over: state.over,
   };
 }

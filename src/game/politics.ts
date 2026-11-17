@@ -69,7 +69,7 @@ export function describe(r: Ruling): string {
 /** 党首にふさわしいかの点数。当選回数と、調整・知名度・資金の能力で決まる */
 export function leaderScore(m: Member): number {
   const W = P.leader.score;
-  return m.terms * W.terms + m.abilities.調整 * W.coord + m.abilities.知名度 * W.fame + m.abilities.資金 * W.fund;
+  return m.terms * W.terms + m.abilities.調整 * W.coord + m.abilities.知名度 * W.fame + m.abilities.資金力 * W.fund;
 }
 
 /** その党で党首にふさわしい議員（点数の最も高い議員） */
@@ -101,6 +101,8 @@ export function leaderElection(
     /** 立候補できない議員（任期の上限に達した党首など） */
     excludeIds?: number[];
     extra?: { member: Member; bonus: number };
+    /** extra の候補に必ず入れる議員と、extra には入れない議員（プレイヤーとの関係の札による） */
+    bias?: { for: number[]; against: number[] };
     rand: () => number;
   },
 ): LeaderElection | undefined {
@@ -123,7 +125,11 @@ export function leaderElection(
     for (const c of cands) {
       let u = leaderScore(c) / L.score_divisor - ideologyGap(voter, c) * L.ideology_weight + opts.rand() * L.noise;
       if (c.id === inc?.id) u += L.incumbent_bonus + (opts.incumbentApproval !== undefined ? (opts.incumbentApproval - 35) * L.incumbent_approval_weight : 0);
-      if (c.id === opts.extra?.member.id) u += opts.extra.bonus;
+      if (c.id === opts.extra?.member.id) {
+        u += opts.extra.bonus;
+        if (opts.bias?.for.includes(voter.id)) u += 1000;
+        if (opts.bias?.against.includes(voter.id)) u -= 1000;
+      }
       if (c.id === voter.id) u += L.self_bonus;
       if (u > bestU) {
         bestU = u;

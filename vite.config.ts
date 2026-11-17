@@ -1,3 +1,4 @@
+/// <reference types="vitest/config" />
 import { defineConfig } from "vite";
 import { resolve } from "node:path";
 import { buildDefines } from "./build-info.js";
@@ -7,6 +8,8 @@ import { buildDefines } from "./build-info.js";
 export default defineConfig({
   base: "./",
   define: buildDefines(),
+  // 名簿（465人）を何度も作るテストがあるので、既定の時間の上限を長めにする
+  test: { testTimeout: 30_000 },
   build: {
     rollupOptions: {
       input: {

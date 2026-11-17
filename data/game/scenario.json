@@ -17,7 +17,7 @@
       },
       "gender": "男",
       "birthYear": 1958,
-      "archetype": "汎用",
+      "archetype": "一般",
       "lineage": "世襲",
       "terms": 12,
       "tier": "重鎮",
@@ -27,7 +27,7 @@
         "調整": 44,
         "知名度": 86,
         "組織": 62,
-        "資金": 55
+        "資金力": 55
       },
       "jiban": 4,
       "specialties": [
@@ -71,8 +71,8 @@
       },
       "gender": "男",
       "birthYear": 1957,
-      "archetype": "地方議員からの叩き上げ",
-      "lineage": "なし",
+      "archetype": "地方議員出身",
+      "lineage": "一般",
       "terms": 10,
       "tier": "重鎮",
       "abilities": {
@@ -81,7 +81,7 @@
         "調整": 70,
         "知名度": 82,
         "組織": 62,
-        "資金": 50
+        "資金力": 50
       },
       "jiban": 4,
       "specialties": [
@@ -123,8 +123,8 @@
       },
       "gender": "男",
       "birthYear": 1975,
-      "archetype": "首長経験の行政型",
-      "lineage": "なし",
+      "archetype": "首長出身",
+      "lineage": "一般",
       "terms": 4,
       "tier": "中堅",
       "abilities": {
@@ -133,7 +133,7 @@
         "調整": 55,
         "知名度": 88,
         "組織": 58,
-        "資金": 55
+        "資金力": 55
       },
       "jiban": 3,
       "specialties": [
@@ -175,8 +175,8 @@
       },
       "gender": "男",
       "birthYear": 1969,
-      "archetype": "官僚出身の政策通",
-      "lineage": "なし",
+      "archetype": "元官僚",
+      "lineage": "一般",
       "terms": 6,
       "tier": "ベテラン",
       "abilities": {
@@ -185,7 +185,7 @@
         "調整": 62,
         "知名度": 78,
         "組織": 50,
-        "資金": 52
+        "資金力": 52
       },
       "jiban": 3,
       "specialties": [
@@ -228,7 +228,7 @@
       "gender": "男",
       "birthYear": 1952,
       "archetype": "専門職",
-      "lineage": "なし",
+      "lineage": "一般",
       "terms": 11,
       "tier": "重鎮",
       "abilities": {
@@ -237,7 +237,7 @@
         "調整": 76,
         "知名度": 60,
         "組織": 82,
-        "資金": 55
+        "資金力": 55
       },
       "jiban": 3,
       "specialties": [
@@ -280,8 +280,8 @@
       },
       "gender": "男",
       "birthYear": 1974,
-      "archetype": "知名度型",
-      "lineage": "なし",
+      "archetype": "著名人・タレント",
+      "lineage": "一般",
       "terms": 2,
       "tier": "中堅",
       "abilities": {
@@ -290,7 +290,7 @@
         "調整": 40,
         "知名度": 90,
         "組織": 55,
-        "資金": 60
+        "資金力": 60
       },
       "jiban": 2,
       "specialties": [
@@ -334,8 +334,8 @@
       },
       "gender": "女",
       "birthYear": 1965,
-      "archetype": "現場の代弁者",
-      "lineage": "なし",
+      "archetype": "市民活動家",
+      "lineage": "一般",
       "terms": 3,
       "tier": "中堅",
       "abilities": {
@@ -344,7 +344,7 @@
         "調整": 52,
         "知名度": 62,
         "組織": 70,
-        "資金": 45
+        "資金力": 45
       },
       "jiban": 2,
       "specialties": [
@@ -386,8 +386,8 @@
       },
       "gender": "男",
       "birthYear": 1977,
-      "archetype": "地方議員からの叩き上げ",
-      "lineage": "なし",
+      "archetype": "地方議員出身",
+      "lineage": "一般",
       "terms": 1,
       "tier": "新人",
       "abilities": {
@@ -396,7 +396,7 @@
         "調整": 40,
         "知名度": 70,
         "組織": 60,
-        "資金": 58
+        "資金力": 58
       },
       "jiban": 2,
       "specialties": [

@@ -1,5 +1,5 @@
 {
-  "note": "議員人生モードで毎月の終わりに起きうる日常の出来事。政治以外の出来事も含む（恋愛は入れない）。chance はひと月に何か起きる確率、weight は選ばれやすさ。status を書いた出来事はその立場のときだけ起きる。choices の effects は体力 stamina、やる気 mood、資金 money（万円）、経験点 exp、関係 relations、地盤の進み具合 jiban_progress、能力 abilities の増減。{secretary} は秘書の名前に置き換える。 once が true の出来事は一生に一度だけ起きる。同じ出来事は career.json の event_cooldown_months のあいだは繰り返さない。 post を書いた出来事はその役職のときだけ起きる（minister 大臣と官房長官、pm 首相、party_exec 党三役、leader 野党の党首）。risk のある選択肢は、能力が threshold 未満だと fail_effects と fail_result になる。approval は内閣支持率の増減。months を書いた出来事（季節の言葉が入るもの）はその月だけ起きる。",
+  "note": "議員人生モードで毎月の終わりに起きうる日常の出来事。政治以外の出来事も含む（恋愛は入れない）。chance はひと月に何か起きる確率、weight は選ばれやすさ。status を書いた出来事はその立場のときだけ起きる。choices の effects は体力 stamina、やる気 mood、資金 money（万円）、経験点 exp、関係 relations、地盤の進み具合 jiban_progress、能力 abilities の増減。{secretary} は秘書の名前に置き換える。 once が true の出来事は一生に一度だけ起きる。同じ出来事は career.json の event_cooldown_months のあいだは繰り返さない。 post を書いた出来事はその役職のときだけ起きる（minister 大臣と官房長官、pm 首相、party_exec 党三役、leader 野党の党首）。risk のある選択肢は、能力が threshold 未満だと fail_effects と fail_result になる。approval は内閣支持率の増減。months を書いた出来事（季節の言葉が入るもの）はその月だけ起きる。 needs を書いた出来事は、その人物（rival ライバル、doki 同期、senpai 党の先輩、secretary 秘書）がいるときだけ起きる。effects の bonds はその人物との関係の増減。文の {rival} {doki} {senpai} はその人の名前に置き換える。",
   "chance": 0.3,
   "events": [
     {
@@ -1834,7 +1834,7 @@
       "choices": [
         {
           "label": "地元の名産品をSNSでPR",
-          "result": "発信を見た人が足を運んでくれ、商工会から感謝された。",
+          "result": "SNSの投稿を見た人が足を運んでくれ、商工会から感謝された。",
           "effects": {
             "stamina": -5,
             "exp": {
@@ -1910,7 +1910,7 @@
       "choices": [
         {
           "label": "一軒ずつ店に入り話を聞く",
-          "result": "地道な歩き回りが評価され、ドブ板選挙のコツを掴んだ。",
+          "result": "地道に地元を歩いたことが評価され、ドブ板選挙のコツを掴んだ。",
           "effects": {
             "stamina": -12,
             "jiban_progress": 14,
@@ -2043,9 +2043,9 @@
             }
           },
           "risk": {
-            "ability": "資金",
+            "ability": "資金力",
             "threshold": 50,
-            "fail_result": "数字の感覚が甘いと思われ、話が浅く終わってしまった。",
+            "fail_result": "数字の感覚が甘いと思われ、踏み込んだ話ができずに終わった。",
             "fail_effects": {
               "relations": {
                 "supporters": -3
@@ -2134,7 +2134,7 @@
       "choices": [
         {
           "label": "バス会社と町内会に話を聞く",
-          "result": "問題の背景を丁寧に取材し、記者からも一目置かれた。",
+          "result": "問題の背景を丁寧に調べ上げ、記者からも一目置かれた。",
           "effects": {
             "stamina": -10,
             "exp": {
@@ -2218,7 +2218,7 @@
       "choices": [
         {
           "label": "遅くまで本音で意見を交わす",
-          "result": "現場の切実な声を吸収し、住民目線の感覚が磨かれた。",
+          "result": "現場の切実な声を聞き、暮らしの実感をつかんだ。",
           "effects": {
             "stamina": -14,
             "money": -5,
@@ -2260,7 +2260,7 @@
       "text": "山間部の集落から「イノシシに畑を荒らされて困っている」と連絡が入った。",
       "choices": [
         {
-          "label": "現地を見て防護柵の設置を動く",
+          "label": "現地を見て防護柵の設置に動く",
           "result": "素早い対応に農家の人々が喜び、強い支持を得た。",
           "effects": {
             "stamina": -12,
@@ -2522,7 +2522,7 @@
       "choices": [
         {
           "label": "熱い演説と共に毎日配り切る",
-          "result": "街頭で立ち止まる人が増え、辻説法の感覚を掴んだ。",
+          "result": "街頭で立ち止まる人が増え、街頭演説の手応えをつかんだ。",
           "effects": {
             "stamina": -15,
             "jiban_progress": 15,
@@ -2606,7 +2606,7 @@
       "text": "プレハブを借りて個人事務所を開いた。支援者や記者が数人集まっている。",
       "choices": [
         {
-          "label": "決意表明を力強くぶち上げる",
+          "label": "決意表明を力強く語る",
           "result": "気迫のこもった挨拶に、会場が熱気に包まれた。",
           "effects": {
             "stamina": -8,
@@ -3027,7 +3027,7 @@
       "choices": [
         {
           "label": "徹夜で条文の検討に加わる",
-          "result": "法制局との折衝をやり遂げ、政策通として成長した。",
+          "result": "法制局との折衝をやり遂げ、政策への理解が一段と深まった。",
           "effects": {
             "stamina": -15,
             "exp": {
@@ -3179,7 +3179,7 @@
       "choices": [
         {
           "label": "双方の顔を立てて円満に調整",
-          "result": "見事な差配でしこりを残さず、根回しの神髄を見せた。",
+          "result": "見事な差配で、しこりを残さずにまとめ上げた。",
           "effects": {
             "stamina": -14,
             "relations": {
@@ -3282,7 +3282,7 @@
       "choices": [
         {
           "label": "隅々まで読み返し返事を書く",
-          "result": "国民の暮らしの重みを再確認し、政治への情熱が燃えた。",
+          "result": "国民の暮らしの重みを再確認し、政治への思いが一層強まった。",
           "effects": {
             "stamina": -10,
             "mood": 1,
@@ -3355,6 +3355,460 @@
               "supporters": 5,
               "party": 4
             }
+          }
+        }
+      ]
+    },
+    {
+      "id": "rival_tv_greenroom",
+      "weight": 2,
+      "status": [
+        "議員",
+        "浪人"
+      ],
+      "needs": "rival",
+      "title": "楽屋での鉢合わせ",
+      "text": "地元の特集番組の収録前、控え室で{rival}と二人きりになった。",
+      "choices": [
+        {
+          "label": "番組の進行について談笑する",
+          "result": "収録前の緊張がほぐれ、番組内でも落ち着いた討論ができた。",
+          "effects": {
+            "bonds": {
+              "rival": 6
+            },
+            "exp": {
+              "media": 5
+            }
+          }
+        },
+        {
+          "label": "本番に備えて黙って資料を読む",
+          "result": "互いに視線を合わせず、本番さながらの緊張感の中で時間を過ごした。",
+          "effects": {
+            "bonds": {
+              "rival": -4
+            },
+            "exp": {
+              "policy": 5
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "rival_train_delay",
+      "weight": 2,
+      "status": [
+        "議員"
+      ],
+      "needs": "rival",
+      "title": "新幹線のホームで",
+      "text": "地元から東京へ向かう新幹線が遅延し、ホームで{rival}と隣り合わせた。",
+      "choices": [
+        {
+          "label": "温かい飲み物を差し入れる",
+          "result": "{rival}は驚いた表情を見せたあと、笑顔で礼を言って受け取った。",
+          "effects": {
+            "money": -1,
+            "bonds": {
+              "rival": 8
+            }
+          }
+        },
+        {
+          "label": "会釈だけして別の車両へ移る",
+          "result": "余計な誤解を避けるため、距離を保って別の乗車口へ向かった。",
+          "effects": {
+            "bonds": {
+              "rival": -3
+            },
+            "stamina": 5
+          }
+        }
+      ]
+    },
+    {
+      "id": "rival_rain_speech",
+      "weight": 2,
+      "status": [
+        "議員",
+        "浪人"
+      ],
+      "months": [
+        6,
+        9
+      ],
+      "needs": "rival",
+      "title": "雨の日の駅前",
+      "text": "激しい雨の中、先に駅前に立っていた{rival}と演説の場所が重なった。",
+      "choices": [
+        {
+          "label": "場所を譲り合い時間をずらす",
+          "result": "紳士的に調整して交互に演説を行い、周囲の通行人にも好印象を残した。",
+          "effects": {
+            "bonds": {
+              "rival": 7
+            },
+            "relations": {
+              "supporters": 3
+            }
+          }
+        },
+        {
+          "label": "構わず大声で演説を始める",
+          "result": "互いに負けじと声を張り上げ、駅前は騒然とした空気になった。",
+          "effects": {
+            "bonds": {
+              "rival": -7
+            },
+            "exp": {
+              "election": 6
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "doki_diet_cafeteria",
+      "weight": 2,
+      "status": [
+        "議員"
+      ],
+      "needs": "doki",
+      "title": "議事堂の食堂で",
+      "text": "昼休み、議員食堂の隅で{doki}が難しい顔をして資料を睨んでいた。",
+      "choices": [
+        {
+          "label": "隣の席に座り相談に乗る",
+          "result": "法案の課題を一緒に整理すると、{doki}の表情が明るくなった。",
+          "effects": {
+            "bonds": {
+              "doki": 8
+            },
+            "exp": {
+              "policy": 6
+            },
+            "stamina": -5
+          }
+        },
+        {
+          "label": "挨拶だけして急ぎの用へ向かう",
+          "result": "{doki}は軽く手を挙げただけで、再び書類に目を落とした。",
+          "effects": {
+            "bonds": {
+              "doki": -2
+            },
+            "exp": {
+              "network": 4
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "doki_question_prep",
+      "weight": 2,
+      "status": [
+        "議員"
+      ],
+      "needs": "doki",
+      "title": "質問前の激励",
+      "text": "明日重要な委員会質問に立つ{doki}が、緊張した様子で廊下を歩いている。",
+      "choices": [
+        {
+          "label": "遅くまで答弁の練習に付き合う",
+          "result": "想定問答の相手を務め、{doki}は自信をつけて帰っていった。",
+          "effects": {
+            "stamina": -8,
+            "bonds": {
+              "doki": 10
+            },
+            "exp": {
+              "policy": 8
+            }
+          }
+        },
+        {
+          "label": "頑張ってこいと肩を叩く",
+          "result": "{doki}は『ありがとう、やってくるよ』と力強く頷いた。",
+          "effects": {
+            "bonds": {
+              "doki": 4
+            },
+            "mood": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": "doki_media_spotlight",
+      "weight": 2,
+      "status": [
+        "議員"
+      ],
+      "needs": "doki",
+      "title": "同期への取材攻勢",
+      "text": "{doki}がテレビ番組で注目を集め、党内で羨む声が出始めている。",
+      "choices": [
+        {
+          "label": "素直に活躍を喜び助言を送る",
+          "result": "{doki}は『お前に言われると安心する』と素直に聞き入れた。",
+          "effects": {
+            "bonds": {
+              "doki": 7
+            },
+            "relations": {
+              "press": 3
+            }
+          }
+        },
+        {
+          "label": "目立ちすぎないよう忠告する",
+          "result": "{doki}は『嫉妬かよ』と少し不機嫌そうな顔を見せた。",
+          "effects": {
+            "bonds": {
+              "doki": -5
+            },
+            "relations": {
+              "party": 4
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "senpai_ryotei_bill",
+      "weight": 2,
+      "status": [
+        "議員"
+      ],
+      "needs": "senpai",
+      "title": "先輩からの食事誘い",
+      "text": "夜、{senpai}から『うまい店を見つけたから顔を出せ』と電話があった。",
+      "choices": [
+        {
+          "label": "駆けつけて政治の話を聞く",
+          "result": "長年の経験に基づく助言を聞き、党内の人脈の仕組みを学んだ。",
+          "effects": {
+            "stamina": -5,
+            "bonds": {
+              "senpai": 8
+            },
+            "exp": {
+              "network": 10
+            }
+          }
+        },
+        {
+          "label": "地元の予定を理由に断る",
+          "result": "地元活動を優先したことで、{senpai}は少し残念そうだった。",
+          "effects": {
+            "bonds": {
+              "senpai": -4
+            },
+            "jiban_progress": 8
+          }
+        }
+      ]
+    },
+    {
+      "id": "senpai_gift_season",
+      "weight": 2,
+      "status": [
+        "候補",
+        "議員",
+        "浪人"
+      ],
+      "months": [
+        7,
+        12
+      ],
+      "needs": "senpai",
+      "title": "季節の挨拶状",
+      "text": "{senpai}の事務所から、丁寧な激励の手紙と地元の特産品が届いた。",
+      "choices": [
+        {
+          "label": "すぐにお礼の電話を入れる",
+          "result": "近況を報告すると、{senpai}は上機嫌で励ましてくれた。",
+          "effects": {
+            "bonds": {
+              "senpai": 7
+            },
+            "relations": {
+              "party": 3
+            }
+          }
+        },
+        {
+          "label": "秘書にお礼状を出させる",
+          "result": "形式通りの礼状で済ませ、自分の時間と体力を確保した。",
+          "effects": {
+            "bonds": {
+              "senpai": -3
+            },
+            "stamina": 5
+          }
+        }
+      ]
+    },
+    {
+      "id": "senpai_committee_seat",
+      "weight": 2,
+      "status": [
+        "議員"
+      ],
+      "needs": "senpai",
+      "title": "先輩の口添え",
+      "text": "希望していた委員会のポストについて、{senpai}が『話をつけてやろう』と言った。",
+      "choices": [
+        {
+          "label": "ありがたく先輩の好意を受ける",
+          "result": "{senpai}の尽力で話がまとまり、先輩への恩義が深まった。",
+          "effects": {
+            "bonds": {
+              "senpai": 8
+            },
+            "exp": {
+              "network": 6
+            }
+          }
+        },
+        {
+          "label": "自力で勝ち取りたいと辞退する",
+          "result": "{senpai}は少し寂しそうだったが、こちらの自立心を認めた。",
+          "effects": {
+            "bonds": {
+              "senpai": -5
+            },
+            "abilities": {
+              "政策": 1
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "secretary_overwork",
+      "weight": 2,
+      "status": [
+        "候補",
+        "議員",
+        "浪人"
+      ],
+      "needs": "secretary",
+      "title": "深夜の事務所",
+      "text": "深夜に事務所へ戻ると、{secretary}が机に突っ伏して眠っていた。",
+      "choices": [
+        {
+          "label": "帰宅を促し残りを引き受ける",
+          "result": "{secretary}は恐縮しながらも、何度も感謝して帰宅した。",
+          "effects": {
+            "stamina": -8,
+            "bonds": {
+              "secretary": 10
+            },
+            "relations": {
+              "secretary": 6
+            }
+          }
+        },
+        {
+          "label": "上着をかけて静かに見守る",
+          "result": "しばらくして目を覚ました{secretary}と温かい茶を飲んだ。",
+          "effects": {
+            "bonds": {
+              "secretary": 6
+            },
+            "mood": 1
+          }
+        },
+        {
+          "label": "起こして明日の予定を確認する",
+          "result": "{secretary}は慌てて起き上がり、淡々と予定を読み上げた。",
+          "effects": {
+            "bonds": {
+              "secretary": -6
+            },
+            "exp": {
+              "election": 6
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "secretary_mistake_cover",
+      "weight": 2,
+      "status": [
+        "候補",
+        "議員",
+        "浪人"
+      ],
+      "needs": "secretary",
+      "title": "予定の重複",
+      "text": "後援会の会合と視察が重なっていると分かり、{secretary}が焦っている。",
+      "choices": [
+        {
+          "label": "自分の伝え方も悪かったと詫びる",
+          "result": "{secretary}は感激し、すぐに先方へお詫びと調整に走った。",
+          "effects": {
+            "bonds": {
+              "secretary": 8
+            },
+            "relations": {
+              "supporters": -3
+            }
+          }
+        },
+        {
+          "label": "どうにか調整しろと厳しく叱る",
+          "result": "{secretary}は萎縮しながらも、なんとか予定をやりくりした。",
+          "effects": {
+            "bonds": {
+              "secretary": -7
+            },
+            "relations": {
+              "secretary": -4
+            },
+            "exp": {
+              "network": 5
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "secretary_birthday_tea",
+      "weight": 2,
+      "status": [
+        "候補",
+        "議員",
+        "浪人"
+      ],
+      "needs": "secretary",
+      "title": "移動中の会話",
+      "text": "移動の車中、{secretary}が『先生と走り始めた頃を思い出します』と笑った。",
+      "choices": [
+        {
+          "label": "これからも頼むと菓子折りを渡す",
+          "result": "{secretary}は嬉しそうに受け取り、改めて気を引き締めた。",
+          "effects": {
+            "money": -2,
+            "bonds": {
+              "secretary": 9
+            },
+            "mood": 1
+          }
+        },
+        {
+          "label": "まだまだこれからだと答える",
+          "result": "{secretary}も力強く頷き、二人で次の訪問先へ向かった。",
+          "effects": {
+            "bonds": {
+              "secretary": 3
+            },
+            "stamina": 5
           }
         }
       ]

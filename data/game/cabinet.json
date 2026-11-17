@@ -6,7 +6,7 @@
   "terms_weight": 1.5,
   "posts": [
     { "id": "pm", "name": "内閣総理大臣", "kind": "内閣", "fixed_role": "首相" },
-    { "id": "secretary_general", "name": "幹事長", "kind": "党", "min_terms": 6, "weights": { "調整": 0.4, "組織": 0.3, "資金": 0.3 } },
+    { "id": "secretary_general", "name": "幹事長", "kind": "党", "min_terms": 6, "weights": { "調整": 0.4, "組織": 0.3, "資金力": 0.3 } },
     { "id": "chief_cabinet_secretary", "name": "内閣官房長官", "kind": "内閣", "min_terms": 4, "weights": { "調整": 0.5, "弁舌": 0.3, "知名度": 0.2 } },
     { "id": "policy_chief", "name": "政調会長", "kind": "党", "min_terms": 4, "weights": { "政策": 0.6, "調整": 0.4 } },
     { "id": "general_council_chair", "name": "総務会長", "kind": "党", "min_terms": 6, "weights": { "調整": 0.7, "組織": 0.3 } },

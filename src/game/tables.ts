@@ -1,7 +1,7 @@
 // 生成に使う表（data/game/character_tables.json）の型と、表を引く関数
 import raw from "../../data/game/character_tables.json";
 
-export const ABILITIES = ["弁舌", "政策", "調整", "知名度", "組織", "資金"] as const;
+export const ABILITIES = ["弁舌", "政策", "調整", "知名度", "組織", "資金力"] as const;
 export type Ability = (typeof ABILITIES)[number];
 export type Abilities = Record<Ability, number>;
 

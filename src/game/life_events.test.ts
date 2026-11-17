@@ -22,8 +22,8 @@ interface Event {
 }
 
 const EVENTS = (life as unknown as { events: Event[] }).events;
-const ABILITIES = ["弁舌", "政策", "調整", "知名度", "組織", "資金"];
-const EFFECTS = ["stamina", "max_stamina", "mood", "money", "exp", "relations", "jiban_progress", "abilities", "approval", "skills_add", "skills_remove"];
+const ABILITIES = ["弁舌", "政策", "調整", "知名度", "組織", "資金力"];
+const EFFECTS = ["stamina", "max_stamina", "mood", "money", "exp", "relations", "jiban_progress", "abilities", "approval", "skills_add", "skills_remove", "bonds"];
 const EXP = ["election", "policy", "network", "media", "money"];
 const RELATIONS = ["secretary", "party", "supporters", "press", "kengi"];
 const SKILL_IDS = new Set(skills.skills.map((s) => s.id));

@@ -36,7 +36,7 @@ export interface Member {
   seat: "小選挙区" | "比例" | "なし";
   /** 小選挙区の議員はその区（districts.ts の DistrictId）。比例の議員と議員でない人は null */
   district: DistrictId | null;
-  /** 地元の県。小選挙区の議員は選挙区と同じ。比例の議員は次に小選挙区から出るときの候補地 */
+  /** 地元の都道府県。小選挙区の議員は選挙区と同じ。比例の議員は次に小選挙区から出るときの候補地 */
   home: PrefCode;
   /** 地元（home）での地盤（1〜4） */
   jiban: number;
@@ -48,7 +48,7 @@ export interface Member {
   conviction: number;
   /** 党への忠誠（1〜5）。高いほど党の方針に従い、政界再編で党を離れにくい */
   loyalty: number;
-  /** 特殊能力の id（data/game/skills.json） */
+  /** 持ち味の id（data/game/skills.json） */
   skills: string[];
   /** 手作りの固定キャラクターの役割（首相など）。生成した議員にはない */
   fixedRole?: string;
@@ -63,7 +63,7 @@ interface FixedMember {
   /** 小選挙区の議員の区の番号。書かなければ、その県で開始時点に自党が持つ区のうち番号の最も若い区 */
   district_no?: number;
   seat?: "比例";
-  /** 比例の議員の地元の県 */
+  /** 比例の議員の地元の都道府県 */
   home?: PrefCode;
   name: Omit<GeneratedName, "gender" | "birthYear">;
   gender: Gender;

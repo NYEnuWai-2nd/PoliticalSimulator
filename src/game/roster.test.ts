@@ -8,7 +8,7 @@ import { ageOf, generateRoster } from "./roster.js";
 import type { Member } from "./roster.js";
 import { ABILITIES, TABLES, centerOf, rankOf } from "./tables.js";
 import { IDEOLOGY_AXES, PARTIES } from "./parties.js";
-import { DISTRICTS, HOUSE_SEATS, MAJORITY, PR_SEATS, SMD_SEATS, districtName, districtStrength, districtsOf, findDistrict, initialSeatPlan, largestRemainder, prefOfDistrict } from "./districts.js";
+import { DISTRICTS, HOUSE_SEATS, MAJORITY, PR_SEATS, SMD_SEATS, districtName, districtStrength, districtsOf, findDistrict, initialSeatPlan, largestRemainder, localizeAssembly, prefOfDistrict } from "./districts.js";
 import seats2024 from "../../data/stats/shugiin_2024_seats.json";
 
 const data = { surnames, givenNames, exclusion } as unknown as NameData;
@@ -148,7 +148,7 @@ describe("generateRoster", () => {
     expect(rate("minsei")).toBeLessThan(0.32);
     expect(rate("minken")).toBeLessThan(0.12);
     // 名簿を60個作るので、ほかのテストと並んで動くと既定の5秒を超えることがある
-  }, 30_000);
+  }, 120_000);
 
   it("思想は政党の中心の近くに散らばり、範囲内に収まる", async () => {
     const all = await manyRosters(20);
@@ -159,7 +159,7 @@ describe("generateRoster", () => {
     };
     expect(mean("minsei")).toBeLessThan(-1);
     expect(mean("minken")).toBeGreaterThan(1);
-  });
+  }, 60_000);
 });
 
 describe("政党", () => {
@@ -198,5 +198,15 @@ describe("名前生成器の姓の指定", () => {
   it("姓データにない姓はエラーにする", async () => {
     const gen = await createNameGenerator({ ...data, seed: 3 });
     await expect(gen.generate({ surname: "存在しない姓" })).rejects.toThrow();
+  });
+});
+
+describe("県議の表記", () => {
+  it("東京は都議、北海道は道議、大阪・京都は府議、ほかは県議のまま", () => {
+    const t = "県議団と県議会。県議の後援。県庁と県政、党の県連。隣の県は変えない。";
+    expect(localizeAssembly(t, 13)).toBe("都議団と都議会。都議の後援。都庁と都政、党の都連。隣の県は変えない。");
+    expect(localizeAssembly(t, 1)).toBe("道議団と道議会。道議の後援。道庁と道政、党の道連。隣の県は変えない。");
+    expect(localizeAssembly("県議会議員", 27)).toBe("府議会議員");
+    expect(localizeAssembly(t, 23)).toBe(t);
   });
 });

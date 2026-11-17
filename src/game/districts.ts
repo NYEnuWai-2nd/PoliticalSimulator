@@ -176,3 +176,14 @@ export function prefLeadingParty(roster: { seat: string; district: DistrictId | 
   for (const m of smdMembersOf(roster, pref)) count[m.party] = (count[m.party] ?? 0) + 1;
   return Object.keys(count).sort((a, b) => count[b] - count[a] || orderOf(a) - orderOf(b))[0];
 }
+
+/**
+ * データや画面の文の「県議」「県議団」「県議会」「県庁」「県政」「県連」を、地元に合わせて
+ * 都（東京）・道（北海道）・府（大阪、京都）に置き換える。データの文は「県」で書いておき、画面に出す直前に通す
+ */
+export function localizeAssembly(text: string, pref: PrefCode | undefined): string {
+  if (!pref) return text;
+  const s = pref === 13 ? "都" : pref === 1 ? "道" : pref === 26 || pref === 27 ? "府" : "県";
+  if (s === "県") return text;
+  return text.replace(/県(議会議員|議団|議会|議|庁|政|連)/g, `${s}$1`);
+}

@@ -8,7 +8,7 @@ import type { Member } from "./roster.js";
 import { formGovernment, formInitialGovernment, INITIAL_RULING, rulingOf } from "./cabinet.js";
 import { formCoalition, leaderElection, pickLeader, seatsOf } from "./politics.js";
 import { HOUSE_SEATS, MAJORITY } from "./districts.js";
-import { chooseEvent, govAction, isPrimeMinister, startCareer, startOptions, takeTurn } from "./career.js";
+import { chooseEvent, chooseStory, govAction, isPrimeMinister, startCareer, startOptions, takeTurn } from "./career.js";
 
 const data = { surnames, givenNames, exclusion } as unknown as NameData;
 
@@ -84,6 +84,7 @@ describe("首相への道", () => {
     // 最初の総選挙まで進める
     for (let t = 0; t < 60 && state.elections.length === 0; t++) {
       if (state.pendingEvent) chooseEvent(state, world, 0);
+      if (state.pendingStory) chooseStory(state, world, 0);
       await takeTurn(state, world, t % 3 === 2 ? "rest" : "local");
     }
     expect(state.status).toBe("議員");

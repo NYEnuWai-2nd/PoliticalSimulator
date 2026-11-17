@@ -72,7 +72,7 @@ export interface GameState {
   rngCounter: number;
   /** 与党と連立相手 */
   ruling: Ruling;
-  /** 長期政権の疲れ。支持率が戻っていく基準の値をこれだけ下げる */
+  /** 政権疲れ。支持率が戻っていく基準の値をこれだけ下げる */
   fatigue?: number;
   /** 衆議院の任期が満了する年月 */
   termEnd: { year: number; month: number };
@@ -387,7 +387,7 @@ export function endTurn(state: GameState, ctx: GameContext): void {
   if (state.month === R.session_months.find((m) => m > 6)) log(state, "通知", "臨時国会が始まった。");
   if (state.month === 7) log(state, "通知", "通常国会が閉会した。秋の臨時国会まで法案は出せない。");
   if (state.year > state.termEnd.year || (state.year === state.termEnd.year && state.month > state.termEnd.month)) {
-    state.over = "任期満了。総選挙は次の段階で実装します。";
+    state.over = "任期満了";
     log(state, "通知", "衆議院議員の任期が満了した。");
     pushScene(state, ctx, "term_end");
   }

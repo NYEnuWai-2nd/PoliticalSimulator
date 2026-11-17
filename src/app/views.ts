@@ -10,7 +10,7 @@ import { OPP, isOppositionParty, newOppositionState, otherOppositionParties, pac
 import { inSession } from "../game/game.js";
 import type { AdviceLevel } from "../game/advice.js";
 
-/** 画面のモード。通常は秘書の助言とおすすめを出して数字を絞り、プロは全部の数字を出す */
+/** 表示モード。通常は秘書の助言とおすすめを出して数字を絞り、プロは全部の数字を出す */
 export type UiMode = "normal" | "pro";
 import type { CareerState, CareerWorld, ElectionSummary, Highlight, OriginId, RouteId, StartOption } from "../game/career.js";
 import { IDEOLOGY_AXES, PARTIES, partyById } from "../game/parties.js";
@@ -21,19 +21,21 @@ import type { Member } from "../game/roster.js";
 import { MAJORITY, districtName } from "../game/districts.js";
 import { chip, esc, face, icon, moodIcon, partyColor, pct, rankBadge } from "./ui.js";
 import { VERSION_LABEL } from "../version.js";
+import { BOND_ROLE_NAMES, bondWith, bondWord } from "../game/story.js";
+import type { StoryScene } from "../game/story.js";
 
 export interface SetupChoice {
   origin?: OriginId;
   party?: string;
   route?: RouteId;
   pref?: number;
-  /** 小選挙区と後継の道で出る区 */
+  /** 小選挙区と後継で出る区 */
   district?: number;
   archetype?: string;
 }
 
 const prefName = (p: number) => PREFECTURES[p - 1]?.name ?? String(p);
-/** 始め方：出馬の道の県の一覧。比例名簿は県を押すと決まり、小選挙区の道は県を押すとその県の区の一覧が開く */
+/** 始め方：出馬方法の県の一覧。比例名簿は県を押すと決まり、小選挙区は県を押すとその県の区の一覧が開く */
 function prefList(opts: StartOption[], c: SetupChoice, route: RouteId): string {
   if (route === "pr")
     return `<div class="pref-list">${opts
@@ -60,7 +62,7 @@ function districtList(opts: StartOption[], c: SetupChoice, route: RouteId): stri
 const SECRETARY_COLOR = "#e0559a";
 const secretaryFace = (state: CareerState, cls = "") => `<span class="face ${cls}" style="background:${SECRETARY_COLOR}">${esc(state.secretaryName.slice(0, 1))}</span>`;
 /** 経験点の種類ごとに、それを使って伸ばせる能力（data/game/career.json の upgrade.cost から） */
-const EXP_TO_ABILITIES: Record<string, string[]> = { media: ["弁舌", "知名度"], election: ["組織", "弁舌"], policy: ["政策", "調整"], network: ["調整", "組織"], money: ["資金"] };
+const EXP_TO_ABILITIES: Record<string, string[]> = { media: ["弁舌", "知名度"], election: ["組織", "弁舌"], policy: ["政策", "調整"], network: ["調整", "組織"], money: ["資金力"] };
 /** 会話の顔の札（名前の1文字目、政党の色。政党が分からなければ紺） */
 const sayFace = (name: string, party?: string) => `<span class="face say-face" style="background:${party ? partyColor(party) : "#2b4a75"}">${esc(name.slice(0, 1))}</span>`;
 const expName = (id: string) => EXP_TYPES.find((e) => e.id === id)!.name;
@@ -84,7 +86,7 @@ export const FX: Record<string, string> = {
 
 // ---------- 始め方（1画面に1つずつ選ぶ） ----------
 
-export const SETUP_STEPS = ["出自", "政党", "出馬の道と県", "経歴類型", "確認"] as const;
+export const SETUP_STEPS = ["出身", "政党", "出馬方法と県", "経歴", "確認"] as const;
 
 /** saved：自動保存のデータがあればその説明（「続きから」に出す） */
 export function setupView(roster: Member[], c: SetupChoice, step: number, saved?: string, mode: UiMode = "normal", adviceLevel: AdviceLevel = "all"): string {
@@ -93,8 +95,8 @@ export function setupView(roster: Member[], c: SetupChoice, step: number, saved?
   let title = "";
   let body = "";
   if (step === 0) {
-    title = "出自（難易度）を選ぶ";
-    body = `<div class="cut box resume">${saved ? `<button class="btn primary" data-action="continue">続きから</button><span class="muted">${esc(saved)}</span><button class="btn small" data-action="delete-save">セーブを消す</button>` : `<span class="muted">はじめから遊ぶ</span>`}<button class="btn small push" data-action="import">ファイルから読み込む</button></div><div class="cut box resume mode-box"><b>画面のモード</b>${modeSwitch(mode, adviceLevel)}</div><div class="options cols-1">${ORIGINS.map(
+    title = "出身（難易度）を選ぶ";
+    body = `<div class="cut box resume">${saved ? `<button class="btn primary" data-action="continue">続きから</button><span class="muted">${esc(saved)}</span><button class="btn small" data-action="delete-save">セーブを消す</button>` : `<span class="muted">はじめから遊ぶ</span>`}<button class="btn small push" data-action="import">ファイルから読み込む</button></div><div class="cut box resume mode-box"><b>表示モード</b>${modeSwitch(mode, adviceLevel)}</div><div class="options cols-1">${ORIGINS.map(
       (o) => `<button class="option${c.origin === o.id ? " is-active" : ""}" data-setup="origin" data-value="${o.id}"><b>${o.name}（${o.difficulty}）</b><small>${esc(o.description)}</small></button>`,
     ).join("")}</div>`;
   } else if (step === 1) {
@@ -105,7 +107,7 @@ export function setupView(roster: Member[], c: SetupChoice, step: number, saved?
       .join("")}</div>`;
   } else if (step === 2) {
     const opened = c.route && c.route !== "pr" && c.pref && !c.district ? c.pref : undefined;
-    title = opened ? `${prefName(opened)}の区を選ぶ` : "出馬の道と地元の県を選ぶ";
+    title = opened ? `${prefName(opened)}の区を選ぶ` : "出馬方法と地元の都道府県を選ぶ";
     const opts = startOptions(roster, c.party!, c.origin!);
     const routes = [...new Set(opts.map((o) => o.route))];
     const route = c.route && routes.includes(c.route) ? c.route : routes[0];
@@ -119,7 +121,7 @@ export function setupView(roster: Member[], c: SetupChoice, step: number, saved?
       .join("")}</div><p class="muted step-note">${esc(routeNote[route])}</p>
       ${opened ? districtList(opts.filter((o) => o.route === route && o.pref === opened), c, route) : prefList(opts.filter((o) => o.route === route), c, route)}`;
   } else if (step === 3) {
-    title = "経歴類型を選ぶ";
+    title = "経歴を選ぶ";
     body = `<p class="muted step-note">能力の略号：弁＝弁舌、政＝政策、調＝調整、知＝知名度、組＝組織、資＝資金。ランクは S が最も高く、A〜G の順に下がる。</p><div class="options cols-2">${TABLES.archetypes
       .map((a) => `<button class="option${c.archetype === a.id ? " is-active" : ""}" data-setup="archetype" data-value="${a.id}" ${tip(`${a.name}\n${ABILITIES.map((ab) => `${ab} ${a.base_ranks[ab]}`).join("　")}`)}><b>${esc(a.name)}</b><span class="arch-ranks">${ABILITIES.map((ab) => `<span class="arch-rank"><small>${ab.slice(0, 1)}</small><b style="color:var(--rank-${a.base_ranks[ab]})">${a.base_ranks[ab]}</b></span>`).join("")}</span></button>`)
       .join("")}</div>`;
@@ -128,12 +130,12 @@ export function setupView(roster: Member[], c: SetupChoice, step: number, saved?
     const o = ORIGINS.find((x) => x.id === c.origin)!;
     const a = TABLES.archetypes.find((x) => x.id === c.archetype)!;
     body = `<div class="cut box summary">
-      <p><b>出自</b>　${esc(o.name)}（${esc(o.difficulty)}）</p>
+      <p><b>出身</b>　${esc(o.name)}（${esc(o.difficulty)}）</p>
       <p><b>政党</b>　${chip(c.party!)} ${esc(partyById(c.party!).name)}</p>
       <p><b>出馬</b>　${esc(ROUTE_NAMES[c.route!])}・${esc(c.district ? districtName(c.district) : prefName(c.pref!))}</p>
       <p><b>経歴</b>　${esc(a.name)}</p>
       <p><b>始めの能力</b>　<span class="arch-ranks">${ABILITIES.map((ab) => `<span class="arch-rank"><small>${esc(ab)}</small><b style="color:var(--rank-${a.base_ranks[ab]})">${a.base_ranks[ab]}</b></span>`).join("")}</span></p>
-      <p><b>画面のモード</b>　${mode === "normal" ? "通常（秘書の助言つき）" : "プロ（数字をすべて出す）"}。始めてからも「自分」の画面で変えられる。</p></div>
+      <p><b>表示モード</b>　${mode === "normal" ? "通常（秘書の助言つき）" : "プロ（数字をすべて出す）"}。始めてからも「能力」の画面で変えられる。</p></div>
       <p style="text-align:center"><button class="btn primary big" data-action="start">この条件で始める</button></p>`;
   }
   return `<div class="setup">
@@ -157,12 +159,12 @@ export function partyLean(p: Party): string {
 /** 通常とプロの切り替え（始め方と自分の画面で使う） */
 export function modeSwitch(mode: UiMode, advice: AdviceLevel = "all"): string {
   const b = (on: boolean, action: string, label: string) => `<button class="btn small${on ? " is-active" : ""}" data-action="${action}">${label}</button>`;
-  return `<div class="mode-switch">${b(mode === "normal", "mode-normal", "通常")}${b(mode === "pro", "mode-pro", "プロ")}</div>
-    <p class="muted" style="margin:6px 0 0">${mode === "normal" ? "通常：活動の画面では、経験点と関係の欄の代わりに秘書の助言とおすすめの活動を出し、活動の効果も言葉で説明する。" : "プロ：経験点や関係など、すべての数字を活動の画面に出す。"}</p>
+  return `<div class="mode-switch">${b(mode === "normal", "mode-normal", "標準")}${b(mode === "pro", "mode-pro", "詳細")}</div>
+    <p class="muted" style="margin:6px 0 0">${mode === "normal" ? "標準：活動の画面では、経験点と関係の欄の代わりに秘書の助言とおすすめの活動を出し、活動の効果も言葉で説明する。" : "詳細：経験点や関係など、すべての数字を活動の画面に出す。"}</p>
     <div class="mode-switch" style="margin-top:8px"><span class="muted">秘書の助言</span>${b(advice === "all", "advice-all", "全部")}${b(advice === "warn", "advice-warn", "警告だけ")}${b(advice === "off", "advice-off", "出さない")}</div>`;
 }
 
-// ---------- 状態の帯 ----------
+// ---------- 上の帯 ----------
 
 export function statusBar(state: CareerState, world: CareerWorld, mode: UiMode = "pro"): string {
   const s = careerSummary(state, world);
@@ -185,7 +187,7 @@ export function statusBar(state: CareerState, world: CareerWorld, mode: UiMode =
 
 function racePanel(state: CareerState, world: CareerWorld): string {
   if (state.setup.route === "pr") {
-    return `<div class="cut race" ${tip("比例名簿の道\n党の幹部との関係が80で1位、12下がるごとに1つ下がる。党の比例の当選者数に入れば当選")}>${icon("exp-election", 24)}<span>比例名簿</span><span class="muted">見込み ${prRank(state) + 1}位</span><span class="muted" style="margin-left:auto">党の幹部 ${state.relations.party}</span></div>`;
+    return `<div class="cut race" ${tip("比例単独\n党の幹部との関係が80で1位、12下がるごとに1つ下がる。党の比例の当選者数に入れば当選")}>${icon("exp-election", 24)}<span>比例名簿</span><span class="muted">見込み ${prRank(state) + 1}位</span><span class="muted" style="margin-left:auto">党の幹部 ${state.relations.party}</span></div>`;
   }
   const f = raceForecast(state, world);
   const me = f.find((x) => x.isPlayer)!;
@@ -208,7 +210,7 @@ function racePanel(state: CareerState, world: CareerWorld): string {
       : `<b>${esc(rival.name)}</b>`
     : "";
   const place = districtName(state.setup.district!);
-  return `<div class="cut race">${icon("st-daruma", 22)}<span>${esc(place)}</span><div class="race-bar" ${tip(`${place}の情勢（揺らぎを除いた見込み）\n${all}`)}>${bar}</div><b class="${verdict[1]}">${verdict[0]}</b></div>
+  return `<div class="cut race">${icon("st-daruma", 22)}<span>${esc(place)}</span><div class="race-bar" ${tip(`${place}の情勢（今の見込み）\n${all}`)}>${bar}</div><b class="${verdict[1]}">${verdict[0]}</b></div>
     <div class="cut race sub">${icon("st-jiban", 18)}<span class="race-me" style="--pc:${partyColor(me.party)}">自分 ${pct(me.share)}</span>${rival ? `<span class="race-vs">相手</span>${rivalHtml}<span class="race-them" style="--pc:${partyColor(rival.party)}">${pct(rival.share)}</span>` : ""}<span class="muted push" ${tip(`地盤 ${world.player.jiban} / 4\n「地元回り」「地域行事」「県議と連携」で固まる。半年続けて地元の活動をしないと1段下がる`)}>地盤 ${world.player.jiban}</span></div>`;
 }
 
@@ -223,7 +225,7 @@ const REL_TIPS: Record<string, string> = {
 function relPanel(state: CareerState): string {
   const colors: Record<string, string> = { secretary: SECRETARY_COLOR, party: partyColor(state.setup.party), supporters: "#8d6e63", press: "#607d8b", kengi: "#3f51b5" };
   const rows = RELATIONS.map(
-    (r) => `<div class="cut rel" ${tip(`${REL_TIPS[r.id]}\n今 ${state.relations[r.id]}（放っておくと40に戻っていく。白い線が40）`)}>${r.id === "secretary" ? secretaryFace(state) : `<span class="face" style="background:${colors[r.id]}">${esc(r.name.slice(0, 1))}</span>`}
+    (r) => `<div class="cut rel" ${tip(`${REL_TIPS[r.id]}\n今 ${state.relations[r.id]}（放っておくと40に戻っていく。白い線が40）`)}>${r.id === "secretary" ? secretaryFace(state) : `<span class="face" style="background:${colors[r.id]}">${esc(r.id === "kengi" ? "議" : r.name.slice(0, 1))}</span>`}
       <div class="rel-info"><div class="rel-top"><span>${esc(r.id === "secretary" ? `秘書 ${state.secretaryName}` : r.name)}</span><small>${state.relations[r.id]}</small></div>
       <div class="mini-gauge mark-40"><i style="width:${state.relations[r.id]}%"></i></div></div></div>`,
   ).join("");
@@ -233,7 +235,7 @@ function relPanel(state: CareerState): string {
 function activityList(state: CareerState, world: CareerWorld) {
   const list = ACTIVITIES.map((a) => ({ id: a.id, name: a.name, icon: a.icon, description: a.description, stamina: a.stamina, exp: a.exp as Record<string, number> }));
   if (postCategory(state, world))
-    list.push({ id: "duty", name: "公務", icon: "act-party", description: `${state.post}としての仕事をする。役職ごとに効果が違う。`, stamina: -10, exp: {} });
+    list.push({ id: "duty", name: "職務", icon: "act-party", description: `${state.post}としての仕事をする。役職ごとに効果が違う。`, stamina: -10, exp: {} });
   return list;
 }
 
@@ -253,16 +255,16 @@ export function activityView(
   const normal = mode === "normal";
   const advice = filterAdvice(adviseMonth(state, world), adviceLevel);
   const rec = normal ? recommendedActivity(advice) : undefined;
-  // プロモードでは、警告だけを1行で出す
+  // 詳細モードでは、警告だけを1行で出す
   const proWarn = !normal ? advice.find((a) => a.warn) : undefined;
   const sel = acts.find((a) => a.id === selected);
   const exp = EXP_TYPES.map(
-    (e) => `<div class="cut exp-row" ${tip(`${e.name}の経験点 ${state.exp[e.id]}\n「自分」の画面で能力を上げるのに使う`)}>${icon(e.icon, 22)}<span class="exp-name">${e.name}</span><span class="exp-val">${state.exp[e.id]}</span><span class="exp-add" ${tip("選んだ活動で増える見込み")}>${sel?.exp[e.id] ? `+${sel.exp[e.id]}` : ""}</span></div>`,
+    (e) => `<div class="cut exp-row" ${tip(`${e.name}の経験点 ${state.exp[e.id]}\n「能力」の画面で能力を上げるのに使う`)}>${icon(e.icon, 22)}<span class="exp-name">${e.name}</span><span class="exp-val">${state.exp[e.id]}</span><span class="exp-add" ${tip("選んだ活動で増える見込み")}>${sel?.exp[e.id] ? `+${sel.exp[e.id]}` : ""}</span></div>`,
   ).join("");
   const cards = acts
     .map(
       (a) => `<button class="card${a.id === selected ? " is-active" : ""}" data-act="${a.id}" aria-label="${esc(a.name)}">
-      ${normal ? (a.id === rec ? `<span class="tag rec">おすすめ</span>` : "") : a.id === "local" && world.player.jiban < 4 ? `<span class="tag">地盤UP</span>` : ""}
+      ${normal ? (a.id === rec ? `<span class="tag rec">おすすめ</span>` : "") : a.id === "local" && world.player.jiban < 4 ? `<span class="tag">地盤↑</span>` : ""}
       <span class="card-in">${icon(a.icon, 40)}<span class="lb">${esc(a.name)}</span></span>
       <span class="cost" style="${a.stamina > 0 ? "color:#16a33a" : ""}">体力${a.stamina > 0 ? "+" : ""}${a.stamina}</span></button>`,
     )
@@ -292,16 +294,16 @@ export function activityView(
   </div>`;
 }
 
-// ---------- 特殊能力 ----------
+// ---------- 持ち味 ----------
 
-/** 特殊能力の札（色ごとに形を変えず色だけ変える。押せないので角ばった形） */
+/** 持ち味の札（色ごとに形を変えず色だけ変える。押せないので角ばった形） */
 export function skillChips(ids: readonly string[]): string {
   const list = sortSkills(ids);
   if (!list.length) return `<span class="muted">なし</span>`;
-  return list.map((sk) => `<span class="skill skill-${sk.color}" ${tip(`${sk.name}（${COLOR_NAMES[sk.color]}の特殊能力）\n${sk.description}`)}>${esc(sk.name)}</span>`).join("");
+  return list.map((sk) => `<span class="skill skill-${sk.color}" ${tip(`${sk.name}（持ち味・${COLOR_NAMES[sk.color]}）\n${sk.description}`)}>${esc(sk.name)}</span>`).join("");
 }
 
-const ACT_NAME: Record<string, string> = Object.fromEntries([...ACTIVITIES.map((a) => [a.id, a.name]), ["duty", "公務"]]);
+const ACT_NAME: Record<string, string> = Object.fromEntries([...ACTIVITIES.map((a) => [a.id, a.name]), ["duty", "職務"]]);
 
 function skillSection(state: CareerState, world: CareerWorld): string {
   const p = world.player;
@@ -312,26 +314,26 @@ function skillSection(state: CareerState, world: CareerWorld): string {
       return `<div class="cut row sm skill-row"><span class="skill skill-${sk.color}">${esc(sk.name)}</span><span class="grow">${esc(sk.description)}${cure}</span></div>`;
     })
     .join("");
-  // 身につけられる特殊能力（上位のものを持っていれば下位は出さない）
+  // 身につけられる持ち味（上位のものを持っていれば下位は出さない）
   const hints = state.skillHints ?? {};
   const next = SKILLS.filter((sk) => sk.acquire && !p.skills.includes(sk.id) && !SKILLS.some((x) => x.replaces?.includes(sk.id) && p.skills.includes(x.id)))
-    // コツをつかんだものを先に並べる
+    // きっかけをつかんだものを先に並べる
     .sort((a, b) => (hints[b.id] ?? 0) - (hints[a.id] ?? 0))
     .map((sk) => {
       const lv = hints[sk.id] ?? 0;
       const can = lv ? canLearnSkill(state, world, sk.id) : undefined;
       const cost = lv ? Object.entries(learnCost(sk, lv)).map(([k, n]) => `${expName(k)}${n}`).join(" ") : "";
       const learn = lv
-        ? `<span class="hint-badge">コツLv${lv}</span><button class="btn small" data-learn="${sk.id}" ${can?.ok ? "" : "disabled"}>覚える（${cost}）</button>${can?.ok ? "" : `<small class="muted">${esc(can?.reason ?? "")}</small>`}`
+        ? `<span class="hint-badge">きっかけ段階${lv}</span><button class="btn small" data-learn="${sk.id}" ${can?.ok ? "" : "disabled"}>身につける（${cost}）</button>${can?.ok ? "" : `<small class="muted">${esc(can?.reason ?? "")}</small>`}`
         : "";
       return `<div class="cut row sm skill-row"><span class="skill skill-${sk.color}${lv ? "" : " is-locked"}">${esc(sk.name)}</span><span class="grow">${esc(sk.description)}<small class="muted">条件：${esc(conditionProgress(sk.acquire!, ctx, (id) => ACT_NAME[id] ?? id))}</small>${learn ? `<span class="learn-line">${learn}</span>` : ""}</span></div>`;
     })
     .join("");
-  return `<section class="cut box"><h2>特殊能力</h2><div class="rows">${have || "<p class='muted' style='margin:0'>まだない</p>"}</div>
-    <h3 class="sub-h">身につけられる特殊能力</h3><p class="muted" style="margin:0 0 6px;font-size:12px">条件の回数をこなすと月末に身につく。活動でコツをつかめば、回数が足りなくても経験点を払って覚えられる。</p><div class="rows">${next}</div></section>`;
+  return `<section class="cut box"><h2>持ち味</h2><div class="rows">${have || "<p class='muted' style='margin:0'>まだない</p>"}</div>
+    <h3 class="sub-h">身につけられる持ち味</h3><p class="muted" style="margin:0 0 6px;font-size:12px">条件の回数をこなすと月末に身につく。活動できっかけをつかめば、回数が足りなくても経験点を払って身につけられる。</p><div class="rows">${next}</div></section>`;
 }
 
-/** 通常モードで、活動の効果を数字ではなく言葉で言う */
+/** 標準モードで、活動の効果を数字ではなく言葉で言う */
 function effectWords(a: { exp: Record<string, number>; stamina: number }): string {
   // 経験点の名前ではなく、それで伸ばせる能力の名前で言う（よく伸びるものは★★、少しは★）
   const score: Record<string, number> = {};
@@ -345,13 +347,13 @@ function effectWords(a: { exp: Record<string, number>; stamina: number }): strin
   return [grow ? `伸ばしやすい能力：${grow}` : "", st].filter(Boolean).join("　");
 }
 
-// ---------- 秘書の助言（通常モード） ----------
+// ---------- 秘書の助言（標準モード） ----------
 
 function adviceHtml(state: CareerState, world: CareerWorld, advice: ReturnType<typeof adviseMonth>): string {
   const items = advice
     .map((a) => {
       const go = a.tab
-        ? `<button class="btn small" data-tab="${a.tab}">${a.tab === "self" ? "自分の画面へ" : a.tab === "party" ? "党内の画面へ" : "内閣の画面へ"}</button>`
+        ? `<button class="btn small" data-tab="${a.tab}">${a.tab === "self" ? "能力の画面へ" : a.tab === "party" ? "自党の画面へ" : "内閣の画面へ"}</button>`
         : a.act
           ? `<button class="btn small" data-act="${a.act}">${esc(activityList(state, world).find((x) => x.id === a.act)?.name ?? "")}を選ぶ</button>`
           : "";
@@ -360,7 +362,7 @@ function adviceHtml(state: CareerState, world: CareerWorld, advice: ReturnType<t
     .join("");
   return `<div class="advice-head">${secretaryFace(state)}<div><b>秘書 ${esc(state.secretaryName)}</b><small class="muted">今月の助言</small></div></div>
     <ul class="advice-list">${items}</ul>
-    <button class="link-btn" data-action="mode-pro">数字を全部見る（プロモードにする）</button>`;
+    <button class="link-btn" data-action="mode-pro">数字を全部見る（詳細モードにする）</button>`;
 }
 
 // ---------- 人物の詳しい情報 ----------
@@ -391,8 +393,9 @@ export function memberDetail(state: CareerState, world: CareerWorld, id: number)
       <small class="muted">${esc(m.name.surnameKana)} ${esc(m.name.givenNameKana)}</small><p>${chip(m.party)} ${esc(partyById(m.party).name)}　${age}歳・${m.gender}</p></div>
       <button class="btn small close" data-action="close-member" aria-label="閉じる">✕</button></div>
     <p class="d-facts"><span>${esc(seat)}</span><span>当選${m.terms}回</span><span>地盤${m.jiban}</span>${post ? `<span class="post">${esc(post)}</span>` : ""}${leader ? `<span class="post">${esc(leader)}</span>` : ""}</p>
-    <p class="d-facts"><span>${esc(m.archetype)}</span>${m.lineage !== "なし" ? `<span>${esc(m.lineage)}</span>` : ""}<span>得意：${esc(m.specialties.join("・"))}</span><span>性格：${esc(m.traits.join("・"))}</span></p>
-    <div class="d-skills">${sortSkills(m.skills).map((sk) => `<p><span class="skill skill-${sk.color}">${esc(sk.name)}</span><small>${esc(sk.description)}</small></p>`).join("") || `<p class="muted">特殊能力なし</p>`}</div>
+    <p class="d-facts"><span>${esc(m.archetype)}</span>${m.lineage !== "一般" ? `<span>${esc(m.lineage)}</span>` : ""}<span>得意：${esc(m.specialties.join("・"))}</span><span>性格：${esc(m.traits.join("・"))}</span></p>
+    ${bondLine(state, m.id)}
+    <div class="d-skills">${sortSkills(m.skills).map((sk) => `<p><span class="skill skill-${sk.color}">${esc(sk.name)}</span><small>${esc(sk.description)}</small></p>`).join("") || `<p class="muted">持ち味なし</p>`}</div>
     <div class="d-grid"><div>${abilities}</div><div>${ideology}<p class="muted" style="margin:6px 0 0">信念 ${m.conviction}/5・党への忠誠 ${m.loyalty}/5</p></div></div>
   </div></div>`;
 }
@@ -447,16 +450,16 @@ export function selfView(state: CareerState, world: CareerWorld, savedAt?: strin
         <section class="cut box"><h2>関係</h2><div class="rows">${rel}</div></section>
         <section class="cut box"><h2>党首選</h2>${leader}</section>
         <section class="cut box"><h2>経歴</h2><ul style="margin:0;padding-left:1.2em">${ach}</ul></section>
-        <section class="cut box"><h2>画面のモード</h2>${modeSwitch(mode, adviceLevel)}</section>
+        <section class="cut box"><h2>表示モード</h2>${modeSwitch(mode, adviceLevel)}</section>
         <section class="cut box"><h2>セーブ</h2><p class="muted" style="margin:0 0 8px">${savedAt ? `このブラウザに自動で保存しています（最後の保存 ${esc(savedAt)}）。` : "このブラウザには保存できていません。ファイルに書き出してください。"}</p>
           <p class="btn-row" style="margin:0"><button class="btn small" data-action="export">ファイルに書き出す</button><button class="btn small" data-action="import">ファイルから読み込む</button></p>
-          <p class="btn-row" style="margin:8px 0 0"><button class="btn small" data-action="restart-same">同じ世界で最初から</button><button class="btn small" data-action="restart">新しい世界で最初から</button></p></section>
+          <p class="btn-row" style="margin:8px 0 0"><button class="btn small" data-action="restart-same">同じ顔ぶれで最初から</button><button class="btn small" data-action="restart">新しい顔ぶれで最初から</button></p></section>
       </div>
     </div>
   </div>`;
 }
 
-// ---------- 党首選（自分と党内の画面で共通） ----------
+// ---------- 党首選（自分と自党の画面で共通） ----------
 
 function leaderSection(state: CareerState, world: CareerWorld): string {
   const party = state.setup.party;
@@ -464,11 +467,11 @@ function leaderSection(state: CareerState, world: CareerWorld): string {
   const leader = leaderId !== undefined ? findMember(world, leaderId) : undefined;
   const ruling = state.gov.ruling.party === party;
   const when = ruling
-    ? `次の党首選：<b>${state.leaderTermEnd.year}年${state.leaderTermEnd.month}月</b>（党首の任期切れ）`
+    ? `次の党首選：<b>${state.leaderTermEnd.year}年${state.leaderTermEnd.month}月</b>（党首の任期満了）`
     : "次の党首選：総選挙で敗れたときや、党首が落選したときに行われる";
   const run = canRunForLeader(state, world)
     ? `<button class="btn ${state.runForLeader ? "is-active" : ""}" data-action="toggle-run">${state.runForLeader ? "立候補を届け出た（押すと取り消す）" : "次の党首選に立候補する"}</button>`
-    : `<p class="muted" style="margin:0">当選3回以上で、党の幹部との関係が50以上なら立候補できる（党首は生涯3期まで）。今は当選${world.player.terms}回・党の幹部 ${state.relations.party}。</p>`;
+    : `<p class="muted" style="margin:0">当選3回以上で、党の幹部との関係が50以上なら立候補できる（党首は通算3期まで）。今は当選${world.player.terms}回・党の幹部 ${state.relations.party}。</p>`;
   return `<p style="margin:0 0 6px">党首：${leader ? `<button class="name-btn" data-member="${leader.id}">${esc(leader.name.displayName)}</button>` : "不在"}　${when}</p>${run}`;
 }
 
@@ -492,7 +495,7 @@ function oppOffReason(state: CareerState, id: string, points: number): string | 
     if (!inSession(state)) return "国会の会期外（臨時国会は秋から）";
     if (opp?.debatedTurn === state.turn) return "党首討論は月に1回";
   }
-  if (id === "proposal" && (opp?.proposals ?? 0) < OPP.actions.proposal.cost) return `対案の準備が足りない（${opp?.proposals ?? 0}/${OPP.actions.proposal.cost}。政調会長が毎月ためる）`;
+  if (id === "proposal" && (opp?.proposals ?? 0) < OPP.actions.proposal.cost) return `対案の準備が足りない（${opp?.proposals ?? 0}/${OPP.actions.proposal.cost}。政調会長が毎月進める）`;
   if (id === "noconfidence" && opp?.lastNoConfidence !== undefined) {
     const wait = OPP.actions.noconfidence.cooldown_months - (state.turn - opp.lastNoConfidence);
     if (wait > 0) return `不信任案は${OPP.actions.noconfidence.cooldown_months}か月に1回（あと${wait}か月）`;
@@ -538,7 +541,7 @@ function oppositionSection(state: CareerState, world: CareerWorld): string {
     })
     .join("");
   const momentum = opp?.momentum ?? 0;
-  const status = `<p class="opp-stats"><span ${tip(`自党への追い風\n総選挙で全国の支持に ${momentum.toFixed(1)} ポイント足される。党首討論、追及、対案で増え、毎月少しずつ弱まる`)}>追い風 <b>${momentum >= 0 ? "+" : ""}${momentum.toFixed(1)}</b></span><span ${tip(`対案の準備\n${OPP.actions.proposal.cost}たまると「対案の発表」ができる。政調会長が毎月ためる`)}>対案の準備 <b>${opp?.proposals ?? 0}</b></span><span ${tip(`不信任案の根回し\n国対委員長の公務でたまり、不信任案で与党から造反が出やすくなる`)}>根回し <b>${opp?.diet ?? 0}</b></span></p>`;
+  const status = `<p class="opp-stats"><span ${tip(`自党への追い風\n総選挙で全国の支持に ${momentum.toFixed(1)} ポイント足される。党首討論、追及、対案で増え、毎月少しずつ弱まる`)}>追い風 <b>${momentum >= 0 ? "+" : ""}${momentum.toFixed(1)}</b></span><span ${tip(`対案の準備\n${OPP.actions.proposal.cost}たまると「対案の発表」ができる。政調会長が毎月進める`)}>対案の準備 <b>${opp?.proposals ?? 0}</b></span><span ${tip(`不信任案の根回し\n国対委員長の職務でたまり、不信任案で与党から造反が出やすくなる`)}>根回し <b>${opp?.diet ?? 0}</b></span></p>`;
   const actions = leader
     ? `<h3 class="sub-h">党首の行動（今月あと${points}回）</h3><div class="opp-actions">${OPP_ACTIONS.filter((a) => !a.needsParty)
         .map((a) => {
@@ -622,14 +625,14 @@ export function logView(state: CareerState, filter: LogFilter): string {
       date = l.date;
       html += `<h3 class="log-date">${esc(date)}</h3><ul class="log-list">`;
     }
-    html += `<li class="${l.kind === "gov" ? "gov" : "self"}${l.level ? ` ${l.level}` : ""}"><span class="log-kind">${l.level === "major" ? "山場" : l.kind === "gov" ? "政局" : "自分"}</span><span>${esc(l.text)}${l.count ? `<b class="log-count">×${l.count}</b>` : ""}</span></li>`;
+    html += `<li class="${l.kind === "gov" ? "gov" : "self"}${l.level ? ` ${l.level}` : ""}"><span class="log-kind">${l.level === "major" ? "節目" : l.kind === "gov" ? "政局" : "個人"}</span><span>${esc(l.text)}${l.count ? `<b class="log-count">×${l.count}</b>` : ""}</span></li>`;
   }
   if (date) html += "</ul>";
   const tabs = (
     [
-      ["major", "大事なこと"],
+      ["major", "主な記録"],
       ["all", "すべて"],
-      ["self", "自分"],
+      ["self", "個人"],
       ["gov", "政局"],
     ] as const
   )
@@ -645,15 +648,16 @@ export function logView(state: CareerState, filter: LogFilter): string {
 const HELP: [string, string][] = [
   ["目的", "一人の候補者として総選挙での当選を目指す。当選を重ねて大臣や党の役職に就き、与党の党首選に勝てば首相になれる。落選しても浪人として続けられる。75歳になるか、30年たつと引退して議員人生を終える。"],
   ["1か月の流れ", "活動を1つ選ぶと1か月進む。カードを押すと説明と効果の見込みが出て、「実行する」ボタンかカードをもう一度押すと実行する。月末に経費が引かれ、日常の出来事が起きることがある。出来事では、選択肢を選ぶと結果が出る。"],
-  ["総選挙", "任期満了か解散で行う。小選挙区では、党への支持（内閣支持率による風を含む）に本人の地盤、知名度、後援会・地元紙・県議団との関係、選挙資金が上乗せされる。活動の画面の情勢の棒で見込みが分かる。比例名簿の道では、党の幹部との関係で名簿の順位が決まる。"],
-  ["経験点と能力", "活動で5種類の経験点がたまる。「自分」の画面で経験点を使って6つの能力を上げる。能力が高いほど、上げるのに必要な経験点が増える。"],
+  ["総選挙", "任期満了か解散で行う。小選挙区では、党への支持（内閣支持率による風を含む）に本人の地盤、知名度、後援会・地元紙・県議団との関係、選挙資金が上乗せされる。活動の画面の情勢の棒で見込みが分かる。比例単独では、党の幹部との関係で名簿の順位が決まる。"],
+  ["経験点と能力", "活動で5種類の経験点がたまる。「能力」の画面で経験点を使って6つの能力を上げる。能力が高いほど、上げるのに必要な経験点が増える。"],
   ["地盤と関係", "地盤（1〜4）は「地元回り」「地域行事」「県議と連携」で固まり、半年続けて地元の活動をしないと1段下がる。関係（秘書、党の幹部、後援会、地元紙、県議団）は放っておくと40に戻っていく。数字や棒にマウスを乗せるか長押しすると、何に効くかが出る。"],
-  ["党首選と首相", "当選3回以上で党の幹部との関係が50以上なら、党内の画面で党首選への立候補を届け出られる。与党の党首選は党首の任期切れのときに行う。与党の党首になると首相になり、内閣の画面で法案や解散などの政権の行動を選べる。"],
-  ["野党", "自分の党が野党のときは、当選を重ねると幹事長、政調会長、国対委員長、選対委員長、影の大臣に就き、公務でほかの野党との協力度を上げたり、対案の準備をためたりする。野党の党首になると、党内の画面で、ほかの野党との会談、党首討論、失政の追及、対案の発表、選挙協力（候補者の一本化）、内閣不信任案の提出を毎月使える。選挙協力を結んだ党とは、小選挙区で一方が候補を降ろし、その党の票の一部がもう一方に移る。"],
-  ["特殊能力とコツ", "活動の回数などの条件を満たすと、月末に特殊能力が身につく。活動のあとにときどき「コツ」をつかみ、コツがあれば回数が足りなくても「自分」の画面で経験点を払って覚えられる。"],
-  ["記録", "状態の帯（日付や資金の並び）の「記録」で、自分に起きたことと政局の動き（政権の行動、採決、政界の出来事）を月ごとに振り返れる。「大事なこと」では、総選挙や就任、政権交代などの山場と、出来事の結果だけを出す。"],
-  ["画面のモード", "通常モードでは、秘書が毎月の助言とおすすめの活動を教えてくれ、細かい数字は省かれる。プロモードでは、経験点や関係などのすべての数字が出る。最初の画面と「自分」の画面で切り替えられる。"],
-  ["保存", "状態はこのブラウザに自動で保存され、最初の画面の「続きから」で再開できる。「自分」の画面からファイルへの書き出しと読み込みができる。"],
+  ["党首選と首相", "当選3回以上で党の幹部との関係が50以上なら、自党の画面で党首選への立候補を届け出られる。与党の党首選は党首の任期満了のときに行う。与党の党首になると首相になり、内閣の画面で法案や解散などの政権の行動を選べる。"],
+  ["野党", "自分の党が野党のときは、当選を重ねると幹事長、政調会長、国対委員長、選対委員長、影の大臣に就き、職務でほかの野党との協力度を上げたり、対案の準備を進めたりする。野党の党首になると、自党の画面で、ほかの野党との会談、党首討論、失政の追及、対案の発表、選挙協力（候補者の一本化）、内閣不信任案の提出を毎月使える。選挙協力を結んだ党とは、小選挙区で一方が候補を降ろし、その党の票の一部がもう一方に移る。"],
+  ["持ち味ときっかけ", "活動の回数などの条件を満たすと、月末に持ち味が身につく。活動のあとにときどき「きっかけ」をつかみ、きっかけがあれば回数が足りなくても「能力」の画面で経験点を払って身につけられる。持ち味には4種類ある。「秀逸」はめったに持てない強力なもの、「強み」は経歴や家柄に結び付いた長所、「弱点」は条件を満たすと克服できる短所、「気質」は良い面と悪い面の両方があるもの。"],
+  ["記録", "上の帯（日付や資金の並び）の「記録」で、自分に起きたことと政局の動き（政権の行動、採決、政界の出来事）を月ごとに振り返れる。「主な記録」では、総選挙や就任、政権交代などの節目と、出来事の結果だけを出す。"],
+  ["表示モード", "標準モードでは、秘書が毎月の助言とおすすめの活動を教えてくれ、細かい数字は省かれる。詳細モードでは、経験点や関係などのすべての数字が出る。最初の画面と「能力」の画面で切り替えられる。"],
+  ["保存", "状態はこのブラウザに自動で保存され、最初の画面の「続きから」で再開できる。「能力」の画面からファイルへの書き出しと読み込みができる。"],
+  ["政治の言葉", "浪人：落選して、次の選挙での返り咲きを目指している人。少数与党：与党の議席が過半数に届いていない状態で、法案を通すには野党の協力が要る。党三役：与党の幹事長、総務会長、政調会長。幹事長：党の運営と選挙を取り仕切る。政調会長：党の政策をまとめる。総務会長：党の方針を決める会議をまとめる。国対委員長：国会の日程や、ほかの党との交渉を受け持つ。選対委員長：選挙の戦い方と候補者選びを受け持つ。影の大臣：政権交代に備えて分野ごとに政府を追及する野党の担当者。党議拘束：党が決めた賛否に、所属議員が採決で従う決まり。比例単独：小選挙区には出ず、比例区の名簿だけで立候補すること。県議団：地元の県議会議員の集まり（東京なら都議、北海道なら道議、大阪・京都なら府議）。"],
   ["キー操作", "1〜5：画面の切り替え。活動の画面では ← → で選んで Enter で実行。出来事は数字キーで選ぶ。Esc でポップアップを閉じる。"],
 ];
 
@@ -705,7 +709,7 @@ export function electionView(state: CareerState, e: ElectionSummary): string {
     </div></div></div>`;
 }
 
-// ---------- 山場の場面（政権交代、首相交代、自分の就任） ----------
+// ---------- 節目の場面（政権交代、首相交代、自分の就任） ----------
 
 export function highlightView(h: Highlight): string {
   const lines = h.lines
@@ -719,4 +723,100 @@ export function highlightView(h: Highlight): string {
     <div class="cut hl-title">${esc(h.title)}</div><p class="hl-text">${esc(h.text)}</p>
     <div class="says">${lines}</div>
     <button class="btn primary wide" data-action="close-highlight">続ける</button></div></div>`;
+}
+
+// ---------- 物語の場面（全画面） ----------
+
+export interface StoryViewState {
+  /** 今出しているセリフの番号（セリフの数と同じなら選択肢を出す） */
+  line: number;
+  /** 1回押して選んだ選択肢 */
+  selected?: number;
+  /** 会話の履歴を開いているか */
+  history: boolean;
+}
+
+/** 顔の札：議員なら党の色と名字の1文字、秘書は秘書の色。押すと人物の情報（議員のときだけ） */
+function storyTile(name: string, opts: { party?: string; memberId?: number; secretary?: boolean; off?: boolean; label: string }): string {
+  const bg = opts.secretary ? SECRETARY_COLOR : opts.party ? partyColor(opts.party) : "#7d6b55";
+  const tap = opts.memberId !== undefined ? ` data-member="${opts.memberId}"` : " disabled";
+  return `<div class="st-who${opts.off ? " off" : ""}"><button class="st-tile" style="background:${bg}"${tap}>${esc(name.slice(0, 1))}${opts.memberId !== undefined ? `<span class="st-i">i</span>` : ""}</button><div class="st-shoulder"></div><span class="cut st-plate">${esc(opts.label)}</span></div>`;
+}
+
+function storyBondPanel(state: CareerState, scene: StoryScene): string {
+  const p = scene.partner;
+  if (!p) return "";
+  const b = p.memberId !== undefined ? bondWith(state.bonds, p.memberId) : state.bonds?.people.secretary;
+  const last = state.elections.at(-1);
+  const race = p.role === "rival" && last?.district.length ? last.district : undefined;
+  const me = race?.find((x) => x.isPlayer);
+  const them = race?.find((x) => x.name === p.name);
+  const value = b
+    ? `<p><span>あなたとの関係</span><b>${b.value > 0 ? "+" : ""}${b.value}（${bondWord(b.value)}）</b></p><div class="st-meter"><i style="left:${50 + b.value / 2}%"></i></div><p><span>間柄</span><b>${esc(b.tag ?? "まだ決まっていない")}</b></p>`
+    : `<p class="muted">まだ関係がない</p>`;
+  const vs =
+    me && them
+      ? `<p class="st-race-cap">前回の総選挙</p><div class="st-vs"><i style="width:${them.share * 100}%;background:${partyColor(them.party)}"></i><i style="width:${me.share * 100}%;background:${partyColor(me.party)}"></i></div><p><span>${esc(them.name.split(" ")[0])} ${pct(them.share)}</span><span>自分 ${pct(me.share)}</span></p>`
+      : "";
+  return `<section class="cut st-side-box"><h4>${esc(p.name)}（${esc(BOND_ROLE_NAMES[p.role])}）</h4>${value}${vs}</section>`;
+}
+
+export function storyView(state: CareerState, world: CareerWorld, scene: StoryScene, v: StoryViewState, mode: "normal" | "pro"): string {
+  const atChoice = v.line >= scene.lines.length;
+  const cur = scene.lines[Math.min(v.line, scene.lines.length - 1)];
+  // 左の枠：話している人が自分以外ならその人、そうでなければ物語の相手。右の枠：自分
+  const leftLine = !atChoice && cur.role !== "self" && cur.role !== "narrator" ? cur : undefined;
+  const left = leftLine
+    ? { name: leftLine.name || "？", party: leftLine.party, memberId: leftLine.memberId, secretary: leftLine.role === "secretary", label: leftLine.name || leftLine.label }
+    : scene.partner
+      ? { name: scene.partner.name, party: scene.partner.party, memberId: scene.partner.memberId, secretary: scene.partner.role === "secretary", label: scene.partner.name }
+      : undefined;
+  const speakingSelf = !atChoice && cur.role === "self";
+  const stage = `<div class="st-stage">${left ? storyTile(left.name, { ...left, off: !leftLine }) : "<div></div>"}${storyTile(world.player.name.surname, { party: world.player.party, memberId: world.player.id, off: !speakingSelf && !atChoice, label: "自分" })}</div>`;
+  const chapterText = `第${scene.chapterNo}章（${scene.chapterNo} / ${scene.chapterCount}）`;
+  const head = `<div class="st-top"><div class="cut st-chapter"><small>物語「${esc(scene.title)}」</small><b>${chapterText}</b></div><button class="btn small" data-action="story-history">会話の履歴</button></div>
+    <span class="cut st-place">${esc(scene.place)}</span>${atChoice ? "" : `<button class="st-skip" data-action="story-skip">この章を飛ばす</button>`}`;
+  let bottom: string;
+  if (!atChoice) {
+    const side = cur.role === "self" ? "right" : "left";
+    const color = cur.role === "secretary" ? SECRETARY_COLOR : cur.party ? partyColor(cur.party) : "#7d6b55";
+    const plate = cur.role === "narrator" ? "" : `<div class="cut st-name ${side}" style="--bg:${color};--bd:${color}">${esc(cur.name)}${cur.label && cur.label !== cur.name ? `<small>${esc(cur.label)}</small>` : ""}</div>`;
+    bottom = `${plate}<div class="cut st-talk${cur.role === "narrator" ? " st-narr" : ""}" data-action="story-next"><p>${esc(cur.text)}</p><span class="st-hint">押すと次へ（${v.line + 1} / ${scene.lines.length}）</span><span class="st-next">▼</span></div>`;
+  } else {
+    const last = scene.lines[scene.lines.length - 1];
+    const choices = scene.choices
+      .map((c, i) => {
+        const tags = mode === "pro" && c.tags.length ? `<span class="st-tags">${c.tags.map((t) => `<span class="cut">${esc(t)}</span>`).join("")}</span>` : "";
+        return `<button class="st-choice${v.selected === i ? " sel" : ""}" data-story-choice="${i}"><span class="st-label">${esc(c.label)}</span>${tags}${v.selected === i ? `<span class="st-again">もう一度押すと決定</span>` : ""}</button>`;
+      })
+      .join("");
+    bottom = `<div class="st-choices"><div class="cut st-q">${esc(last.text)}</div>${choices}</div>`;
+  }
+  const history = v.history
+    ? `<div class="st-history" data-action="story-history"><div class="cut st-history-box" data-stop><h3>会話の履歴</h3>${scene.lines
+        .slice(0, Math.min(v.line + 1, scene.lines.length))
+        .map((l) => `<p>${l.name ? `<b>${esc(l.name)}</b>` : ""}${esc(l.text)}</p>`)
+        .join("")}<button class="btn wide" data-action="story-history">閉じる</button></div></div>`
+    : "";
+  return `<div class="story-screen" role="dialog" aria-modal="true" aria-label="物語">
+    <div class="st-scene bg-${esc(scene.bg)}"><div class="st-bg"></div><div class="st-dim${atChoice ? " deep" : ""}"></div>${head}${stage}${bottom}</div>
+    <aside class="st-side"><section class="cut st-side-box"><h4>物語</h4><p class="st-big">${esc(scene.title)}</p><p><span>章</span><b>${chapterText}</b></p></section>${storyBondPanel(state, scene)}</aside>
+    ${history}</div>`;
+}
+
+/** 選んだあとの結果（動いた数値の札と、物語が終わったときは結末） */
+export function storyResultView(r: { title: string; label: string; result: string; changes: string[]; ending?: { title: string; text: string } }): string {
+  const tag = (c: string) => `<span class="cut change-tag ${/間柄/.test(c) ? "bond" : /[-−]|下がった/.test(c) ? "down" : "up"}">${esc(c)}</span>`;
+  return `<div class="story-screen"><div class="st-scene"><div class="st-bg"></div><div class="st-dim deep"></div>
+    <div class="cut st-result"><small class="muted">物語「${esc(r.title)}」</small><h3>${esc(r.label)}</h3><p>${esc(r.result)}</p>
+      ${r.changes.length ? `<p class="change-tags">${r.changes.map(tag).join("")}</p>` : ""}
+      ${r.ending ? `<div class="cut st-ending"><small>結末</small><b>${esc(r.ending.title)}</b><p>${esc(r.ending.text)}</p></div>` : ""}
+      <button class="btn primary wide" data-action="story-result-close">${r.ending ? "物語を閉じる" : "次へ"}</button></div></div></div>`;
+}
+
+/** 人物の詳しい情報に出す、自分との関係（ライバル、同期、先輩のとき） */
+function bondLine(state: CareerState, id: number): string {
+  const b = bondWith(state.bonds, id);
+  if (!b) return "";
+  return `<p class="cut d-bond"><b>${b.role ? esc(BOND_ROLE_NAMES[b.role]) : "知り合い"}</b>あなたとの関係 ${b.value > 0 ? "+" : ""}${b.value}（${bondWord(b.value)}）${b.tag ? `・間柄「${esc(b.tag)}」` : ""}</p>`;
 }

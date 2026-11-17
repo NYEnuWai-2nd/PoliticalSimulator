@@ -6,7 +6,7 @@ import exclusion from "../../data/names/exclude_real_politicians.json";
 import type { NameData } from "../data/nameData.js";
 import { createWorld } from "./roster.js";
 import { formInitialGovernment } from "./cabinet.js";
-import { chooseEvent, isOppositionLeader, oppAction, oppositionLineup, raceForecast, shadowCabinet, startCareer, startOptions, takeTurn } from "./career.js";
+import { chooseEvent, chooseStory, isOppositionLeader, oppAction, oppositionLineup, raceForecast, shadowCabinet, startCareer, startOptions, takeTurn } from "./career.js";
 import { applyPacts, countNoConfidence, initialCooperation, pactTransfer } from "./opposition.js";
 
 const data = { surnames, givenNames, exclusion } as unknown as NameData;
@@ -24,6 +24,7 @@ async function minkenLeader(seed = 4) {
 
 async function nextMonth(state: Awaited<ReturnType<typeof minkenLeader>>["state"], world: Awaited<ReturnType<typeof minkenLeader>>["world"]) {
   if (state.pendingEvent) chooseEvent(state, world, 0);
+  if (state.pendingStory) chooseStory(state, world, 0);
   await takeTurn(state, world, "rest");
 }
 
