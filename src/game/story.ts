@@ -88,6 +88,8 @@ export interface StoryEnding {
   title: string;
   text: string;
   effects?: StoryEffects;
+  /** 何度でも起きる物語の、2回目からの題と文 */
+  again?: { title: string; text: string };
 }
 
 export interface Story {
@@ -513,7 +515,8 @@ export function advance(ctx: StoryContext, pending: PendingStory, choice: StoryC
   const ending = st.endings.find((e) => e.id === outcome.next);
   if (ending) {
     ctx.story.done[st.id] = ending.id;
-    return ending;
+    // 2回目からは、言い換えた題と文を使う
+    return (ctx.story.count?.[st.id] ?? 1) > 1 && ending.again ? { ...ending, ...ending.again } : ending;
   }
   if (st.chapters.some((c) => c.id === outcome.next)) ctx.story.active.push(schedule(ctx, st, outcome.next));
   else ctx.story.done[st.id] = "";

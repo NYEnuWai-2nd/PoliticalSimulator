@@ -102,7 +102,9 @@ export function setupView(roster: Member[], c: SetupChoice, step: number, saved?
   } else if (step === 1) {
     title = "政党を選ぶ";
     const seated = PARTIES.filter((p) => !p.is_independent && roster.some((m) => m.party === p.id));
-    body = `<div class="options cols-2">${seated
+    const indep = roster.filter((m) => partyById(m.party).is_independent).length;
+    const seatNote = `<p class="muted step-note">定数${roster.length}・過半数${MAJORITY}。開始時点は与党（民政党・公正党）が過半数に届かない少数与党。${indep ? `ほかに無所属${indep}人。` : ""}</p>`;
+    body = `${seatNote}<div class="options cols-2">${seated
       .map((p) => `<button class="option${c.party === p.id ? " is-active" : ""}" data-setup="party" data-value="${p.id}"><b>${chip(p.id)} ${esc(p.short)} ${p.id === INITIAL_RULING.party || INITIAL_RULING.partners.includes(p.id) ? '<span class="side-badge ruling">与党</span>' : '<span class="side-badge">野党</span>'}</b><small>${esc(p.name)}・${roster.filter((m) => m.party === p.id).length}議席</small><span class="lean-tags">${partyLean(p).split("・").map((t) => `<span class="lean-tag">${esc(t)}</span>`).join("")}</span></button>`)
       .join("")}</div>`;
   } else if (step === 2) {

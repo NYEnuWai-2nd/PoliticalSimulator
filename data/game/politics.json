@@ -1,10 +1,13 @@
 {
   "note": "政局の数値（試作用の仮の値）。連立の組み直し、党首選、首相の辞任、役職ごとの公務。",
   "coalition": {
-    "note": "連立の組み方。中心の党（第一党か、今の与党の第一党）から思想の距離が max_partner_distance 以内の党を、最大 max_partners 党まで足した組み合わせのうち、過半数に届くものを選ぶ（加わる党が少ない → 第一党が中心 → 思想の幅が狭い → 過半数を超えすぎない、の順）。2026-11-17に、近い党から順に足す形から改めた（中規模の党に声がかからなかったため。Muse のレポート）。 junior_share：連立相手は中心の党の議席のこの倍より少ない党に限る（対立する大政党どうしの大連立はつくらない）。",
+    "note": "連立の組み方。中心の党（第一党か、今の与党の第一党）から思想の距離が max_partner_distance 以内の党を、最大 max_partners 党まで足した組み合わせのうち、過半数に届くものを選ぶ（加わる党が少ない → 第一党が中心 → 思想の幅が狭い → 過半数を超えすぎない、の順）。2026-11-17に、近い党から順に足す形から改めた（中規模の党に声がかからなかったため。Muse のレポート）。 junior_share：連立相手は中心の党の議席のこの倍より少ない党に限る（対立する大政党どうしの大連立はつくらない）。 第一党を中心にしても今の与党に足しても過半数に届かないときは、議席の多い順に anti_bases 党までを中心に、最大 anti_max_partners 党を足した「第一党を除いた連合」も作る（党どうしの思想の幅は anti_max_spread まで）。この連合の首相は、連合の中で思想の距離の合計（議席で重み付け）が最も小さい党から出す（1993年の非自民連立の型）。",
     "max_partner_distance": 2.5,
     "max_partners": 3,
-    "junior_share": 0.5
+    "junior_share": 0.5,
+    "anti_bases": 3,
+    "anti_max_partners": 6,
+    "anti_max_spread": 3.2
   },
   "leader": {
     "note": "党首選。score は党首の点数の重み。各議員は（点数 ÷ score_divisor − 思想の差 × ideology_weight + 揺らぎ）が最も高い候補に入れる。term_months は与党の党首の任期。プレイヤーは当選 min_terms 回以上で、党の幹部との関係が min_party_relation 以上なら立候補できる。 現職の党首には incumbent_bonus に (内閣支持率 − 35) × incumbent_approval_weight を足す（与党のとき）。党首は連続 term_limit 期まで。 プレイヤーは生涯で term_limit 期まで（返り咲いても通算で数える）。",
@@ -101,11 +104,23 @@
     }
   },
   "fatigue": {
-    "note": "長期政権の疲れ。与党が政権に就いて n 年たつと、内閣支持率が戻っていく基準の値が min(cap, n × per_year) だけ下がる。政権交代で0に戻る。開始時点の与党は initial_years 年たっているものとする。 さらに同じ首相が n 年続くと n × pm_per_year 下がる（合計で total_cap まで）。",
+    "note": "長期政権の疲れ。与党が政権に就いて n 年たつと、内閣支持率が戻っていく基準の値が min(cap, n × per_year) だけ下がる。政権交代で0に戻る。開始時点の与党は initial_years 年たっているものとする。 さらに同じ首相が n 年続くと n × pm_per_year 下がる（合計で total_cap まで）。 首相の短命：同じ政権のまま、直近 turnover_years 年に首相が2回以上替わると、2回目から1回ごとに turnover_per_change 下がる（2007〜2009年のように、首相が1年ずつ替わると逆風が強まる）。政権交代で0に戻る。",
     "per_year": 0.8,
     "cap": 10,
     "initial_years": 6,
     "pm_per_year": 0.7,
-    "total_cap": 14
+    "total_cap": 14,
+    "turnover_per_change": 2.5,
+    "turnover_years": 4
+  },
+  "breakup": {
+    "note": "任期の途中の連立の崩れ。毎月、連立相手ごとに base の確率で連立を抜けるかを見る。内閣支持率が approval_line を下回ると (approval_line − 支持率) × per_approval を足し、連立の党の数が多いほど（3党目から1党ごとに）per_extra_party を足す。第一党を除いた連合なら anti_mult 倍。総選挙から min_months か月は抜けない。抜けたあとの与党の議席が過半数の recompose_ratio 倍を下回ると、総選挙を待たずに連立を組み直す（政権交代もありうる。1994年の自社さ連立の型）。",
+    "base": 0.0004,
+    "approval_line": 30,
+    "per_approval": 0.0003,
+    "per_extra_party": 0.001,
+    "anti_mult": 2.5,
+    "min_months": 6,
+    "recompose_ratio": 0.85
   }
 }

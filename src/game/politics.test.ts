@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import politicsRaw from "../../data/game/politics.json";
 import surnames from "../../data/names/surnames.json";
 import givenNames from "../../data/names/given_names.json";
 import exclusion from "../../data/names/exclude_real_politicians.json";
@@ -6,7 +7,7 @@ import type { NameData } from "../data/nameData.js";
 import { createWorld } from "./roster.js";
 import type { Member } from "./roster.js";
 import { formGovernment, formInitialGovernment, INITIAL_RULING, rulingOf } from "./cabinet.js";
-import { formCoalition, leaderElection, pickLeader, seatsOf } from "./politics.js";
+import { centerLed, formCoalition, isAntiCoalition, leaderElection, pickLeader, seatsOf } from "./politics.js";
 import { HOUSE_SEATS, MAJORITY } from "./districts.js";
 import { chooseEvent, chooseStory, govAction, isPrimeMinister, startCareer, startOptions, takeTurn } from "./career.js";
 
@@ -152,5 +153,58 @@ describe("連立の組み方（最小勝利連合）", () => {
     const gov = formGovernment(r, { ruling });
     for (const p of ruling.partners) expect(gov.some((a) => a.post.kind === "内閣" && a.member.party === p), p).toBe(true);
     expect(rulingOf(gov).partners.sort()).toEqual([...ruling.partners].sort());
+  });
+});
+
+describe("政権交代の型", () => {
+  function exact(roster: Member[], counts: Record<string, number>): Member[] {
+    const parties = Object.entries(counts).flatMap(([p, n]) => Array(n).fill(p) as string[]);
+    return roster.map((m, i) => ({ ...m, party: parties[i] ?? "independent" }));
+  }
+
+  it("第一党が過半数に届かず、ほかの党を束ねれば届くなら、第一党を除いた連合が政権を取る（首相は思想の真ん中の党）", async () => {
+    const { roster } = await createWorld(data, 1);
+    const r = exact(roster, { minsei: 140, kosei: 15, hoshu: 3, sankaku: 3, minken: 130, sasshin: 70, kyowa: 60, reimei: 9, shusan: 8, shahei: 1 });
+    const c = formCoalition(r, INITIAL_RULING);
+    const members = [c.ruling.party, ...c.ruling.partners];
+    expect(members).not.toContain("minsei");
+    expect(c.seats).toBeGreaterThanOrEqual(MAJORITY);
+    expect(c.changed).toBe(true);
+    expect(isAntiCoalition(r, c.ruling)).toBe(true);
+    // 首相の党は、連合の中で思想の距離の合計（議席で重み付け）が最も小さい党
+    expect(centerLed(r, c.ruling).party).toBe(c.ruling.party);
+  });
+
+  it("同じ政権のまま首相が続けて替わると、政権疲れが大きくなる", async () => {
+    const run = async (changes: number) => {
+      const { roster, factory } = await createWorld(data, 2);
+      const opt = startOptions(roster, "minsei", "newcomer").find((o) => o.route === "smd")!;
+      const { state, world } = await startCareer({ roster, government: formInitialGovernment(roster), factory }, { origin: "newcomer", party: "minsei", pref: opt.pref, route: "smd", archetype: "local" }, 2);
+      state.pmChanges = Array.from({ length: changes }, (_, i) => state.turn - i);
+      await takeTurn(state, world, "rest");
+      return state.gov.fatigue ?? 0;
+    };
+    expect(await run(3)).toBeGreaterThan(await run(0));
+  });
+
+  it("内閣支持率が低いと、任期の途中で連立相手が抜けることがある", async () => {
+    const { roster, factory } = await createWorld(data, 2);
+    const opt = startOptions(roster, "minken", "newcomer").find((o) => o.route === "smd")!;
+    const { state, world } = await startCareer({ roster, government: formInitialGovernment(roster), factory }, { origin: "newcomer", party: "minken", pref: opt.pref, route: "smd", archetype: "local" }, 2);
+    state.coalitionSince = -100;
+    // 確率を一時的に1にして、離脱が起きることだけを確かめる
+    const before = politicsRaw.breakup.base;
+    politicsRaw.breakup.base = 1;
+    for (let i = 0; i < 12 && !state.log.some((l) => l.text.includes("連立を離脱")); i++) {
+      state.gov.approval = 5;
+      if (state.pendingEvent) chooseEvent(state, world, 0);
+      if (state.pendingStory) chooseStory(state, world, 0);
+      await takeTurn(state, world, "rest");
+    }
+    politicsRaw.breakup.base = before;
+    expect(state.log.some((l) => l.text.includes("連立を離脱"))).toBe(true);
+    // 抜けた党は与党から外れ、閣僚も出していない
+    const leftParty = state.log.find((l) => l.text.includes("連立を離脱"))!.text.split("が連立を離脱")[0];
+    expect(leftParty.length).toBeGreaterThan(0);
   });
 });

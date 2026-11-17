@@ -79,7 +79,21 @@ export function formCoalition(roster: Member[], prev: Ruling): CoalitionResult {
     const pool = order.filter((p) => p !== base.party && !base.partners.includes(p) && seatsOf(roster, p) < limit && partyDistance(base.party, p) <= C.max_partner_distance);
     for (const add of subsets(pool, Math.max(0, C.max_partners - base.partners.length))) options.push({ party: base.party, partners: [...base.partners, ...add] });
   }
-  const winning = options.filter((r) => seats(r) >= MAJORITY);
+  let winning = options.filter((r) => seats(r) >= MAJORITY);
+  // 第一党を中心にしても、今の与党に足しても届かないときは、第一党を除いた連合を作る（1993年の非自民連立の型）
+  let anti = false;
+  if (!winning.length) {
+    for (const base of order.filter((p) => p !== leader).slice(0, C.anti_bases)) {
+      const pool = order.filter((p) => p !== leader && p !== base && seatsOf(roster, p) <= seatsOf(roster, base));
+      for (const add of subsets(pool, C.anti_max_partners)) {
+        const members = [base, ...add];
+        if (spreadOf(members) > C.anti_max_spread) continue;
+        const r = { party: base, partners: add };
+        if (seats(r) >= MAJORITY) winning.push(r);
+      }
+    }
+    if (winning.length) anti = true;
+  }
   let ruling: Ruling;
   if (winning.length) {
     const key = (r: Ruling) => [r.partners.length, r.party === leader ? 0 : 1, spreadOf([r.party, ...r.partners]), seats(r)];
@@ -94,12 +108,28 @@ export function formCoalition(roster: Member[], prev: Ruling): CoalitionResult {
     const fresh = options.filter((r) => r.party === leader).sort((x, y) => seats(y) - seats(x) || spreadOf([x.party, ...x.partners]) - spreadOf([y.party, ...y.partners]))[0] ?? { party: leader, partners: [] };
     ruling = keptAlive && seats(kept) >= seats(fresh) ? kept : fresh;
   }
+  // 第一党を除いた連合の首相は、連合の中で思想の真ん中にいる党から出す（議席の多い党とは限らない）
+  if (anti) ruling = centerLed(roster, ruling);
   const changed = ruling.party !== prev.party;
   const minority = seats(ruling) < MAJORITY ? "少数与党として" : "";
   const text = changed
     ? `政権交代。${describe(ruling)}が${minority}政権を担う（${seats(ruling)}議席）。`
     : `${describe(ruling)}が${minority}政権を続ける（${seats(ruling)}議席）。`;
   return { ruling, changed, seats: seats(ruling), text };
+}
+
+/** 連合の中で、ほかの党との思想の距離の合計（議席で重み付け）が最も小さい党を首相の党にする */
+export function centerLed(roster: Member[], r: Ruling): Ruling {
+  const members = [r.party, ...r.partners];
+  const cost = (p: string) => members.reduce((a, q) => a + partyDistance(p, q) * seatsOf(roster, q), 0);
+  const center = [...members].sort((a, b) => cost(a) - cost(b) || seatsOf(roster, b) - seatsOf(roster, a))[0];
+  return { party: center, partners: members.filter((p) => p !== center) };
+}
+
+/** 連立が第一党を除いた連合か（首相の党も第一党も政権の外） */
+export function isAntiCoalition(roster: Member[], r: Ruling): boolean {
+  const leader = partiesBySeats(roster)[0];
+  return r.party !== leader && !r.partners.includes(leader);
 }
 
 export function describe(r: Ruling): string {

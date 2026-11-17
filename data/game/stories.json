@@ -1,5 +1,5 @@
 {
-  "note": "物語の連作（設計は docs/design.md の5.6節）。中身は Gemini の案（docs/prompts/gemini_story_events_answer.md）を取り込み、口調と用語をそろえたもの。 start_chance は、毎月の終わりに始まる物語（trigger が monthly）が、条件を満たした月に始まる確率。after_election などの出来事で始まる物語は、条件を満たせば必ず始まる（同時に始まるのは1本）。 max_active は同時に進む物語の数の上限。grace_months は、章の起きる月を過ぎても条件を待つ月数（過ぎると fallback の結末で終わる）。 bond_effects は関係の札（間柄）の効果。monthly_exp は毎月の経験点、vote_bonus は総選挙の得票率に足すポイント、risk は能力の判定のしきい値の増減（負なら通りやすい）、leader_vote は党首選でプレイヤーに入れるか（for）、相手に入れるか（against）。 bond_ideas は Gemini の案の原文（参考）。rival_types はライバルの人物像の型（総選挙の一言に使う）。 election_bond_rules は、総選挙の結果などで人物との関係が自動で動く量（ライバルに大差・僅差で勝った／負けた、同期の落選と先の大臣就任、先輩の引退と落選、党首選で同期や先輩と争った）。big_margin（ポイント）以上の差を大差、close_margin 未満を僅差とする。election_bond_ideas はその案の原文。 物語の chance は始まる確率で、毎月の物語は条件を満たした月ごと（書かなければ start_chance）、何度でも起きる物語は2回目から（書かなければ必ず）。起きる時期の限られる物語（大臣、首相・与党の役員、野党の党首、引退が近い時期）は高めにしてある。出来事で始まる物語は、まだ起きていないものを先に選ぶ。",
+  "note": "物語の連作（設計は docs/design.md の5.6節）。中身は Gemini の案（docs/prompts/gemini_story_events_answer.md）を取り込み、口調と用語をそろえたもの。 start_chance は、毎月の終わりに始まる物語（trigger が monthly）が、条件を満たした月に始まる確率。after_election などの出来事で始まる物語は、条件を満たせば必ず始まる（同時に始まるのは1本）。 max_active は同時に進む物語の数の上限。grace_months は、章の起きる月を過ぎても条件を待つ月数（過ぎると fallback の結末で終わる）。 bond_effects は関係の札（間柄）の効果。monthly_exp は毎月の経験点、vote_bonus は総選挙の得票率に足すポイント、risk は能力の判定のしきい値の増減（負なら通りやすい）、leader_vote は党首選でプレイヤーに入れるか（for）、相手に入れるか（against）。 bond_ideas は Gemini の案の原文（参考）。rival_types はライバルの人物像の型（総選挙の一言に使う）。 election_bond_rules は、総選挙の結果などで人物との関係が自動で動く量（ライバルに大差・僅差で勝った／負けた、同期の落選と先の大臣就任、先輩の引退と落選、党首選で同期や先輩と争った）。big_margin（ポイント）以上の差を大差、close_margin 未満を僅差とする。election_bond_ideas はその案の原文。 物語の chance は始まる確率で、毎月の物語は条件を満たした月ごと（書かなければ start_chance）、何度でも起きる物語は2回目から（書かなければ必ず）。起きる時期の限られる物語（大臣、首相・与党の役員、野党の党首、引退が近い時期）は高めにしてある。出来事で始まる物語は、まだ起きていないものを先に選ぶ。 結末の again は、何度でも起きる物語の2回目からの題と文。",
   "start_chance": 0.05,
   "max_active": 2,
   "grace_months": 6,
@@ -6510,6 +6510,10 @@
               "election": 12,
               "media": 8
             }
+          },
+          "again": {
+            "title": "盤石の街頭",
+            "text": "何度目かの攻防で、駅前の常連から声をかけられるようになった。街頭はもう自分の場所だ。"
           }
         },
         {
@@ -6521,6 +6525,10 @@
             "relations": {
               "supporters": 5
             }
+          },
+          "again": {
+            "title": "根を張る",
+            "text": "相手が替わっても、地域の信頼は変わらなかった。積み上げてきたものが選挙区に根付いている。"
           }
         },
         {
@@ -6532,6 +6540,10 @@
               "election": 8
             },
             "mood": 1
+          },
+          "again": {
+            "title": "宿題の残る選挙",
+            "text": "またしても決め手を欠いた。同じ反省を繰り返さないよう、選挙のやり方を見直すことにした。"
           }
         },
         {

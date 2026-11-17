@@ -14,12 +14,12 @@ import { START_YEAR } from "./roster.js";
 import type { Appointment, Ruling } from "./cabinet.js";
 import { formGovernment } from "./cabinet.js";
 import politicsRaw from "../../data/game/politics.json";
-import { describe as describeRuling, formCoalition, leaderElection, pickLeader } from "./politics.js";
+import { describe as describeRuling, formCoalition, isAntiCoalition, leaderElection, pickLeader } from "./politics.js";
 import type { LeaderElection } from "./politics.js";
 import { ABILITIES, TABLES, centerOf } from "./tables.js";
 import type { Ability } from "./tables.js";
 import { partyById } from "./parties.js";
-import { DISTRICTS, PREF_CODES, districtById, districtName } from "./districts.js";
+import { DISTRICTS, MAJORITY as MAJORITY_SEATS, PREF_CODES, districtById, districtName } from "./districts.js";
 import type { DistrictId, PrefCode } from "./districts.js";
 import { PREFECTURES } from "../map/japanMap.js";
 import { BILLS, billName, createGame, endTurn, nemawashi, pressConference, startDrafting, submitBill, talkWithParty } from "./game.js";
@@ -255,6 +255,10 @@ export interface CareerState {
   rulingSince: number;
   /** 今の首相が就任した年（首相個人の疲れに使う） */
   pmSince: number;
+  /** 同じ政権のまま首相が替わったターン（首相の短命が続くときの逆風に使う。政権交代で空に戻る） */
+  pmChanges?: number[];
+  /** 最後に総選挙か連立の組み直しがあったターン（直後は連立が崩れない） */
+  coalitionSince?: number;
   /** プレイヤーが与党の党首を務めた期数の通算（生涯の上限に使う） */
   playerLeaderTerms: number;
   rngCounter: number;
@@ -534,7 +538,10 @@ function runLeaderElection(state: CareerState, world: CareerWorld, party: string
   if (isRuling) {
     state.leaderTermEnd = addMonths(state, PL.leader.term_months);
     state.leaderTermsServed = before === result.winner.id ? state.leaderTermsServed + 1 : 1;
-    if (before !== result.winner.id) state.pmSince = state.year;
+    if (before !== result.winner.id) {
+      state.pmSince = state.year;
+      state.pmChanges = [...(state.pmChanges ?? []), state.turn];
+    }
     if (result.winner.id === world.player.id) state.playerLeaderTerms++;
     if (termLimited) logGov(state, "首相は党首の任期の上限に達し、退いた。");
     if (rebuild) {
@@ -551,7 +558,10 @@ function fatigueOf(state: CareerState): number {
   const F = PL.fatigue;
   const party = Math.min(F.cap, Math.max(0, state.year - state.rulingSince) * F.per_year);
   const pm = Math.max(0, state.year - state.pmSince) * F.pm_per_year;
-  return Math.min(F.total_cap, party + pm);
+  // 首相の短命：同じ政権のまま、直近の数年に首相が2回以上替わると逆風が強まる
+  const recent = (state.pmChanges ?? []).filter((t) => state.turn - t < F.turnover_years * 12).length;
+  const turnover = Math.max(0, recent - 1) * F.turnover_per_change;
+  return Math.min(F.total_cap, party + pm + turnover);
 }
 
 function addMonths(s: Pick<CareerState, "year" | "month">, n: number): { year: number; month: number } {
@@ -1553,6 +1563,8 @@ async function endMonth(state: CareerState, world: CareerWorld): Promise<void> {
       runLeaderElection(state, world, g.ruling.party, "首相の辞任", true);
     }
   }
+  // 任期の途中の連立の崩れ（連立相手が抜ける。与党が大きく割れれば、総選挙を待たずに連立を組み直す）
+  if (!dissolve && !termEnded) coalitionBreakup(state, world);
   // 与党の党首の任期満了
   if (!dissolve && !termEnded && reached(state, state.leaderTermEnd)) runLeaderElection(state, world, g.ruling.party, "任期満了", true);
   if (state.dissolveRequested) {
@@ -1702,10 +1714,12 @@ async function holdElection(state: CareerState, world: CareerWorld): Promise<voi
     state.leaderTermsServed = 1;
     state.rulingSince = state.year;
     state.pmSince = state.year;
+    state.pmChanges = [];
     if (state.leaders[coalition.ruling.party] === world.player.id) state.playerLeaderTerms++;
     const pmName = world.roster.find((m) => m.id === state.leaders[coalition.ruling.party])?.name.displayName ?? "";
     logGov(state, `${describeRuling(coalition.ruling)}の${coalition.ruling.partners.length ? "連立政権" : "単独政権"}が発足し、${pmName}が首相に就いた。`);
   }
+  state.coalitionSince = state.turn;
   // 内閣を組み直す。プレイヤーが役職に就くこともある
   rebuildGovernment(state, world, coalition.ruling);
   state.gov = createGame(state.seed + state.elections.length * 7919, { roster: world.roster, government: world.government }, {
@@ -1721,6 +1735,48 @@ async function holdElection(state: CareerState, world: CareerWorld): Promise<voi
   state.govLogCopied = state.gov.log.length;
   if (me && me.terms === 1) startStoriesAndLog(state, world, "first_win");
   startStoriesAndLog(state, world, "after_election");
+}
+
+/**
+ * 任期の途中の連立の崩れ（data/game/politics.json の breakup）。内閣支持率が低いほど、連立の党が多いほど、
+ * 第一党を除いた連合ほど、連立相手が抜けやすい。抜けたあとの与党が過半数から大きく足りなければ、
+ * 総選挙を待たずに連立を組み直す（2010年の連立離脱、1994年の連立の組み替えの型）
+ */
+function coalitionBreakup(state: CareerState, world: CareerWorld): void {
+  const B = PL.breakup;
+  const g = state.gov;
+  if (!g.ruling.partners.length || state.turn - (state.coalitionSince ?? 0) < B.min_months) return;
+  // プレイヤーが首相のときは、プレイヤーの政権の連立は崩さない（崩れるかどうかは協議で自分が守る）
+  if (isPrimeMinister(state, world)) return;
+  const anti = isAntiCoalition(world.roster, g.ruling);
+  const parties = 1 + g.ruling.partners.length;
+  const chance =
+    (B.base + Math.max(0, B.approval_line - g.approval) * B.per_approval + Math.max(0, parties - 2) * B.per_extra_party) * (anti ? B.anti_mult : 1);
+  const leaving = g.ruling.partners.find(() => rand(state) < chance);
+  if (!leaving) return;
+  const ruling = { party: g.ruling.party, partners: g.ruling.partners.filter((p) => p !== leaving) };
+  const seats = world.roster.filter((m) => m.party === ruling.party || ruling.partners.includes(m.party)).length;
+  logGov(state, `${partyById(leaving).short}が連立を離脱した（内閣支持率${g.approval}%）。与党は${seats}議席になった。`, "major");
+  state.coalitionSince = state.turn;
+  if (seats >= MAJORITY_SEATS * PL.breakup.recompose_ratio) {
+    g.ruling = ruling;
+    rebuildGovernment(state, world, ruling);
+    return;
+  }
+  // 与党が大きく割れたので、総選挙を待たずに連立を組み直す
+  const coalition = formCoalition(world.roster, ruling);
+  g.ruling = coalition.ruling;
+  for (const party of Object.keys(state.leaders)) if (!world.roster.some((m) => m.party === party)) delete state.leaders[party];
+  if (coalition.changed) {
+    logGov(state, `連立の組み直しで${coalition.text}`, "major");
+    state.leaderTermEnd = addMonths(state, PL.leader.term_months);
+    state.leaderTermsServed = 1;
+    state.rulingSince = state.year;
+    state.pmSince = state.year;
+    state.pmChanges = [];
+    if (state.leaders[coalition.ruling.party] === world.player.id) state.playerLeaderTerms++;
+  } else logGov(state, coalition.text);
+  rebuildGovernment(state, world, coalition.ruling);
 }
 
 /** 政権の記録のうち新しいものを、政局の記録として自分の記録に写す（総選挙で政権の状態が作り直されても残るように） */
