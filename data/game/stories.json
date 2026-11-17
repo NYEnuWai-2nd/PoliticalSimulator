@@ -1,5 +1,5 @@
 {
-  "note": "物語の連作（設計は docs/design.md の5.6節）。中身は Gemini の案（docs/prompts/gemini_story_events_answer.md）を取り込み、口調と用語をそろえたもの。 start_chance は、毎月の終わりに始まる物語（trigger が monthly）が、条件を満たした月に始まる確率。after_election などの出来事で始まる物語は、条件を満たせば必ず始まる（同時に始まるのは1本）。 max_active は同時に進む物語の数の上限。grace_months は、章の起きる月を過ぎても条件を待つ月数（過ぎると fallback の結末で終わる）。 bond_effects は関係の札（間柄）の効果。monthly_exp は毎月の経験点、vote_bonus は総選挙の得票率に足すポイント、risk は能力の判定のしきい値の増減（負なら通りやすい）、leader_vote は党首選でプレイヤーに入れるか（for）、相手に入れるか（against）。 bond_ideas は Gemini の案の原文（参考）。rival_types はライバルの人物像の型（総選挙の一言に使う）。 election_bond_rules は、総選挙の結果などで人物との関係が自動で動く量（ライバルに大差・僅差で勝った／負けた、同期の落選と先の大臣就任、先輩の引退と落選、党首選で同期や先輩と争った）。big_margin（ポイント）以上の差を大差、close_margin 未満を僅差とする。election_bond_ideas はその案の原文。 物語の chance は始まる確率で、毎月の物語は条件を満たした月ごと（書かなければ start_chance）、何度でも起きる物語は2回目から（書かなければ必ず）。起きる時期の限られる物語（大臣、首相・与党の役員、野党の党首、引退が近い時期）は高めにしてある。出来事で始まる物語は、まだ起きていないものを先に選ぶ。 結末の again は、何度でも起きる物語の2回目からの題と文。",
+  "note": "物語の連作（設計は docs/design.md の5.6節）。中身は Gemini の案（docs/prompts/gemini_story_events_answer.md）を取り込み、口調と用語をそろえたもの。 start_chance は、毎月の終わりに始まる物語（trigger が monthly）が、条件を満たした月に始まる確率。after_election などの出来事で始まる物語は、条件を満たせば必ず始まる（同時に始まるのは1本）。 max_active は同時に進む物語の数の上限。grace_months は、章の起きる月を過ぎても条件を待つ月数（過ぎると fallback の結末で終わる）。 bond_effects は関係の札（間柄）の効果。monthly_exp は毎月の経験点、vote_bonus は総選挙の得票率に足すポイント、risk は能力の判定のしきい値の増減（負なら通りやすい）、leader_vote は党首選でプレイヤーに入れるか（for）、相手に入れるか（against）。 bond_ideas は Gemini の案の原文（参考）。rival_types はライバルの人物像の型（総選挙の一言に使う）。 election_bond_rules は、総選挙の結果などで人物との関係が自動で動く量（ライバルに大差・僅差で勝った／負けた、同期の落選と先の大臣就任、先輩の引退と落選、党首選で同期や先輩と争った）。big_margin（ポイント）以上の差を大差、close_margin 未満を僅差とする。election_bond_ideas はその案の原文。 物語の chance は始まる確率で、毎月の物語は条件を満たした月ごと（書かなければ start_chance）、何度でも起きる物語は2回目から（書かなければ必ず）。起きる時期の限られる物語（大臣、首相・与党の役員、野党の党首、引退が近い時期）は高めにしてある。出来事で始まる物語は、まだ起きていないものを先に選ぶ。 結末の again は、何度でも起きる物語の2回目からの題と文。 trigger が decision の物語は自動では始まらず、career.ts が判断の場面として出す（連立の誘い、首相の座、連合の呼びかけ）。効果の coalition は政権に当てる判断（join 加わる、outside 閣外協力、decline 断る、pm_accept 首相を引き受ける、pm_yield 譲る、call 連合を呼びかける）。文の {lead_party} は第一党、{alt} は連合の顔ぶれ。",
   "start_chance": 0.05,
   "max_active": 2,
   "grace_months": 6,
@@ -6558,6 +6558,375 @@
         }
       ],
       "chance": 0.4
+    },
+    {
+      "id": "coalition_offer",
+      "title": "連立への誘い",
+      "summary": "総選挙のあと、第一党から連立政権への参加を求められる。加わる、閣外から協力する、断る、のどれかを選ぶ（判断の場面）。",
+      "cast": [
+        "secretary"
+      ],
+      "once": false,
+      "start": {
+        "trigger": "decision"
+      },
+      "chapters": [
+        {
+          "id": "c1",
+          "bg": "party_hq",
+          "after_months": [
+            0,
+            0
+          ],
+          "lines": [
+            {
+              "speaker": "narrator",
+              "text": "総選挙の結果を受けて、{lead_party}から連立政権への参加を求める申し入れが届いた。"
+            },
+            {
+              "speaker": "secretary",
+              "text": "先生、{lead_party}の幹事長が会談を求めています。閣僚のポストも用意すると言っています。"
+            },
+            {
+              "speaker": "self",
+              "text": "こちらの政策をどこまで受け入れさせられるかが問題だ。"
+            },
+            {
+              "speaker": "secretary",
+              "text": "閣外から協力する道もあります。閣僚は出しませんが、法案ごとに賛否を決められます。"
+            }
+          ],
+          "choices": [
+            {
+              "label": "連立に加わる",
+              "result": "政策の合意文書に署名し、党から閣僚を出すことになった。",
+              "effects": {
+                "coalition": "join",
+                "relations": {
+                  "party": 5
+                }
+              },
+              "next": "end_join"
+            },
+            {
+              "label": "閣外から協力する",
+              "result": "閣僚は出さず、予算などの大事な法案で協力すると約束した。",
+              "effects": {
+                "coalition": "outside",
+                "relations": {
+                  "press": 3
+                }
+              },
+              "next": "end_outside"
+            },
+            {
+              "label": "申し入れを断る",
+              "result": "党の主張を曲げられないとして、申し入れを断った。",
+              "effects": {
+                "coalition": "decline",
+                "relations": {
+                  "supporters": 3,
+                  "party": -3
+                }
+              },
+              "next": "end_decline"
+            }
+          ]
+        }
+      ],
+      "endings": [
+        {
+          "id": "end_join",
+          "title": "連立政権の一員に",
+          "text": "党は政権に加わった。閣僚として政策を形にできるが、政権の失敗の責任も負う。"
+        },
+        {
+          "id": "end_outside",
+          "title": "閣外協力",
+          "text": "政権の外から協力する立場を選んだ。是々非々の姿勢が、どこまで通るかが試される。"
+        },
+        {
+          "id": "end_decline",
+          "title": "野党の道",
+          "text": "連立への参加を断った。政権はほかの党と組むことになった。"
+        }
+      ]
+    },
+    {
+      "id": "coalition_pm",
+      "title": "首相の座",
+      "summary": "第一党を除いた連合で、自分の党が思想の真ん中にいるため、首相に推される。引き受けるか、ほかの党に譲るかを選ぶ（判断の場面）。",
+      "cast": [
+        "secretary"
+      ],
+      "once": false,
+      "start": {
+        "trigger": "decision"
+      },
+      "chapters": [
+        {
+          "id": "c1",
+          "bg": "party_hq",
+          "after_months": [
+            0,
+            0
+          ],
+          "lines": [
+            {
+              "speaker": "narrator",
+              "text": "第一党を除いた各党の協議は、連合の首相に{self}を推す方向でまとまりつつある。"
+            },
+            {
+              "speaker": "secretary",
+              "text": "先生、各党の幹部は、どの党とも話ができる先生の立場を買っています。"
+            },
+            {
+              "speaker": "self",
+              "text": "議席の少ない党の党首が、政権を率いることになる。"
+            },
+            {
+              "speaker": "secretary",
+              "text": "首相を引き受ければ、連合をまとめる責任も負います。大きな党に譲る手もあります。"
+            }
+          ],
+          "choices": [
+            {
+              "label": "首相を引き受ける",
+              "result": "各党の党首と握手を交わし、連合の首相を引き受けた。",
+              "effects": {
+                "coalition": "pm_accept",
+                "relations": {
+                  "press": 5
+                },
+                "exp": {
+                  "media": 10
+                }
+              },
+              "next": "end_accept"
+            },
+            {
+              "label": "首相は別の党に譲る",
+              "result": "連合の安定を優先し、首相の座をほかの党に譲った。",
+              "effects": {
+                "coalition": "pm_yield",
+                "relations": {
+                  "party": 5
+                },
+                "exp": {
+                  "network": 10
+                }
+              },
+              "next": "end_yield"
+            }
+          ]
+        }
+      ],
+      "endings": [
+        {
+          "id": "end_accept",
+          "title": "連合の首相",
+          "text": "議席の少ない党から首相が生まれた。思想の違う党をまとめ続けられるかが問われる。"
+        },
+        {
+          "id": "end_yield",
+          "title": "連合の要",
+          "text": "首相の座は譲ったが、連合の真ん中で各党をつなぐ役を担うことになった。"
+        }
+      ]
+    },
+    {
+      "id": "coalition_call",
+      "title": "連合の呼びかけ",
+      "summary": "与党が少数与党になり、第一党を除いた各党で過半数に届く。野党の党首として各党に呼びかけるかを選ぶ（判断の場面。調整の判定がやや易しい）。",
+      "cast": [
+        "secretary"
+      ],
+      "once": false,
+      "start": {
+        "trigger": "decision"
+      },
+      "chapters": [
+        {
+          "id": "c1",
+          "bg": "party_hq",
+          "after_months": [
+            0,
+            0
+          ],
+          "lines": [
+            {
+              "speaker": "narrator",
+              "text": "総選挙の結果、第一党の{lead_party}を中心にした政権は、過半数に届かないか、届いてもわずかな差になった。"
+            },
+            {
+              "speaker": "secretary",
+              "text": "先生、第一党を除いた各党の議席を足すと、過半数を超えます。{alt}で組めば、政権を取れるかもしれません。"
+            },
+            {
+              "speaker": "self",
+              "text": "思想の違う党を束ねることになる。まとめ切れなければ、すぐに崩れるだろう。"
+            },
+            {
+              "speaker": "secretary",
+              "text": "呼びかけるなら、今夜のうちに各党の党首に電話を入れる必要があります。"
+            }
+          ],
+          "choices": [
+            {
+              "label": "各党に連合を呼びかける",
+              "result": "夜を徹した電話の末、各党の党首が首を縦に振った。",
+              "effects": {
+                "coalition": "call",
+                "relations": {
+                  "party": 5
+                },
+                "exp": {
+                  "network": 15
+                }
+              },
+              "risk": {
+                "ability": "調整",
+                "threshold": 50,
+                "fail_result": "いくつかの党が首を縦に振らず、呼びかけは実らなかった。",
+                "fail_effects": {
+                  "relations": {
+                    "party": -5
+                  },
+                  "exp": {
+                    "network": 8
+                  }
+                },
+                "fail_next": "end_fail"
+              },
+              "next": "end_call"
+            },
+            {
+              "label": "今回は見送る",
+              "result": "寄せ集めの政権は長く続かないと考え、野党として力を蓄えることにした。",
+              "effects": {
+                "exp": {
+                  "policy": 8
+                }
+              },
+              "next": "end_pass"
+            }
+          ]
+        }
+      ],
+      "endings": [
+        {
+          "id": "end_call",
+          "title": "非第一党の連合",
+          "text": "第一党を除いた連合が政権を担うことになった。束ねた党をまとめ続けられるかが問われる。"
+        },
+        {
+          "id": "end_fail",
+          "title": "幻の連合",
+          "text": "連合の構想は表に出る前に崩れた。各党の党首との間には、気まずさが残った。"
+        },
+        {
+          "id": "end_pass",
+          "title": "力を蓄える",
+          "text": "政権を取りにいくのは見送った。次の総選挙で、党の議席を伸ばすことを目指す。"
+        }
+      ]
+    },
+    {
+      "id": "coalition_call_hard",
+      "title": "連合の呼びかけ",
+      "summary": "与党は過半数を保っているが、第一党を除いた各党で過半数に届く。野党の党首として各党に呼びかけるかを選ぶ（判断の場面。調整の判定が難しい）。",
+      "cast": [
+        "secretary"
+      ],
+      "once": false,
+      "start": {
+        "trigger": "decision"
+      },
+      "chapters": [
+        {
+          "id": "c1",
+          "bg": "party_hq",
+          "after_months": [
+            0,
+            0
+          ],
+          "lines": [
+            {
+              "speaker": "narrator",
+              "text": "総選挙の結果、第一党の{lead_party}を中心にした政権は、過半数に届かないか、届いてもわずかな差になった。"
+            },
+            {
+              "speaker": "secretary",
+              "text": "先生、第一党を除いた各党の議席を足すと、過半数を超えます。{alt}で組めば、政権を取れるかもしれません。"
+            },
+            {
+              "speaker": "self",
+              "text": "思想の違う党を束ねることになる。まとめ切れなければ、すぐに崩れるだろう。"
+            },
+            {
+              "speaker": "secretary",
+              "text": "呼びかけるなら、今夜のうちに各党の党首に電話を入れる必要があります。"
+            }
+          ],
+          "choices": [
+            {
+              "label": "各党に連合を呼びかける",
+              "result": "夜を徹した電話の末、各党の党首が首を縦に振った。",
+              "effects": {
+                "coalition": "call",
+                "relations": {
+                  "party": 5
+                },
+                "exp": {
+                  "network": 15
+                }
+              },
+              "risk": {
+                "ability": "調整",
+                "threshold": 70,
+                "fail_result": "いくつかの党が首を縦に振らず、呼びかけは実らなかった。",
+                "fail_effects": {
+                  "relations": {
+                    "party": -5
+                  },
+                  "exp": {
+                    "network": 8
+                  }
+                },
+                "fail_next": "end_fail"
+              },
+              "next": "end_call"
+            },
+            {
+              "label": "今回は見送る",
+              "result": "寄せ集めの政権は長く続かないと考え、野党として力を蓄えることにした。",
+              "effects": {
+                "exp": {
+                  "policy": 8
+                }
+              },
+              "next": "end_pass"
+            }
+          ]
+        }
+      ],
+      "endings": [
+        {
+          "id": "end_call",
+          "title": "非第一党の連合",
+          "text": "第一党を除いた連合が政権を担うことになった。束ねた党をまとめ続けられるかが問われる。"
+        },
+        {
+          "id": "end_fail",
+          "title": "幻の連合",
+          "text": "連合の構想は表に出る前に崩れた。各党の党首との間には、気まずさが残った。"
+        },
+        {
+          "id": "end_pass",
+          "title": "力を蓄える",
+          "text": "政権を取りにいくのは見送った。次の総選挙で、党の議席を伸ばすことを目指す。"
+        }
+      ]
     }
   ],
   "election_bond_rules": {

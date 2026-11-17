@@ -118,9 +118,12 @@ export function setupView(roster: Member[], c: SetupChoice, step: number, saved?
       successor: "引退する自党の現職の後継。党の票はあるが地盤は1から",
       pr: "比例名簿。党務で党の幹部との関係を上げて上位を狙う",
     };
+    // 小選挙区の地盤が薄い党（公正党、集産党、れいめいなど）には、比例単独をすすめる
+    const smdSeats = roster.filter((m) => m.party === c.party && m.seat === "小選挙区").length;
+    const thinSmd = smdSeats < 5;
     body = `<div class="route-tabs">${routes
       .map((r) => `<button class="btn small${r === route ? " is-active" : ""}" data-setup="route" data-value="${r}">${ROUTE_NAMES[r]}</button>`)
-      .join("")}</div><p class="muted step-note">${esc(routeNote[route])}</p>
+      .join("")}</div><p class="muted step-note">${esc(routeNote[route])}</p>${thinSmd && route !== "pr" && routes.includes("pr") ? `<p class="cut warn-note">この党は小選挙区の議席が少なく（今は${smdSeats}議席）、小選挙区で勝つのは難しい。初めは「比例単独」で出るほうが当選しやすい。</p>` : ""}
       ${opened ? districtList(opts.filter((o) => o.route === route && o.pref === opened), c, route) : prefList(opts.filter((o) => o.route === route), c, route)}`;
   } else if (step === 3) {
     title = "経歴を選ぶ";

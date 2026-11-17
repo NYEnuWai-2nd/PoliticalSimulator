@@ -2228,3 +2228,6 @@
   .st-name.right { right: 44px; }
   .st-choices { left: 40px; right: 40px; max-width: 820px; }
 }
+
+/* 始め方：小選挙区の地盤が薄い党への案内 */
+.warn-note { --c: 6px; --bg: #fff8e1; --bd: #e0a100; padding: 6px 12px; margin: 4px 0 8px; font-size: 13px; color: #6b4a00; }

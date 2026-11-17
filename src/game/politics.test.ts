@@ -7,9 +7,9 @@ import type { NameData } from "../data/nameData.js";
 import { createWorld } from "./roster.js";
 import type { Member } from "./roster.js";
 import { formGovernment, formInitialGovernment, INITIAL_RULING, rulingOf } from "./cabinet.js";
-import { centerLed, formCoalition, isAntiCoalition, leaderElection, pickLeader, seatsOf } from "./politics.js";
+import { bestAntiCoalition, centerLed, formCoalition, isAntiCoalition, leaderElection, pickLeader, seatsOf, yieldPm } from "./politics.js";
 import { HOUSE_SEATS, MAJORITY } from "./districts.js";
-import { chooseEvent, chooseStory, govAction, isPrimeMinister, startCareer, startOptions, takeTurn } from "./career.js";
+import { chooseEvent, chooseStory, currentStoryScene, govAction, isPrimeMinister, startCareer, startOptions, takeTurn } from "./career.js";
 
 const data = { surnames, givenNames, exclusion } as unknown as NameData;
 
@@ -206,5 +206,56 @@ describe("政権交代の型", () => {
     // 抜けた党は与党から外れ、閣僚も出していない
     const leftParty = state.log.find((l) => l.text.includes("連立を離脱"))!.text.split("が連立を離脱")[0];
     expect(leftParty.length).toBeGreaterThan(0);
+  });
+});
+
+describe("連立の場面（プレイヤーの判断）", () => {
+  function exact(roster: Member[], counts: Record<string, number>): Member[] {
+    const parties = Object.entries(counts).flatMap(([p, n]) => Array(n).fill(p) as string[]);
+    return roster.map((m, i) => ({ ...m, party: parties[i] ?? "independent" }));
+  }
+
+  it("除く党を指定すると、その党を外して連立を組む", async () => {
+    const { roster } = await createWorld(data, 1);
+    const r = exact(roster, { minsei: 175, kosei: 24, sasshin: 38, kyowa: 28, hoshu: 3, sankaku: 3, minken: 160, shusan: 8, reimei: 9, shahei: 1 });
+    const c = formCoalition(r, INITIAL_RULING, { exclude: ["sasshin"] });
+    expect([c.ruling.party, ...c.ruling.partners]).not.toContain("sasshin");
+  });
+
+  it("第一党を除いた連合の候補は指定した党を含み、首相を譲ると首相の党が替わる", async () => {
+    const { roster } = await createWorld(data, 1);
+    const r = exact(roster, { minsei: 180, kosei: 20, minken: 140, kyowa: 50, sasshin: 45, reimei: 9, shusan: 8, hoshu: 3, sankaku: 3, shahei: 1 });
+    const alt = bestAntiCoalition(r, "kyowa")!;
+    expect(alt).toBeDefined();
+    expect([alt.party, ...alt.partners]).toContain("kyowa");
+    expect([alt.party, ...alt.partners]).not.toContain("minsei");
+    const y = yieldPm(r, alt, alt.party);
+    expect(y.party).not.toBe(alt.party);
+    expect([y.party, ...y.partners].sort()).toEqual([alt.party, ...alt.partners].sort());
+  });
+
+  it("誘いを断ると自党を外して組み直し、閣外協力なら閣僚を出さず協力度が高い", async () => {
+    const setup = async () => {
+      const { roster, factory } = await createWorld(data, 5);
+      const opt = startOptions(roster, "kyowa", "hereditary").find((o) => o.route === "smd")!;
+      const r = await startCareer({ roster, government: formInitialGovernment(roster), factory }, { origin: "hereditary", party: "kyowa", pref: opt.pref, district: opt.district, route: "smd", archetype: "local" }, 5);
+      // 当選した協和党の党首として、民政党・公正党・協和党の連立に誘われたことにする
+      r.state.status = "議員";
+      r.world.player = { ...r.world.player, terms: 4, seat: "小選挙区", district: opt.district! };
+      r.world.roster.push(r.world.player);
+      r.state.leaders.kyowa = r.world.player.id;
+      r.state.gov.ruling = { party: "minsei", partners: ["kosei", "kyowa"] };
+      r.state.pendingStory = { id: "coalition_offer", chapter: "c1", vars: { lead_party: "民政党" } };
+      return r;
+    };
+    const a = await setup();
+    expect(currentStoryScene(a.state, a.world)!.lines[0].text).toContain("民政党");
+    chooseStory(a.state, a.world, 2);
+    expect([a.state.gov.ruling.party, ...a.state.gov.ruling.partners]).not.toContain("kyowa");
+    const b = await setup();
+    chooseStory(b.state, b.world, 1);
+    expect(b.state.gov.ruling.partners).not.toContain("kyowa");
+    expect(b.world.government.some((x) => x.member.party === "kyowa")).toBe(false);
+    expect(b.state.gov.cooperation.kyowa).toBeGreaterThanOrEqual(80);
   });
 });

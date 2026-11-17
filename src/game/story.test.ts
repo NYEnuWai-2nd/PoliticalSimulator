@@ -16,7 +16,7 @@ import { deserializeCareer, parseSave, serializeCareer } from "./save.js";
 const data = { surnames, givenNames, exclusion } as unknown as NameData;
 
 const SPEAKERS = ["self", "secretary", "rival", "doki", "senpai", "narrator", "other"];
-const EFFECTS = ["stamina", "mood", "money", "exp", "relations", "bonds", "bond_state", "jiban_progress", "abilities", "approval", "vote_bonus", "skills_add", "skills_remove"];
+const EFFECTS = ["stamina", "mood", "money", "exp", "relations", "bonds", "bond_state", "jiban_progress", "abilities", "approval", "vote_bonus", "skills_add", "skills_remove", "coalition"];
 const CONDITIONS = ["trigger", "status", "post", "ruling", "terms_min", "terms_max", "age_min", "age_max", "abilities", "relations", "bonds_min", "bonds_max", "bond_state", "jiban_min", "skills", "no_skills", "flags", "no_flags", "months", "won_last", "margin_max", "rival_in_district"];
 const SKILL_IDS = new Set((skillsRaw as { skills: { id: string }[] }).skills.map((s) => s.id));
 const len = (s: string) => [...s].length;

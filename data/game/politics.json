@@ -114,13 +114,14 @@
     "turnover_years": 4
   },
   "breakup": {
-    "note": "任期の途中の連立の崩れ。毎月、連立相手ごとに base の確率で連立を抜けるかを見る。内閣支持率が approval_line を下回ると (approval_line − 支持率) × per_approval を足し、連立の党の数が多いほど（3党目から1党ごとに）per_extra_party を足す。第一党を除いた連合なら anti_mult 倍。総選挙から min_months か月は抜けない。抜けたあとの与党の議席が過半数の recompose_ratio 倍を下回ると、総選挙を待たずに連立を組み直す（政権交代もありうる。1994年の自社さ連立の型）。",
+    "note": "任期の途中の連立の崩れ。毎月、連立相手ごとに base の確率で連立を抜けるかを見る。内閣支持率が approval_line を下回ると (approval_line − 支持率) × per_approval を足し、連立の党の数が多いほど（3党目から1党ごとに）per_extra_party を足す。第一党を除いた連合なら anti_mult 倍。総選挙から min_months か月は抜けない。抜けたあとの与党の議席が過半数の recompose_ratio 倍を下回ると、総選挙を待たずに連立を組み直す（政権交代もありうる。1994年の自社さ連立の型）。 プレイヤーが首相のときは、第一党を除いた連合だけが崩れうる。抜ける確率に (1 − 協力度 ÷ pm_coop_divisor) を掛けるので、協議で協力度を上げると抜けにくい。",
     "base": 0.0004,
     "approval_line": 30,
     "per_approval": 0.0003,
     "per_extra_party": 0.001,
     "anti_mult": 2.5,
     "min_months": 6,
-    "recompose_ratio": 0.85
+    "recompose_ratio": 0.85,
+    "pm_coop_divisor": 120
   }
 }

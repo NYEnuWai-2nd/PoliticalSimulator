@@ -14,7 +14,7 @@ import { START_YEAR } from "./roster.js";
 import type { Appointment, Ruling } from "./cabinet.js";
 import { formGovernment } from "./cabinet.js";
 import politicsRaw from "../../data/game/politics.json";
-import { describe as describeRuling, formCoalition, isAntiCoalition, leaderElection, pickLeader } from "./politics.js";
+import { bestAntiCoalition, describe as describeRuling, formCoalition, isAntiCoalition, leaderElection, pickLeader, yieldPm } from "./politics.js";
 import type { LeaderElection } from "./politics.js";
 import { ABILITIES, TABLES, centerOf } from "./tables.js";
 import type { Ability } from "./tables.js";
@@ -1323,6 +1323,7 @@ function storyContext(state: CareerState, world: CareerWorld): StoryContext {
     lastElection: last ? { won: last.won, margin: me && other ? Math.round(Math.abs(me.share - other.share) * 1000) / 10 : undefined } : undefined,
     story: state.story,
     bonds: state.bonds,
+    vars: state.pendingStory?.vars,
     findMember: (id) => (world.player.id === id ? world.player : (world.roster.find((m) => m.id === id) ?? world.ronin.find((m) => m.id === id))),
     rand: () => rand(state),
   };
@@ -1350,7 +1351,83 @@ function applyStoryEffects(state: CareerState, world: CareerWorld, ctx: StoryCon
     state.voteBonus = (state.voteBonus ?? 0) + e.vote_bonus;
     out.push(`次の総選挙の票${e.vote_bonus > 0 ? "+" : ""}${e.vote_bonus}`);
   }
+  if (e.coalition) applyCoalitionChoice(state, world, e.coalition);
   return out;
+}
+
+/**
+ * 政権を ruling に替える（総選挙のあとの判断、連立の組み直し）。与党第一党が替われば政権交代として、
+ * 党首の任期、政権疲れ、首相の短命の数を戻す
+ */
+function setRuling(state: CareerState, world: CareerWorld, ruling: Ruling, text: string): void {
+  const g = state.gov;
+  const changed = ruling.party !== g.ruling.party;
+  g.ruling = ruling;
+  for (const p of ruling.partners) g.cooperation[p] = Math.max(g.cooperation[p] ?? 0, 60);
+  for (const party of Object.keys(state.leaders)) if (!world.roster.some((m) => m.party === party)) delete state.leaders[party];
+  if (changed) {
+    state.leaderTermEnd = addMonths(state, PL.leader.term_months);
+    state.leaderTermsServed = 1;
+    state.rulingSince = state.year;
+    state.pmSince = state.year;
+    state.pmChanges = [];
+    if (state.leaders[ruling.party] === world.player.id) state.playerLeaderTerms++;
+  }
+  logGov(state, text, "major");
+  state.coalitionSince = state.turn;
+  rebuildGovernment(state, world, ruling);
+}
+
+/** 連立の場面のあと続けて出す場面（呼びかけが通ったあとの「首相の座」） */
+let pendingAfterChoice: PendingStory | undefined;
+
+/** 連立の場面で選んだことを政権に当てる */
+function applyCoalitionChoice(state: CareerState, world: CareerWorld, choice: NonNullable<StoryEffects["coalition"]>): void {
+  const mine = world.player.party;
+  const g = state.gov;
+  const seatsOf = (r: Ruling) => world.roster.filter((m) => m.party === r.party || r.partners.includes(m.party)).length;
+  if (choice === "outside") {
+    const ruling = { party: g.ruling.party, partners: g.ruling.partners.filter((p) => p !== mine) };
+    setRuling(state, world, ruling, `${partyById(mine).short}は閣僚を出さず、閣外から${describeRuling(ruling)}の政権に協力する。`);
+    g.cooperation[mine] = Math.max(g.cooperation[mine] ?? 0, 80);
+  } else if (choice === "decline") {
+    const prev = { party: g.ruling.party, partners: g.ruling.partners.filter((p) => p !== mine) };
+    const c = formCoalition(world.roster, prev, { exclude: [mine] });
+    setRuling(state, world, c.ruling, `${partyById(mine).short}が連立への参加を断り、${c.text}`);
+  } else if (choice === "pm_yield") {
+    const ruling = yieldPm(world.roster, g.ruling, mine);
+    setRuling(state, world, ruling, `${partyById(mine).short}は首相の座を譲り、${partyById(ruling.party).short}の党首が首相に就く連合になった（${seatsOf(ruling)}議席）。`);
+  } else if (choice === "call") {
+    const found = bestAntiCoalition(world.roster, mine);
+    if (!found) return;
+    // 呼びかけた党の党首が首相になる。続けて「首相の座」の場面を出し、譲ることもできる
+    const alt = { party: mine, partners: [found.party, ...found.partners].filter((p) => p !== mine) };
+    setRuling(state, world, alt, `政権交代。${partyById(mine).short}の呼びかけで、第一党を除いた${describeRuling(alt)}の連合が政権を担う（${seatsOf(alt)}議席）。`);
+    pendingAfterChoice = { id: "coalition_pm", chapter: "c1", vars: { lead_party: partyById(mine).short } };
+  }
+}
+
+/**
+ * 総選挙のあと、プレイヤーが自分の党の党首なら、連立の場面を出す（data/game/stories.json の trigger が decision の物語）。
+ * 連立に誘われた（加わる／閣外協力／断る）、第一党を除いた連合で首相に推された（引き受ける／譲る）、
+ * 野党で第一党を除いた連合が組める（呼びかける／見送る）、のどれか
+ */
+function coalitionDecision(state: CareerState, world: CareerWorld): void {
+  const p = world.player;
+  if (state.status !== "議員" || state.leaders[p.party] !== p.id || state.over) return;
+  const r = state.gov.ruling;
+  const lead = partyById(r.party).short;
+  const open = (id: string, vars: Record<string, string>) => {
+    state.pendingStory = { id, chapter: storyById(id)!.chapters[0].id, vars };
+  };
+  if (r.partners.includes(p.party)) return open("coalition_offer", { lead_party: lead });
+  if (r.party === p.party && isAntiCoalition(world.roster, r)) return open("coalition_pm", { lead_party: lead });
+  if (r.party !== p.party) {
+    const alt = bestAntiCoalition(world.roster, p.party);
+    if (!alt) return;
+    const minority = world.roster.filter((m) => m.party === r.party || r.partners.includes(m.party)).length < MAJORITY_SEATS;
+    open(minority ? "coalition_call" : "coalition_call_hard", { lead_party: lead, alt: describeRuling(alt) });
+  }
 }
 
 /** 月末の物語：関係の札の効果、期限切れの物語、起きる時期になった章 */
@@ -1445,6 +1522,10 @@ export function chooseStory(state: CareerState, world: CareerWorld, index: numbe
     changes.push(...fx);
     logEnding(state, st.title, ending, text + (fx.length ? `（${fx.join("、")}）` : ""));
     endingInfo = { title: ending.title, text };
+  }
+  if (pendingAfterChoice) {
+    state.pendingStory = pendingAfterChoice;
+    pendingAfterChoice = undefined;
   }
   return { ok: true, message: `${label} → ${result}`, label, result, changes, ending: endingInfo };
 }
@@ -1733,6 +1814,7 @@ async function holdElection(state: CareerState, world: CareerWorld): Promise<voi
   state.gov.scenes = [];
   state.gov.fatigue = fatigueOf(state);
   state.govLogCopied = state.gov.log.length;
+  coalitionDecision(state, world);
   if (me && me.terms === 1) startStoriesAndLog(state, world, "first_win");
   startStoriesAndLog(state, world, "after_election");
 }
@@ -1746,13 +1828,15 @@ function coalitionBreakup(state: CareerState, world: CareerWorld): void {
   const B = PL.breakup;
   const g = state.gov;
   if (!g.ruling.partners.length || state.turn - (state.coalitionSince ?? 0) < B.min_months) return;
-  // プレイヤーが首相のときは、プレイヤーの政権の連立は崩さない（崩れるかどうかは協議で自分が守る）
-  if (isPrimeMinister(state, world)) return;
   const anti = isAntiCoalition(world.roster, g.ruling);
+  // プレイヤーが首相のときは、第一党を除いた連合だけが崩れうる（ふつうの連立は崩さない）。
+  // 抜けやすさは連立相手との協力度で下がるので、首相として協議を重ねれば連合を長持ちさせられる
+  const pm = isPrimeMinister(state, world);
+  if (pm && !anti) return;
   const parties = 1 + g.ruling.partners.length;
   const chance =
     (B.base + Math.max(0, B.approval_line - g.approval) * B.per_approval + Math.max(0, parties - 2) * B.per_extra_party) * (anti ? B.anti_mult : 1);
-  const leaving = g.ruling.partners.find(() => rand(state) < chance);
+  const leaving = g.ruling.partners.find((p) => rand(state) < chance * (pm ? Math.max(0, 1 - (g.cooperation[p] ?? 0) / B.pm_coop_divisor) : 1));
   if (!leaving) return;
   const ruling = { party: g.ruling.party, partners: g.ruling.partners.filter((p) => p !== leaving) };
   const seats = world.roster.filter((m) => m.party === ruling.party || ruling.partners.includes(m.party)).length;

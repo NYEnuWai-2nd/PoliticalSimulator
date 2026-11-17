@@ -15,7 +15,7 @@ export type BondTag = "好敵手" | "因縁" | "盟友" | "師弟" | "恩人" | 
 export const BOND_ROLE_NAMES: Record<BondRole, string> = { rival: "ライバル", doki: "同期", senpai: "党の先輩", secretary: "秘書" };
 
 export interface StoryCondition {
-  trigger?: "monthly" | "after_election" | "first_win" | "post_change";
+  trigger?: "monthly" | "after_election" | "first_win" | "post_change" | "decision";
   status?: string[];
   post?: string[];
   ruling?: boolean;
@@ -54,6 +54,8 @@ export interface StoryEffects {
   bonds?: Partial<Record<BondRole, number>>;
   bond_state?: Partial<Record<BondRole, BondTag>>;
   vote_bonus?: number;
+  /** 連立の場面の判断（career.ts が政権に当てる） */
+  coalition?: "join" | "outside" | "decline" | "pm_accept" | "pm_yield" | "call";
 }
 
 export interface StoryLine {
@@ -183,6 +185,8 @@ export interface BondState {
 export interface PendingStory {
   id: string;
   chapter: string;
+  /** 文の中で置き換える言葉（連立の場面の政党名など。{lead_party} → 「民政党」） */
+  vars?: Record<string, string>;
 }
 
 export const newStoryState = (): StoryState => ({ active: [], flags: [], done: {} });
@@ -210,6 +214,8 @@ export interface StoryContext {
   lastElection?: { won: boolean; margin?: number };
   story: StoryState;
   bonds: BondState;
+  /** 文の中で置き換える言葉（選択待ちの章の vars） */
+  vars?: Record<string, string>;
   /** 議員番号から議員か浪人を探す（引退した人は見つからない） */
   findMember: (id: number) => Member | undefined;
   rand: () => number;
@@ -538,6 +544,7 @@ export function fillText(ctx: StoryContext, text: string): string {
   const r = roleMember(ctx, "rival");
   const d = roleMember(ctx, "doki");
   const s = roleMember(ctx, "senpai");
+  for (const [k, v] of Object.entries(ctx.vars ?? {})) text = text.replaceAll(`{${k}}`, v);
   return text
     .replaceAll("{self}", ctx.player.name.surname)
     .replaceAll("{secretary}", ctx.secretaryName)
@@ -589,6 +596,7 @@ export function choiceTags(c: StoryChoice): string[] {
   if (e.money) tags.add("資金");
   if (e.abilities) tags.add("能力");
   if (e.vote_bonus) tags.add("票");
+  if (e.coalition) tags.add("政権");
   if (c.risk) tags.add(`判定：${c.risk.ability}`);
   return [...tags];
 }
