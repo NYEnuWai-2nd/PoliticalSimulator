@@ -113,6 +113,9 @@ export function leaderElection(
   const inc = opts.incumbentId !== undefined && !excluded.has(opts.incumbentId) ? members.find((m) => m.id === opts.incumbentId) : undefined;
   if (inc && !cands.some((c) => c.id === inc.id) && inc.id !== opts.extra?.member.id) cands.push(inc);
   if (opts.extra) cands.push(opts.extra.member);
+  // 立候補できる人がいない（議員が1人だけで、その人が任期の上限に達した党首など）ときは、
+  // 立候補できない条件を外して党の議員から選ぶ。党首がいない党はつくらない
+  if (!cands.length) cands.push(...[...members].sort((a, b) => leaderScore(b) - leaderScore(a)).slice(0, L.candidates));
   const votes = new Map<number, number>(cands.map((c) => [c.id, 0]));
   for (const voter of members) {
     let best = cands[0];

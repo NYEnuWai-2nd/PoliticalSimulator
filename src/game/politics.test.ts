@@ -66,6 +66,14 @@ describe("内閣と党首", () => {
     expect(r.winner.id).toBe(underdog.id);
     expect(r.candidates.reduce((a, c) => a + c.votes, 0)).toBe(seatsOf(roster, party));
   });
+
+  it("議員が1人だけの党で、その人が立候補できなくても、党首選は止まらずにその人を選ぶ（集産党シード136の不具合）", async () => {
+    const { roster } = await createWorld(data, 3);
+    const only = roster.find((m) => m.party === "shusan")!;
+    const one = roster.filter((m) => m.party !== "shusan" || m.id === only.id);
+    const r = leaderElection(one, "shusan", { incumbentId: only.id, excludeIds: [only.id], rand: () => 0.5 })!;
+    expect(r.winner.id).toBe(only.id);
+  });
 });
 
 describe("首相への道", () => {
