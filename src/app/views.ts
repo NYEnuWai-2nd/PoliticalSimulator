@@ -2,7 +2,7 @@
 // HTML を返すだけで、操作は main.ts が受け取る。
 // data-tip を付けた要素は、マウスを乗せるか長押しするとツールチップが出る（main.ts）。
 // data-member を付けた要素は、押すとその人物の詳しい情報が出る。
-import { ACTIVITIES, EXP_TYPES, OPP_ACTIONS, electionComments, isOppositionLeader, oppositionLineup, shadowCabinet, ORIGINS, RELATIONS, ROUTE_NAMES, canLearnSkill, canRunForLeader, canUpgrade, careerSummary, govBills, isPrimeMinister, moneyOutlook, postCategory, prRank, raceForecast, startOptions, upgradeCost } from "../game/career.js";
+import { ACTIVITIES, EXP_TYPES, OPP_ACTIONS, mergeKeepsLeader, mergeOffReason, electionComments, isOppositionLeader, oppositionLineup, shadowCabinet, ORIGINS, RELATIONS, ROUTE_NAMES, canLearnSkill, canRunForLeader, canUpgrade, careerSummary, govBills, isPrimeMinister, moneyOutlook, postCategory, prRank, raceForecast, startOptions, upgradeCost } from "../game/career.js";
 import type { Party } from "../game/parties.js";
 import { COLOR_NAMES, SKILLS, conditionProgress, learnCost, sortSkills } from "../game/skills.js";
 import { adviseMonth, filterAdvice, recommendedActivity } from "../game/advice.js";
@@ -540,7 +540,7 @@ function oppositionSection(state: CareerState, world: CareerWorld): string {
       const c = opp?.cooperation[p] ?? 0;
       const pact = opp?.pacts.includes(p);
       const btns = leader
-        ? `<button class="btn small" data-opp="summit" data-arg="${p}" ${points ? "" : "disabled"}>会談</button><button class="btn small" data-opp="pact" data-arg="${p}" ${points && !pact && c >= OPP.actions.pact.min_cooperation ? "" : "disabled"}>選挙協力</button>`
+        ? `<button class="btn small" data-opp="summit" data-arg="${p}" ${points ? "" : "disabled"}>会談</button><button class="btn small" data-opp="pact" data-arg="${p}" ${points && !pact && c >= OPP.actions.pact.min_cooperation ? "" : "disabled"}>選挙協力</button><button class="btn small" data-opp="merge" data-arg="${p}" ${points && !mergeOffReason(state, world, p) ? "" : "disabled"} ${tip(`合流の協議\n党を一つにする。${mergeKeepsLeader(world, p) ? "相手の党の議員が自分の党に加わり、自分が党首を続ける" : "相手の党のほうが議席が多いので、党首は相手の党首になる"}${mergeOffReason(state, world, p) ? `\n今はできない：${mergeOffReason(state, world, p)}` : ""}`)}>合流</button>`
         : "";
       return `<div class="cut row sm opp-row" ${tip(`${partyById(p).name}との協力度 ${c}\n${OPP.actions.pact.min_cooperation}以上で選挙協力を結べる。不信任案に賛成するかにも効く\n選挙協力をしたときに相手の票が移る割合 ${Math.round(pactTransfer(party, p) * 100)}%`)}>${chip(p)}<span class="grow">${esc(partyById(p).short)} <span class="muted">${world.roster.filter((m) => m.party === p).length}議席</span>${pact ? ' <span class="post">選挙協力</span>' : ""}</span><span class="bar mark-60" style="width:28%;--rc:${partyColor(p)}"><i style="width:${c}%"></i></span><b>${c}</b>${btns ? `<span class="opp-btns">${btns}</span>` : ""}</div>`;
     })
@@ -553,7 +553,7 @@ function oppositionSection(state: CareerState, world: CareerWorld): string {
           const why = oppOffReason(state, a.id, points);
           return `<button class="btn${a.id === "noconfidence" ? " danger-soft" : ""}" data-opp="${a.id}" ${why ? "disabled" : ""} ${tip(`${a.name}\n${a.description}${why ? `\n今は使えない：${why}` : ""}`)}>${esc(a.name)}</button>`;
         })
-        .join("")}</div>${offReasons(state, points)}<p class="muted" style="margin:6px 0 0;font-size:12px">会談と選挙協力は、下の各党の行から選ぶ。行動を選び終えたら、活動の画面で今月の活動を選ぶと月末になる。</p>`
+        .join("")}</div>${offReasons(state, points)}<p class="muted" style="margin:6px 0 0;font-size:12px">会談、選挙協力、合流は、下の各党の行から選ぶ。行動を選び終えたら、活動の画面で今月の活動を選ぶと月末になる。</p>`
     : `<p class="muted" style="margin:6px 0 0;font-size:12px">党首になると、ほかの野党との会談、党首討論、追及、対案、選挙協力、不信任案を自分で動かせる。</p>`;
   return `<section class="cut box"><h2>野党として（与党 ${esc(partyById(state.gov.ruling.party).short)}${state.gov.ruling.partners.length ? "・" + state.gov.ruling.partners.map((x) => esc(partyById(x).short)).join("・") : ""}）</h2>
     <div class="lineup">${lineup}</div>${shadow}${shadowList}${status}${actions}
@@ -663,6 +663,7 @@ const HELP: [string, string][] = [
   ["表示モード", "標準モードでは、秘書が毎月の助言とおすすめの活動を教えてくれ、細かい数字は省かれる。詳細モードでは、経験点や関係などのすべての数字が出る。最初の画面と「能力」の画面で切り替えられる。"],
   ["保存", "状態はこのブラウザに自動で保存され、最初の画面の「続きから」で再開できる。「能力」の画面からファイルへの書き出しと読み込みができる。"],
   ["政治の言葉", "浪人：落選して、次の選挙での返り咲きを目指している人。少数与党：与党の議席が過半数に届いていない状態で、法案を通すには野党の協力が要る。党三役：与党の幹事長、総務会長、政調会長。幹事長：党の運営と選挙を取り仕切る。政調会長：党の政策をまとめる。総務会長：党の方針を決める会議をまとめる。国対委員長：国会の日程や、ほかの党との交渉を受け持つ。選対委員長：選挙の戦い方と候補者選びを受け持つ。影の大臣：政権交代に備えて分野ごとに政府を追及する野党の担当者。党議拘束：党が決めた賛否に、所属議員が採決で従う決まり。比例単独：小選挙区には出ず、比例区の名簿だけで立候補すること。県議団：地元の県議会議員の集まり（東京なら都議、北海道なら道議、大阪・京都なら府議）。"],
+  ["政界再編", "政党は30年のあいだに割れたり、一つになったりする。与党第一党は、党の結束と内閣支持率が低い状態が続くと分裂し、離党した議員が新党をつくる（自分の党が割れたら、残るか移るかを選ぶ）。政権を失って議席を大きく減らした党も割れることがある。思想の近い野党どうしは合流することがあり、自分が野党の党首なら、協力度のとても高い党に合流を持ちかけられる。合流すると議席と支持を合わせられるが、党首は議席の多いほうの党首が続ける。"],
   ["キー操作", "1〜5：画面の切り替え。活動の画面では ← → で選んで Enter で実行。出来事は数字キーで選ぶ。Esc でポップアップを閉じる。"],
 ];
 

@@ -85,7 +85,9 @@ export interface GovernmentOptions {
 /** 内閣と与党の党役員を組む。連立相手がいなければ、連立枠の大臣も与党から選ぶ */
 /**
  * 連立相手に配る閣僚のポスト（ポストの id → 政党）。分野のある大臣のポストを、連立の議席に占める
- * 連立相手の議席の比で配る（どの連立相手にも少なくとも1つ、合わせて半分まで）。
+ * 連立相手の議席の比で配る（どの連立相手にも少なくとも1つ）。首相の党が連立の中で最も議席が多ければ、
+ * 連立相手に配るのは合わせて半分まで。首相の党のほうが小さい連合（第一党を除いた連合で、思想の真ん中の
+ * 小さい党が首相を出すとき）では、首相の党も議席の比の分（少なくとも1つ）だけを取り、残りを連立相手に配る。
  * party が ruling_coalition_partner のポスト（国土交通大臣）は、最も議席の多い連立相手に先に配る。
  * ほかのポストは、その党の議員の点数が最も高くなるものから選ぶ
  */
@@ -96,7 +98,9 @@ function partnerPosts(roster: Member[], ruling: Ruling): Map<string, string> {
   if (!partners.length) return out;
   const fieldPosts = POSTS.filter((p) => p.kind === "内閣" && p.field);
   const total = seats(ruling.party) + partners.reduce((a, p) => a + seats(p), 0);
-  let room = Math.floor(fieldPosts.length / 2);
+  const largest = partners.every((p) => seats(ruling.party) >= seats(p));
+  const own = largest ? Math.ceil(fieldPosts.length / 2) : Math.max(1, Math.round((fieldPosts.length * seats(ruling.party)) / total));
+  let room = fieldPosts.length - own;
   const quota = new Map(partners.map((p) => [p, Math.max(1, Math.round((fieldPosts.length * seats(p)) / total))]));
   const reserved = fieldPosts.find((p) => p.party === "ruling_coalition_partner");
   if (reserved) {
@@ -144,6 +148,8 @@ export function formGovernment(roster: Member[], opts: GovernmentOptions = {}): 
       let pool = roster.filter((m) => open(m, parties));
       // 連立相手に就ける人がいなければ、与党から選ぶ
       if (!pool.length && parties[0] !== ruling.party) pool = roster.filter((m) => open(m, [ruling.party]));
+      // 首相の党の議員が足りなければ（議席の少ない党が首相を出す連合）、閣僚は連立相手から選ぶ
+      if (!pool.length && post.kind === "内閣") pool = roster.filter((m) => open(m, ruling.partners));
       const score = (m: Member) => postScore(post, m) + (adjust?.(m, post) ?? 0);
       // 当選回数の条件を満たす人がいなければ、条件を外して選ぶ
       const eligible = pool.filter((m) => m.terms >= (post.min_terms ?? 1));
@@ -152,7 +158,8 @@ export function formGovernment(roster: Member[], opts: GovernmentOptions = {}): 
         (best, m) => (!best || score(m) > score(best) ? m : best),
         undefined,
       );
-      if (!member) throw new Error(`${post.name}に就ける議員がいません`);
+      // 党の役員に就ける議員がいない（首相の党の議員が数人しかいない）ときは、その役職を空席にする
+      if (!member) continue;
     }
     taken.add(member.id);
     out.push({ post, member, specialtyMatch: !!post.field && member.specialties.includes(post.field) });

@@ -1,5 +1,5 @@
 {
-  "note": "物語の連作（設計は docs/design.md の5.6節）。中身は Gemini の案（docs/prompts/gemini_story_events_answer.md）を取り込み、口調と用語をそろえたもの。 start_chance は、毎月の終わりに始まる物語（trigger が monthly）が、条件を満たした月に始まる確率。after_election などの出来事で始まる物語は、条件を満たせば必ず始まる（同時に始まるのは1本）。 max_active は同時に進む物語の数の上限。grace_months は、章の起きる月を過ぎても条件を待つ月数（過ぎると fallback の結末で終わる）。 bond_effects は関係の札（間柄）の効果。monthly_exp は毎月の経験点、vote_bonus は総選挙の得票率に足すポイント、risk は能力の判定のしきい値の増減（負なら通りやすい）、leader_vote は党首選でプレイヤーに入れるか（for）、相手に入れるか（against）。 bond_ideas は Gemini の案の原文（参考）。rival_types はライバルの人物像の型（総選挙の一言に使う）。 election_bond_rules は、総選挙の結果などで人物との関係が自動で動く量（ライバルに大差・僅差で勝った／負けた、同期の落選と先の大臣就任、先輩の引退と落選、党首選で同期や先輩と争った）。big_margin（ポイント）以上の差を大差、close_margin 未満を僅差とする。election_bond_ideas はその案の原文。 物語の chance は始まる確率で、毎月の物語は条件を満たした月ごと（書かなければ start_chance）、何度でも起きる物語は2回目から（書かなければ必ず）。起きる時期の限られる物語（大臣、首相・与党の役員、野党の党首、引退が近い時期）は高めにしてある。出来事で始まる物語は、まだ起きていないものを先に選ぶ。 結末の again は、何度でも起きる物語の2回目からの題と文。 trigger が decision の物語は自動では始まらず、career.ts が判断の場面として出す（連立の誘い、首相の座、連合の呼びかけ）。効果の coalition は政権に当てる判断（join 加わる、outside 閣外協力、decline 断る、pm_accept 首相を引き受ける、pm_yield 譲る、call 連合を呼びかける）。文の {lead_party} は第一党、{alt} は連合の顔ぶれ。",
+  "note": "物語の連作（設計は docs/design.md の5.6節）。中身は Gemini の案（docs/prompts/gemini_story_events_answer.md）を取り込み、口調と用語をそろえたもの。 start_chance は、毎月の終わりに始まる物語（trigger が monthly）が、条件を満たした月に始まる確率。after_election などの出来事で始まる物語は、条件を満たせば必ず始まる（同時に始まるのは1本）。 max_active は同時に進む物語の数の上限。grace_months は、章の起きる月を過ぎても条件を待つ月数（過ぎると fallback の結末で終わる）。 bond_effects は関係の札（間柄）の効果。monthly_exp は毎月の経験点、vote_bonus は総選挙の得票率に足すポイント、risk は能力の判定のしきい値の増減（負なら通りやすい）、leader_vote は党首選でプレイヤーに入れるか（for）、相手に入れるか（against）。 bond_ideas は Gemini の案の原文（参考）。rival_types はライバルの人物像の型（総選挙の一言に使う）。 election_bond_rules は、総選挙の結果などで人物との関係が自動で動く量（ライバルに大差・僅差で勝った／負けた、同期の落選と先の大臣就任、先輩の引退と落選、党首選で同期や先輩と争った）。big_margin（ポイント）以上の差を大差、close_margin 未満を僅差とする。election_bond_ideas はその案の原文。 物語の chance は始まる確率で、毎月の物語は条件を満たした月ごと（書かなければ start_chance）、何度でも起きる物語は2回目から（書かなければ必ず）。起きる時期の限られる物語（大臣、首相・与党の役員、野党の党首、引退が近い時期）は高めにしてある。出来事で始まる物語は、まだ起きていないものを先に選ぶ。 結末の again は、何度でも起きる物語の2回目からの題と文。 trigger が decision の物語は自動では始まらず、career.ts が判断の場面として出す（連立の誘い、首相の座、連合の呼びかけ）。効果の coalition は政権に当てる判断（join 加わる、outside 閣外協力、decline 断る、pm_accept 首相を引き受ける、pm_yield 譲る、call 連合を呼びかける）。文の {lead_party} は第一党、{alt} は連合の顔ぶれ。 効果の realign は政界再編の場面の判断（leave 離党して新しい党に移る、stay 残る、merge_accept 合流する、merge_decline 断る）。文の {old_party} はもとの党、{new_party} は移る先の党、{new_leader} はその党首、{other_party} は合流の相手、{merged_party} は合流してできる党。",
   "start_chance": 0.05,
   "max_active": 2,
   "grace_months": 6,
@@ -6930,17 +6930,17 @@
           "lines": [
             {
               "speaker": "narrator",
-              "text": "総選挙の結果、第一党の{lead_party}を中心とする枠組みは、過半数に届かないか僅差となった。"
+              "text": "総選挙の結果、{lead_party}を中心とする与党は過半数を保った。ただ、第一党を除いた各党の議席を合わせても過半数に届く。"
             },
             {
               "speaker": "secretary",
               "face": "surprised",
-              "text": "先生、第一党以外の議席を足せば過半数です。{alt}で連合が組めます。"
+              "text": "先生、与党は過半数を保ちましたが、{alt}で組めば、こちらも過半数です。"
             },
             {
               "speaker": "other",
               "name": "党の幹部",
-              "text": "だが、各党は経済や安全保障の考え方が大きく違う。そう簡単に首を縦に振るとは思えんぞ。"
+              "text": "だが、与党に残るつもりの党を引きはがすことになる。そう簡単に首を縦に振るとは思えんぞ。"
             },
             {
               "speaker": "self",
@@ -11208,6 +11208,183 @@
         }
       ],
       "chance": 0.15
+    },
+    {
+      "id": "party_split",
+      "title": "党の分裂",
+      "summary": "自分の党が割れ、離党した議員たちが新しい動きを始めた。党に残るか、離党した側に加わるかを選ぶ（判断の場面）。",
+      "cast": [
+        "secretary",
+        "other"
+      ],
+      "once": false,
+      "start": {
+        "trigger": "decision"
+      },
+      "chapters": [
+        {
+          "id": "c1",
+          "bg": "party_hq",
+          "after_months": [
+            0,
+            0
+          ],
+          "lines": [
+            {
+              "speaker": "narrator",
+              "text": "{old_party}から多くの議員が離党した。行き先は{new_party}で、中心は{new_leader}だ。"
+            },
+            {
+              "speaker": "secretary",
+              "face": "surprised",
+              "text": "先生、離党した議員の事務所から電話です。先生にも加わってほしいと言っています。"
+            },
+            {
+              "speaker": "other",
+              "name": "離党した議員",
+              "text": "今の党に残っても何も変わらない。一緒に新しい流れを作りませんか。"
+            },
+            {
+              "speaker": "self",
+              "face": "serious",
+              "text": "党を出れば、地元の県連や後援会との関係を一から作り直すことになる。"
+            },
+            {
+              "speaker": "secretary",
+              "face": "serious",
+              "text": "残れば、人が減った分、党の中での先生の立場は上がります。ただ、党の勢いは落ちるでしょう。"
+            }
+          ],
+          "choices": [
+            {
+              "label": "党に残る",
+              "result": "離党の誘いを断り、党の立て直しに力を尽くすと伝えた。",
+              "effects": {
+                "realign": "stay",
+                "relations": {
+                  "party": 8
+                }
+              },
+              "next": "end_stay"
+            },
+            {
+              "label": "離党して加わる",
+              "result": "離党届を出し、{new_party}に加わった。",
+              "effects": {
+                "realign": "leave",
+                "relations": {
+                  "supporters": -5,
+                  "press": 5
+                },
+                "exp": {
+                  "network": 10
+                }
+              },
+              "next": "end_leave"
+            }
+          ]
+        }
+      ],
+      "endings": [
+        {
+          "id": "end_stay",
+          "title": "残った者",
+          "text": "党に残った。去った仲間の席を埋めるように、任される仕事が増えていく。"
+        },
+        {
+          "id": "end_leave",
+          "title": "新しい看板",
+          "text": "新しい党の一員になった。次の総選挙は、これまでと違う看板で戦うことになる。"
+        }
+      ]
+    },
+    {
+      "id": "merge_offer",
+      "title": "合流の協議",
+      "summary": "思想の近い野党との間で、党を一つにする話が持ち上がる。党首として、合流するか断るかを選ぶ（判断の場面）。",
+      "cast": [
+        "secretary",
+        "other"
+      ],
+      "once": false,
+      "start": {
+        "trigger": "decision"
+      },
+      "chapters": [
+        {
+          "id": "c1",
+          "bg": "party_hq",
+          "after_months": [
+            0,
+            0
+          ],
+          "lines": [
+            {
+              "speaker": "narrator",
+              "text": "{other_party}と党を一つにする協議が大詰めを迎えた。合流すれば{merged_party}になる。"
+            },
+            {
+              "speaker": "secretary",
+              "text": "先生、{other_party}の党首が最後の会談を求めています。"
+            },
+            {
+              "speaker": "other",
+              "name": "党の幹部",
+              "text": "別々に戦っていては、いつまでも政権に届かん。小選挙区で票を食い合うのは終わりにすべきだ。"
+            },
+            {
+              "speaker": "self",
+              "face": "serious",
+              "text": "一つになれば議席は増える。だが、考え方の違う議員を抱えれば、党の中のまとまりは弱くなる。"
+            },
+            {
+              "speaker": "secretary",
+              "face": "serious",
+              "text": "党首は議席の多いほうの党首が続ける、というのが相手の条件です。"
+            }
+          ],
+          "choices": [
+            {
+              "label": "合流を決める",
+              "result": "両党の党首が並んで記者会見を開き、合流を発表した。",
+              "effects": {
+                "realign": "merge_accept",
+                "relations": {
+                  "press": 5
+                },
+                "exp": {
+                  "network": 15
+                }
+              },
+              "next": "end_merge"
+            },
+            {
+              "label": "合流を断る",
+              "result": "党の独自性を守るとして、合流の話を断った。",
+              "effects": {
+                "realign": "merge_decline",
+                "relations": {
+                  "supporters": 4,
+                  "party": 3
+                }
+              },
+              "next": "end_decline"
+            }
+          ]
+        }
+      ],
+      "endings": [
+        {
+          "id": "end_merge",
+          "title": "一つの党に",
+          "text": "二つの党は一つになった。次の総選挙で、合流が有権者にどう受け止められるかが問われる。"
+        },
+        {
+          "id": "end_decline",
+          "title": "独自の道",
+          "text": "合流は見送られた。相手の党との間には、少し距離ができた。"
+        }
+      ]
     }
   ],
   "election_bond_rules": {

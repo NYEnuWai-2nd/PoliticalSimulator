@@ -56,6 +56,8 @@ export interface StoryEffects {
   vote_bonus?: number;
   /** 連立の場面の判断（career.ts が政権に当てる） */
   coalition?: "join" | "outside" | "decline" | "pm_accept" | "pm_yield" | "call";
+  /** 政界再編の場面の判断（career.ts が当てる）。leave 新しい党に移る、stay 残る、merge_accept 合流する、merge_decline 断る */
+  realign?: "leave" | "stay" | "merge_accept" | "merge_decline";
 }
 
 export interface StoryLine {
@@ -597,6 +599,7 @@ export function choiceTags(c: StoryChoice): string[] {
   if (e.abilities) tags.add("能力");
   if (e.vote_bonus) tags.add("票");
   if (e.coalition) tags.add("政権");
+  if (e.realign) tags.add("政党");
   if (c.risk) tags.add(`判定：${c.risk.ability}`);
   return [...tags];
 }

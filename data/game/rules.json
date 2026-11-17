@@ -134,6 +134,7 @@
       "hoshu": 2.1,
       "shahei": 1.7
     },
-    "wind_reference": 40
+    "wind_reference": 40,
+    "new_party_run_support": 4
   }
 }

@@ -68,7 +68,7 @@ const HELP = `議員人生モード（CLI 版） ${VERSION_LABEL}
   log [件数] [self|gov|all]        記録（既定は自分の記録。gov は政局、all は両方）
   learn <持ち味>                 きっかけをつかんだ持ち味を、経験点を払って身につける（status のきっかけの行に費用）
   opp                              野党の様子（協力度、選挙協力、追い風、対案の準備）
-  opp <行動> [政党]                 野党の党首の行動：summit（会談）、debate（党首討論）、pursue（追及）、proposal（対案）、pact（選挙協力）、noconfidence（不信任案）。summit と pact は政党を付ける
+  opp <行動> [政党]                 野党の党首の行動：summit（会談）、debate（党首討論）、pursue（追及）、proposal（対案）、pact（選挙協力）、merge（合流）、noconfidence（不信任案）。summit と pact は政党を付ける
   hint                             秘書の助言（今月やるとよいこと。おすすめの活動は do の後ろに書く id）
   do duty                          職務（役職に就いているとき。役職ごとに効果が違う）
   run on|off                       次の党首選に立候補する／しない（当選3回以上・党の幹部との関係50以上）

@@ -1,6 +1,7 @@
 // 毎月の助言（標準モードで秘書が話す。CLI の hint でも使う）。
 // 今の数値を条件の表に当てはめ、優先度の高いものから数個を返す。画面には依存しない。
 import careerRaw from "../../data/game/career.json";
+import politicsRaw from "../../data/game/politics.json";
 import { ACTIVITIES, breakdownChance, canLearnSkill, isOppositionLeader, canRunForLeader, canUpgrade, isPrimeMinister, moneyOutlook, postCategory, prRank, raceForecast } from "./career.js";
 import type { CareerState, CareerWorld } from "./career.js";
 import { ABILITIES } from "./tables.js";
@@ -40,6 +41,10 @@ export function adviseMonth(state: CareerState, world: CareerWorld, max = 3): Ad
   // 首相：政権の行動が残っている
   if (isPrimeMinister(state, world) && state.gov.actionPoints > 0)
     add({ text: `総理、今月の政権の行動があと${state.gov.actionPoints}回残っています。内閣の画面で法案や根回しを進めましょう。`, tab: "cabinet", priority: 95 });
+
+  // 首相：党の結束が下がると、党が割れることがある
+  if (isPrimeMinister(state, world) && state.gov.cohesion < politicsRaw.realign.split.cohesion_line + 0.1)
+    add({ text: `総理、党の結束が${Math.round(state.gov.cohesion * 100)}%まで下がっています。このままでは離党する議員が出て、党が割れるおそれがあります。内閣の画面で党内の根回しをしましょう。`, tab: "cabinet", priority: 88, warn: true });
 
   // 野党の党首：党首の行動が残っている。選挙協力を結べる相手がいる
   if (isOppositionLeader(state, world) && state.opp && state.opp.actionPoints > 0) {

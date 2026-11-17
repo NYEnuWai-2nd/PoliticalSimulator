@@ -91,12 +91,14 @@ describe("首相への道", () => {
     expect(state.status).toBe("議員");
     if (state.gov.ruling.party !== "minsei") return; // 政権を失った場合はこの確認はしない
     // 当選を重ねたことにして、関係を高め、党首選を今月にする
-    world.player = { ...world.player, terms: 6 };
+    // 乱数の流れで票が並ぶことがあるので、能力も高くして確実に勝つようにする
+    world.player = { ...world.player, terms: 6, abilities: { ...world.player.abilities, 調整: 90, 知名度: 90 } };
     world.roster = world.roster.map((m) => (m.id === world.player.id ? world.player : m));
     state.relations.party = 100;
     state.runForLeader = true;
     state.leaderTermEnd = { year: state.year, month: state.month };
     state.pendingEvent = undefined;
+    state.pendingStory = undefined;
     await takeTurn(state, world, "rest");
     expect(isPrimeMinister(state, world)).toBe(true);
     expect(state.post).toBe("内閣総理大臣");
@@ -258,4 +260,35 @@ describe("連立の場面（プレイヤーの判断）", () => {
     expect(b.world.government.some((x) => x.member.party === "kyowa")).toBe(false);
     expect(b.state.gov.cooperation.kyowa).toBeGreaterThanOrEqual(80);
   });
+});
+
+describe("議席の少ない党が首相を出す連合（Muse の第8版のレポートの不具合）", () => {
+  it("首相の党の議員が数人しかいなくても内閣を組める（閣僚は連立相手から選び、党の役員は空席にする）", async () => {
+    const { roster } = await createWorld(data, 4);
+    const shahei = roster.filter((m) => m.party === "shahei");
+    expect(shahei.length).toBeLessThan(4);
+    const ruling = { party: "shahei", partners: ["minken", "sasshin", "kyowa", "kosei"] };
+    const gov = formGovernment(roster, { ruling, pmId: shahei[0].id });
+    expect(gov.find((a) => a.post.id === "pm")!.member.id).toBe(shahei[0].id);
+    // 閣僚の12ポストはすべて埋まり、連立の党の議員だけが就く
+    const cabinet = gov.filter((a) => a.post.kind === "内閣");
+    expect(cabinet).toHaveLength(12);
+    for (const a of cabinet) expect([ruling.party, ...ruling.partners]).toContain(a.member.party);
+    expect(new Set(gov.map((a) => a.member.id)).size).toBe(gov.length);
+    // 党の役員は首相の党の議員だけ（足りない分は空席）
+    for (const a of gov.filter((x) => x.post.kind === "党")) expect(a.member.party).toBe("shahei");
+    // 分野のある大臣は、議席の多い連立相手に多く配られる
+    const count = (p: string) => cabinet.filter((a) => a.post.field && a.member.party === p).length;
+    expect(count("minken")).toBeGreaterThan(count("kosei"));
+  }, 60_000);
+
+  it("議席が連合の pm_min_share に満たない党は、思想の真ん中にいても首相の党にならない", async () => {
+    const { roster } = await createWorld(data, 4);
+    const r = centerLed(roster, { party: "minken", partners: ["sasshin", "kyowa", "kosei", "shusan", "shahei"] });
+    const total = seatsOf(roster, r.party) + r.partners.reduce((a, p) => a + seatsOf(roster, p), 0);
+    expect(seatsOf(roster, r.party)).toBeGreaterThanOrEqual(total * politicsRaw.coalition.pm_min_share);
+    const y = yieldPm(roster, r, r.party);
+    expect(y.party).not.toBe(r.party);
+    expect(seatsOf(roster, y.party)).toBeGreaterThanOrEqual(total * politicsRaw.coalition.pm_min_share);
+  }, 60_000);
 });

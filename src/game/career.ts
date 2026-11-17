@@ -14,7 +14,7 @@ import { START_YEAR } from "./roster.js";
 import type { Appointment, Ruling } from "./cabinet.js";
 import { formGovernment } from "./cabinet.js";
 import politicsRaw from "../../data/game/politics.json";
-import { bestAntiCoalition, describe as describeRuling, formCoalition, isAntiCoalition, leaderElection, pickLeader, yieldPm } from "./politics.js";
+import { bestAntiCoalition, canLeadCoalition, describe as describeRuling, formCoalition, isAntiCoalition, leaderElection, pickLeader, yieldPm } from "./politics.js";
 import type { LeaderElection } from "./politics.js";
 import { ABILITIES, TABLES, centerOf } from "./tables.js";
 import type { Ability } from "./tables.js";
@@ -26,6 +26,8 @@ import { BILLS, billName, createGame, endTurn, nemawashi, pressConference, start
 import type { GameState } from "./game.js";
 import { aiGovernmentActions, aiWantsDissolution } from "./ai.js";
 import { estimateDistrict, partiesRunning, runElection } from "./election.js";
+import { applyMerge, applySplit, existingParties, newRealign, partyExists } from "./realign.js";
+import type { Realign } from "./realign.js";
 import { OPP, OPP_POSTS, assignOppositionPosts, countNoConfidence, initialCooperation, isFirstOpposition, isOppositionParty, newOppositionState, otherOppositionParties, pactTransfer } from "./opposition.js";
 import type { OppDuty, OppositionState, Pact } from "./opposition.js";
 import { inSession } from "./game.js";
@@ -257,6 +259,10 @@ export interface CareerState {
   pmSince: number;
   /** 同じ政権のまま首相が替わったターン（首相の短命が続くときの逆風に使う。政権交代で空に戻る） */
   pmChanges?: number[];
+  /** 党ごとの、今の党首が就いたターン（ない党は開始時点から。野党の党首の任期に使う） */
+  leaderSince?: Record<string, number>;
+  /** 政界再編のあとの党の勢力（合流、分裂、途中で結成された党）。まだ何も起きていなければない */
+  realign?: Realign;
   /** 最後に総選挙か連立の組み直しがあったターン（直後は連立が崩れない） */
   coalitionSince?: number;
   /** プレイヤーが与党の党首を務めた期数の通算（生涯の上限に使う） */
@@ -530,6 +536,7 @@ function runLeaderElection(state: CareerState, world: CareerWorld, party: string
   }
   const before = state.leaders[party];
   state.leaders[party] = result.winner.id;
+  if (before !== result.winner.id) state.leaderSince = { ...state.leaderSince, [party]: state.turn };
   const isRuling = state.gov.ruling.party === party;
   const votes = result.candidates.map((c) => `${c.member.name.displayName}${c.member.id === world.player.id ? "（自分）" : ""}${c.votes}票`).join("、");
   const showLog = world.player.party === party || isRuling;
@@ -709,7 +716,7 @@ function oppositionMonth(state: CareerState, world: CareerWorld): void {
   } else opp.actionPoints = 0;
 }
 
-export type OppActionId = "summit" | "debate" | "pursue" | "proposal" | "pact" | "noconfidence";
+export type OppActionId = "summit" | "debate" | "pursue" | "proposal" | "pact" | "merge" | "noconfidence";
 
 export const OPP_ACTIONS: { id: OppActionId; name: string; needsParty?: boolean; description: string }[] = [
   { id: "summit", name: "野党党首会談", needsParty: true, description: "ほかの野党の党首と会い、協力度を上げる。思想が近いほど上がりやすい。" },
@@ -717,8 +724,28 @@ export const OPP_ACTIONS: { id: OppActionId; name: string; needsParty?: boolean;
   { id: "pursue", name: "失政の追及", description: "政権の失政や不祥事を追及する。長期政権ほど成功しやすいが、失敗すると自分に返ってくる。" },
   { id: "proposal", name: "対案の発表", description: "準備した対案（政調会長が進める）を発表し、政権を担える党だと示す。" },
   { id: "pact", name: "選挙協力の合意", needsParty: true, description: "協力度の高い野党と小選挙区の候補者を一本化する約束をする。総選挙まで有効。" },
+  { id: "merge", name: "合流の協議", needsParty: true, description: "協力度のとても高い、思想の近い野党と党を一つにする。議席と支持を合わせられるが、党首は議席の多いほうの党首が続ける。" },
   { id: "noconfidence", name: "内閣不信任案の提出", description: "野党の票と与党の造反で過半数を取れば可決。支持率が高ければ解散、低ければ総辞職になる。" },
 ];
+
+/** ほかの野党に合流を持ちかけられない理由（持ちかけられるなら undefined）。画面のボタンと行動の両方で使う */
+export function mergeOffReason(state: CareerState, world: CareerWorld, other: string): string | undefined {
+  const M = RA.merge;
+  const party = world.player.party;
+  const c = state.opp?.cooperation[other] ?? 0;
+  if (M.exclude.includes(other) || M.exclude.includes(party)) return `${partyById(M.exclude.includes(other) ? other : party).short}は独自の路線を守る党で、合流には応じない。`;
+  if (partyDistance(party, other) > M.max_distance) return "思想が離れすぎていて、一つの党にはなれない。";
+  if (!mergeCandidates(state, world).some(([a, b]) => (a === party && b === other) || (a === other && b === party))) return "合わせた議席が大きすぎて、合流はまとまらない。";
+  if (c < M.min_cooperation) return `協力度が${M.min_cooperation}以上の党とだけ合流できる（今は${c}）。`;
+  return undefined;
+}
+
+/** 合流したとき、党首を続けるのは自分か（議席の多いほうの党首が続ける） */
+export function mergeKeepsLeader(world: CareerWorld, other: string): boolean {
+  const seats = (p: string) => world.roster.filter((m) => m.party === p).length;
+  const mine = world.player.party;
+  return seats(mine) > seats(other) || (seats(mine) === seats(other) && mine < other);
+}
 
 /** 党首の行動の結果の文（data/game/opposition.json の texts から一つ選ぶ） */
 function oppText(state: CareerState, key: string, pm: Member | undefined): string {
@@ -845,6 +872,19 @@ export function oppAction(state: CareerState, world: CareerWorld, action: OppAct
         message = `${partyById(arg).short}との選挙協力の協議は、候補者の調整で折り合わなかった。`;
       }
       break;
+    }
+    case "merge": {
+      if (!arg || !others.includes(arg)) return { ok: false, message: `合流の相手を選んでください（${others.map((x) => partyById(x).short).join("、")}）。` };
+      const why = mergeOffReason(state, world, arg);
+      if (why) return { ok: false, message: why };
+      const pair = mergeCandidates(state, world).find(([a, b]) => (a === party && b === arg) || (a === arg && b === party))!;
+      const into = mergeParties(state, world, pair[0], pair[1]);
+      message = `${partyById(arg).short}との合流を決めた。${into === party ? "相手の党の議員が自分の党に加わった。" : `党は${partyById(into).name}になった。`}`;
+      // 党が替わると野党の状態が作り直されるので、行動の回数はここで減らす
+      const now = ensureOpp(state, world);
+      now.actionPoints = Math.max(0, opp.actionPoints - 1);
+      log(state, message, "major");
+      return { ok: true, message };
     }
     case "noconfidence": {
       const N = A.noconfidence;
@@ -1029,14 +1069,14 @@ export function raceForecast(
   const holder = smdHolder(world.roster, district);
   const isMe = holder?.id === world.player.id;
   const rival = holder && !isMe && holder.id !== state.parentId ? holder : undefined;
-  const parties = partiesRunning(district, rival?.party ?? (isMe ? state.setup.party : undefined));
+  const parties = partiesRunning(district, rival?.party ?? (isMe ? state.setup.party : undefined), state.gov.ruling, state.realign);
   if (!parties.includes(state.setup.party)) parties.push(state.setup.party);
   const entries = parties.map((p) => {
     if (p === state.setup.party) return { party: p, member: world.player, incumbent: isMe, bonus: playerBonus(state) };
     if (rival && rival.party === p) return { party: p, member: rival, incumbent: true };
     return { party: p, incumbent: false };
   });
-  return estimateDistrict(district, state.gov.approval, entries, state.gov.ruling, { bonus: partyBonusOf(state, world), pacts: currentPacts(state, world) })
+  return estimateDistrict(district, state.gov.approval, entries, state.gov.ruling, { bonus: partyBonusOf(state, world), pacts: currentPacts(state, world), realign: state.realign })
     .map((e) => ({
       name: e.member ? e.member.name.displayName : `${partyById(e.party).short}の候補`,
       party: e.party,
@@ -1352,6 +1392,7 @@ function applyStoryEffects(state: CareerState, world: CareerWorld, ctx: StoryCon
     out.push(`次の総選挙の票${e.vote_bonus > 0 ? "+" : ""}${e.vote_bonus}`);
   }
   if (e.coalition) applyCoalitionChoice(state, world, e.coalition);
+  if (e.realign) applyRealignChoice(state, world, e.realign);
   return out;
 }
 
@@ -1400,10 +1441,18 @@ function applyCoalitionChoice(state: CareerState, world: CareerWorld, choice: No
   } else if (choice === "call") {
     const found = bestAntiCoalition(world.roster, mine);
     if (!found) return;
-    // 呼びかけた党の党首が首相になる。続けて「首相の座」の場面を出し、譲ることもできる
-    const alt = { party: mine, partners: [found.party, ...found.partners].filter((p) => p !== mine) };
-    setRuling(state, world, alt, `政権交代。${partyById(mine).short}の呼びかけで、第一党を除いた${describeRuling(alt)}の連合が政権を担う（${seatsOf(alt)}議席）。`);
-    pendingAfterChoice = { id: "coalition_pm", chapter: "c1", vars: { lead_party: partyById(mine).short } };
+    // 呼びかけた党の党首が首相になる。続けて「首相の座」の場面を出し、譲ることもできる。
+    // ただし呼びかけた党の議席が連合の中で少なすぎれば（pm_min_share 未満）、首相は連合の中で思想の真ん中の党から出る
+    const all = [found.party, ...found.partners];
+    const lead = canLeadCoalition(world.roster, all, mine);
+    const alt = lead ? { party: mine, partners: all.filter((p) => p !== mine) } : found;
+    setRuling(
+      state,
+      world,
+      alt,
+      `政権交代。${partyById(mine).short}の呼びかけで、第一党を除いた${describeRuling(alt)}の連合が政権を担う（${seatsOf(alt)}議席）。${alt.party === mine ? "" : `首相は${partyById(alt.party).short}の党首が務める。`}`,
+    );
+    if (alt.party === mine) pendingAfterChoice = { id: "coalition_pm", chapter: "c1", vars: { lead_party: partyById(mine).short } };
   }
 }
 
@@ -1646,6 +1695,8 @@ async function endMonth(state: CareerState, world: CareerWorld): Promise<void> {
   }
   // 任期の途中の連立の崩れ（連立相手が抜ける。与党が大きく割れれば、総選挙を待たずに連立を組み直す）
   if (!dissolve && !termEnded) coalitionBreakup(state, world);
+  // 政界再編（与党第一党の分裂、野党どうしの合流）
+  if (!dissolve && !termEnded) realignMonth(state, world);
   // 与党の党首の任期満了
   if (!dissolve && !termEnded && reached(state, state.leaderTermEnd)) runLeaderElection(state, world, g.ruling.party, "任期満了", true);
   if (state.dissolveRequested) {
@@ -1710,6 +1761,7 @@ async function holdElection(state: CareerState, world: CareerWorld): Promise<voi
     factory: world.factory,
     forced: isPr ? [] : [{ district: state.setup.district!, party: state.setup.party, member: world.player, bonus: playerBonus(state) }],
     partyBonus: partyBonusOf(state, world),
+    realign: state.realign,
     pacts: currentPacts(state, world),
     forcedPr: isPr ? [{ party: state.setup.party, member: world.player, rank }] : [],
     retireIds: state.parentId !== undefined ? [state.parentId] : [],
@@ -1788,8 +1840,27 @@ async function holdElection(state: CareerState, world: CareerWorld): Promise<voi
     if (partyById(party).is_independent) continue;
     const lostPower = coalition.changed && party === prev.party;
     const leaderLost = !world.roster.some((m) => m.id === state.leaders[party]);
-    if (lostPower || leaderLost) runLeaderElection(state, world, party, lostPower ? "政権を失って" : "党首の落選", false);
+    // 野党の党首は、総選挙で議席を大きく減らしたときと、長く務めたときにも党首選になる
+    // （党首が替わらない党では、プレイヤーが党首になる道がなかった。プレイヤーが党首のときは行わない）
+    const O = PL.leader.opposition;
+    const opp = party !== prev.party && party !== coalition.ruling.party && state.leaders[party] !== world.player.id;
+    const before = prevSeats.find((x) => x.party === party)?.total ?? 0;
+    const shrank = opp && world.roster.filter((m) => m.party === party).length < before * O.seat_loss_ratio;
+    const longTenure = opp && state.turn - (state.leaderSince?.[party] ?? 0) >= O.tenure_months;
+    const reason = lostPower ? "政権を失って" : leaderLost ? "党首の落選" : shrank ? "議席を減らして" : longTenure ? "任期満了" : "";
+    if (reason) runLeaderElection(state, world, party, reason, false);
   }
+  // 政権を失って議席を大きく減らした党は、割れることがある
+  const lost = prevSeats.find((x) => x.party === prev.party)?.total ?? 0;
+  const lostNow = world.roster.filter((m) => m.party === prev.party).length;
+  const splitAfterLoss =
+    coalition.changed &&
+    coalition.ruling.party !== prev.party &&
+    !coalition.ruling.partners.includes(prev.party) &&
+    lostNow >= RA.split.min_seats &&
+    lostNow < lost * RA.split.loss_ratio &&
+    monthsSinceRealign(state) >= RA.cooldown_months &&
+    rand(state) < RA.split.loss_chance;
   if (coalition.changed) {
     state.leaderTermEnd = addMonths(state, PL.leader.term_months);
     state.leaderTermsServed = 1;
@@ -1815,8 +1886,224 @@ async function holdElection(state: CareerState, world: CareerWorld): Promise<voi
   state.gov.fatigue = fatigueOf(state);
   state.govLogCopied = state.gov.log.length;
   coalitionDecision(state, world);
+  if (splitAfterLoss) splitParty(state, world, prev.party, "政権を失い、議席を大きく減らした");
   if (me && me.terms === 1) startStoriesAndLog(state, world, "first_win");
   startStoriesAndLog(state, world, "after_election");
+}
+
+// ---- 政界再編（党の合流と分裂。data/game/politics.json の realign、勢力の持ち方は realign.ts） ----
+
+const RA = PL.realign;
+
+/** 議員と浪人の所属を into の党に移す（プレイヤーを含むなら、始め方の党と野党の状態も替える） */
+function moveMembers(state: CareerState, world: CareerWorld, ids: Set<number>, into: string): void {
+  if (ids.has(world.player.id)) {
+    world.player = { ...world.player, party: into };
+    state.setup = { ...state.setup, party: into };
+    delete state.opp;
+    delete state.oppPost;
+  }
+  const mv = (m: Member) => (m.id === world.player.id ? world.player : ids.has(m.id) ? { ...m, party: into } : m);
+  world.roster = world.roster.map(mv);
+  world.ronin = world.ronin.map(mv);
+  world.government = world.government.map((a) => ({ ...a, member: mv(a.member) }));
+}
+
+/** 最後の合流か分裂から何か月たったか（まだなければ大きな数） */
+function monthsSinceRealign(state: CareerState): number {
+  const last = state.realign?.events.at(-1);
+  return last ? state.turn - last.turn : 9999;
+}
+
+/** 合流してできる党（決まった組み合わせなら新しい党、そうでなければ議席の多いほうの党に合流する） */
+function mergedPartyId(state: CareerState, a: string, b: string): string {
+  const dyn = state.realign;
+  const named = RA.merge.new_party.find((x) => x.parties.includes(a) && x.parties.includes(b));
+  return named && !partyExists(dyn, named.into) && !dyn?.heirs[named.into] ? named.into : a;
+}
+
+/** 合流できる野党の組（議席の多いほうが先）。思想が近く、合わせても第一党の議席の max_ratio 倍を超えない組 */
+function mergeCandidates(state: CareerState, world: CareerWorld): [string, string][] {
+  const M = RA.merge;
+  const seats = (p: string) => world.roster.filter((m) => m.party === p).length;
+  const parties = existingParties(state.realign).filter((p) => seats(p) > 0 && isOppositionParty(p, state.gov.ruling) && !M.exclude.includes(p));
+  const top = Math.max(0, ...existingParties(state.realign).map(seats));
+  const out: [string, string][] = [];
+  for (const a of parties)
+    for (const b of parties) {
+      if (a === b || seats(a) < seats(b) || (seats(a) === seats(b) && a > b)) continue;
+      if (partyDistance(a, b) > M.max_distance || seats(a) + seats(b) > top * M.max_ratio) continue;
+      out.push([a, b]);
+    }
+  return out.sort((x, y) => partyDistance(x[0], x[1]) - partyDistance(y[0], y[1]));
+}
+
+/** 野党の a と b が合流する（b の党がなくなる。決まった組み合わせなら新しい党になる）。党首は a の党首が続ける */
+function mergeParties(state: CareerState, world: CareerWorld, a: string, b: string): string {
+  const dyn = (state.realign ??= newRealign());
+  const into = mergedPartyId(state, a, b);
+  const leader = state.leaders[a];
+  const ids = new Set([...world.roster, ...world.ronin, world.player].filter((m) => m.party === a || m.party === b).map((m) => m.id));
+  const seatsA = world.roster.filter((m) => m.party === a).length;
+  const seatsB = world.roster.filter((m) => m.party === b).length;
+  applyMerge(dyn, [a, b], into, RA.merge.support_keep, state.turn);
+  moveMembers(state, world, ids, into);
+  delete state.leaders[a];
+  delete state.leaders[b];
+  if (leader !== undefined) state.leaders[into] = leader;
+  state.leaderSince = { ...state.leaderSince, [into]: state.leaderSince?.[a] ?? 0 };
+  // 協力度は高いほうを引き継ぐ
+  for (const map of [state.gov.cooperation, state.opp?.cooperation]) {
+    if (!map) continue;
+    const v = Math.max(map[a] ?? 0, map[b] ?? 0);
+    delete map[a];
+    delete map[b];
+    if (into !== world.player.party || map === state.gov.cooperation) map[into] = v;
+  }
+  if (state.opp) state.opp.pacts = [...new Set(state.opp.pacts.map((p) => (p === a || p === b ? into : p)))].filter((p) => p !== world.player.party);
+  const text =
+    into === a
+      ? `${partyById(b).short}（${seatsB}議席）が${partyById(a).short}（${seatsA}議席）に合流した。${partyById(a).short}は${seatsA + seatsB}議席になった。`
+      : `${partyById(a).short}（${seatsA}議席）と${partyById(b).short}（${seatsB}議席）が合流し、新党「${partyById(into).name}」（${seatsA + seatsB}議席）を結成した。`;
+  logGov(state, text, "major");
+  if (ids.has(world.player.id) && into !== a) log(state, `所属する党が${partyById(into).name}になった。`, "major");
+  else if (world.player.party === into && ids.has(world.player.id) && state.setup.party === into && into === a && seatsB > 0) log(state, `${partyById(b).short}が合流し、党は${seatsA + seatsB}議席になった。`);
+  updatePost(state, world);
+  return into;
+}
+
+/** 分裂して出る人たちの行き先（最初の分裂は新しい党。そのあとは思想の近い今ある党に合流する） */
+function splitDestination(state: CareerState, world: CareerWorld, party: string): string | undefined {
+  const S = RA.split;
+  const dyn = state.realign;
+  if (!partyExists(dyn, S.new_party) && !dyn?.heirs[S.new_party]) return S.new_party;
+  const seats = (p: string) => world.roster.filter((m) => m.party === p).length;
+  return existingParties(dyn)
+    .filter((p) => p !== party && !RA.merge.exclude.includes(p) && seats(p) > 0 && seats(p) < seats(party) && partyDistance(p, party) <= S.join_distance)
+    .sort((x, y) => partyDistance(x, party) - partyDistance(y, party))[0];
+}
+
+/**
+ * 党が割れる。党への忠誠の低い議員から、議員の frac_min〜frac_max が出ていく（党首とプレイヤーは残る）。
+ * 与党第一党が割れて与党が過半数から大きく足りなくなれば、総選挙を待たずに連立を組み直す。
+ * プレイヤーがその党の議員（党首を除く）なら、残るか移るかを選ぶ場面を出す
+ */
+function splitParty(state: CareerState, world: CareerWorld, party: string, why: string): boolean {
+  const S = RA.split;
+  const into = splitDestination(state, world, party);
+  if (!into) return false;
+  const members = world.roster.filter((m) => m.party === party);
+  const leaderId = state.leaders[party];
+  const n = Math.round(members.length * (S.frac_min + rand(state) * (S.frac_max - S.frac_min)));
+  const keyed = members
+    .filter((m) => m.id !== leaderId && m.fixedRole !== "首相" && m.id !== world.player.id)
+    .map((m) => ({ m, key: m.loyalty + rand(state) * S.loyalty_noise }))
+    .sort((x, y) => x.key - y.key || x.m.id - y.m.id);
+  const movers = keyed.slice(0, n).map((x) => x.m);
+  if (movers.length < S.min_movers) return false;
+  const dyn = (state.realign ??= newRealign());
+  const isNew = !partyExists(dyn, into);
+  applySplit(dyn, party, into, movers.length / members.length, S.support_keep, movers.filter((m) => m.seat === "小選挙区" && m.district !== null).map((m) => m.district!), state.turn);
+  moveMembers(state, world, new Set(movers.map((m) => m.id)), into);
+  const g = state.gov;
+  if (isNew) {
+    state.leaders[into] = pickLeader(world.roster, into)!.id;
+    state.leaderSince = { ...state.leaderSince, [into]: state.turn };
+    g.cooperation[into] = S.cooperation;
+    if (state.opp) state.opp.cooperation[into] = initialCooperation(world.player.party, into);
+  }
+  const head = world.roster.find((m) => m.id === state.leaders[into])?.name.displayName ?? "";
+  const left = members.length - movers.length;
+  logGov(
+    state,
+    isNew
+      ? `${partyById(party).short}が分裂した（${why}）。${movers.length}人が離党し、${head}を党首に新党「${partyById(into).name}」を結成した。${partyById(party).short}は${left}議席になった。`
+      : `${partyById(party).short}が分裂した（${why}）。${movers.length}人が離党して${partyById(into).short}に合流した。${partyById(party).short}は${left}議席になった。`,
+    "major",
+  );
+  if (party === g.ruling.party || g.ruling.partners.includes(party)) {
+    if (party === g.ruling.party) g.cohesion = S.cohesion_after;
+    const seats = world.roster.filter((m) => m.party === g.ruling.party || g.ruling.partners.includes(m.party)).length;
+    state.coalitionSince = state.turn;
+    if (seats >= MAJORITY_SEATS * PL.breakup.recompose_ratio) rebuildGovernment(state, world, g.ruling);
+    else recomposeCoalition(state, world, g.ruling);
+  } else updatePost(state, world);
+  const p = world.player;
+  if (p.party === party && leaderId !== p.id && !state.pendingStory && !state.over)
+    state.pendingStory = { id: "party_split", chapter: storyById("party_split")!.chapters[0].id, vars: { old_party: partyById(party).short, new_party: partyById(into).short, new_leader: head, into_id: into } };
+  return true;
+}
+
+/** 月末の政界再編：与党第一党の分裂（結束と内閣支持率が低いとき）と、野党どうしの合流 */
+function realignMonth(state: CareerState, world: CareerWorld): void {
+  if (state.over || monthsSinceRealign(state) < RA.cooldown_months || state.turn - (state.coalitionSince ?? 0) < RA.after_election_months) return;
+  const g = state.gov;
+  const S = RA.split;
+  const first = g.ruling.party;
+  const seats = (p: string) => world.roster.filter((m) => m.party === p).length;
+  if (seats(first) >= S.min_seats && g.cohesion < S.cohesion_line) {
+    const chance = S.base + (S.cohesion_line - g.cohesion) * S.per_cohesion + Math.max(0, S.approval_line - g.approval) * S.per_approval;
+    if (rand(state) < chance && splitParty(state, world, first, `党の結束${Math.round(g.cohesion * 100)}%、内閣支持率${g.approval}%`)) return;
+  }
+  const M = RA.merge;
+  if (rand(state) >= M.monthly_chance) return;
+  const pairs = mergeCandidates(state, world);
+  if (!pairs.length) return;
+  const pair = pairs[Math.floor(rand(state) * pairs.length)];
+  const [a, b] = pair;
+  const p = world.player;
+  // プレイヤーが党首なら、合流するかを選ぶ場面を出す
+  if ((p.party === a || p.party === b) && state.leaders[p.party] === p.id && state.status === "議員") {
+    if (state.pendingStory) return;
+    const other = p.party === a ? b : a;
+    const into = mergedPartyId(state, a, b);
+    state.pendingStory = {
+      id: "merge_offer",
+      chapter: storyById("merge_offer")!.chapters[0].id,
+      vars: { other_party: partyById(other).short, merged_party: partyById(into).name, a_id: a, b_id: b },
+    };
+    return;
+  }
+  mergeParties(state, world, a, b);
+}
+
+/** 合流と分裂の場面で選んだことを当てる */
+function applyRealignChoice(state: CareerState, world: CareerWorld, choice: NonNullable<StoryEffects["realign"]>): void {
+  const vars = state.pendingStory?.vars ?? {};
+  const p = world.player;
+  if (choice === "leave" && vars.into_id && partyExists(state.realign, vars.into_id)) {
+    const from = p.party;
+    const dyn = (state.realign ??= newRealign());
+    if (state.setup.route !== "pr" && state.setup.district) dyn.base[state.setup.district] = vars.into_id;
+    moveMembers(state, world, new Set([p.id]), vars.into_id);
+    state.relations.party = RA.split.player_relation;
+    log(state, `${partyById(from).short}を離党し、${partyById(vars.into_id).name}に加わった。`, "major");
+    if (state.status === "議員") rebuildGovernment(state, world, state.gov.ruling);
+  } else if (choice === "merge_accept" && vars.a_id && vars.b_id) {
+    const ok = mergeCandidates(state, world).some(([a, b]) => a === vars.a_id && b === vars.b_id);
+    if (ok) mergeParties(state, world, vars.a_id, vars.b_id);
+  } else if (choice === "merge_decline" && vars.a_id && vars.b_id && state.opp) {
+    const other = p.party === vars.a_id ? vars.b_id : vars.a_id;
+    state.opp.cooperation[other] = Math.max(0, (state.opp.cooperation[other] ?? 0) - RA.merge.decline_loss);
+  }
+}
+
+/** 与党が大きく割れたので、総選挙を待たずに連立を組み直す */
+function recomposeCoalition(state: CareerState, world: CareerWorld, ruling: Ruling): void {
+  const g = state.gov;
+  const coalition = formCoalition(world.roster, ruling);
+  g.ruling = coalition.ruling;
+  for (const party of Object.keys(state.leaders)) if (!world.roster.some((m) => m.party === party)) delete state.leaders[party];
+  if (coalition.changed) {
+    logGov(state, `連立の組み直しで${coalition.text}`, "major");
+    state.leaderTermEnd = addMonths(state, PL.leader.term_months);
+    state.leaderTermsServed = 1;
+    state.rulingSince = state.year;
+    state.pmSince = state.year;
+    state.pmChanges = [];
+    if (state.leaders[coalition.ruling.party] === world.player.id) state.playerLeaderTerms++;
+  } else logGov(state, coalition.text);
+  rebuildGovernment(state, world, coalition.ruling);
 }
 
 /**
@@ -1847,20 +2134,7 @@ function coalitionBreakup(state: CareerState, world: CareerWorld): void {
     rebuildGovernment(state, world, ruling);
     return;
   }
-  // 与党が大きく割れたので、総選挙を待たずに連立を組み直す
-  const coalition = formCoalition(world.roster, ruling);
-  g.ruling = coalition.ruling;
-  for (const party of Object.keys(state.leaders)) if (!world.roster.some((m) => m.party === party)) delete state.leaders[party];
-  if (coalition.changed) {
-    logGov(state, `連立の組み直しで${coalition.text}`, "major");
-    state.leaderTermEnd = addMonths(state, PL.leader.term_months);
-    state.leaderTermsServed = 1;
-    state.rulingSince = state.year;
-    state.pmSince = state.year;
-    state.pmChanges = [];
-    if (state.leaders[coalition.ruling.party] === world.player.id) state.playerLeaderTerms++;
-  } else logGov(state, coalition.text);
-  rebuildGovernment(state, world, coalition.ruling);
+  recomposeCoalition(state, world, ruling);
 }
 
 /** 政権の記録のうち新しいものを、政局の記録として自分の記録に写す（総選挙で政権の状態が作り直されても残るように） */

@@ -160,16 +160,27 @@ export function yieldPm(roster: Member[], r: Ruling, party: string): Ruling {
   const others = members.filter((p) => p !== party);
   if (!others.length) return r;
   const cost = (p: string) => members.reduce((a, q) => a + partyDistance(p, q) * seatsOf(roster, q), 0);
-  const center = [...others].sort((a, b) => cost(a) - cost(b) || seatsOf(roster, b) - seatsOf(roster, a))[0];
+  const big = others.filter((p) => canLeadCoalition(roster, members, p));
+  const center = [...(big.length ? big : others)].sort((a, b) => cost(a) - cost(b) || seatsOf(roster, b) - seatsOf(roster, a))[0];
   return { party: center, partners: members.filter((p) => p !== center) };
 }
 
-/** 連合の中で、ほかの党との思想の距離の合計（議席で重み付け）が最も小さい党を首相の党にする */
+/** その党が連合の首相を出せるだけの議席を持っているか（連合の議席の pm_min_share 以上） */
+export function canLeadCoalition(roster: Member[], members: string[], party: string): boolean {
+  const total = members.reduce((a, p) => a + seatsOf(roster, p), 0);
+  return seatsOf(roster, party) >= total * P.coalition.pm_min_share;
+}
+
+/**
+ * 連合の中で、ほかの党との思想の距離の合計（議席で重み付け）が最も小さい党を首相の党にする。
+ * 議席が連合の pm_min_share に満たない党は首相を出さない（数議席の党が首相の党になり続けないように）
+ */
 export function centerLed(roster: Member[], r: Ruling): Ruling {
-  const members = [r.party, ...r.partners];
-  const cost = (p: string) => members.reduce((a, q) => a + partyDistance(p, q) * seatsOf(roster, q), 0);
-  const center = [...members].sort((a, b) => cost(a) - cost(b) || seatsOf(roster, b) - seatsOf(roster, a))[0];
-  return { party: center, partners: members.filter((p) => p !== center) };
+  const all = [r.party, ...r.partners];
+  const cost = (p: string) => all.reduce((a, q) => a + partyDistance(p, q) * seatsOf(roster, q), 0);
+  const big = all.filter((p) => canLeadCoalition(roster, all, p));
+  const center = [...(big.length ? big : all)].sort((a, b) => cost(a) - cost(b) || seatsOf(roster, b) - seatsOf(roster, a))[0];
+  return { party: center, partners: all.filter((p) => p !== center) };
 }
 
 /** 連立が第一党を除いた連合か（首相の党も第一党も政権の外） */
