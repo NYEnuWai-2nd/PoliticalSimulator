@@ -1,195 +1,1093 @@
-# 1. 用語の判定表
+{
+  "stories": [
+    {
+      "id": "coalition_offer",
+      "title": "連立への誘い",
+      "summary": "総選挙のあと、第一党から連立政権への参加を求められる。加わる、閣外から協力する、断る、のどれかを選ぶ（判断の場面）。",
+      "cast": ["secretary", "other"],
+      "once": false,
+      "start": { "trigger": "decision" },
+      "chapters": [
+        {
+          "id": "c1",
+          "bg": "party_hq",
+          "after_months": [0, 0],
+          "lines": [
+            { "speaker": "narrator", "text": "総選挙の結果を受け、第一党の{lead_party}から連立政権への参加を求める使者が訪れた。" },
+            { "speaker": "other", "name": "{lead_party}幹事長", "text": "国民は安定した政権を望んでいます。ぜひ我が党と連立を組んでいただきたい。" },
+            { "speaker": "self", "face": "serious", "text": "政権に入れば政策を実現できる。だが、{lead_party}と意見が違う分野をどうするか。" },
+            { "speaker": "other", "name": "{lead_party}幹事長", "text": "閣僚の席を複数用意します。ただし、重要法案では足並みを揃えてもらわねばなりません。" },
+            { "speaker": "secretary", "face": "serious", "text": "先生、連立に加われば力は得られますが、政権の失敗や批判も一緒に背負うことになります。" },
+            { "speaker": "secretary", "face": "normal", "text": "閣外協力なら閣僚は出さず、法案ごとに賛否を決められます。党の独自色は守りやすくなります。" },
+            { "speaker": "secretary", "face": "normal", "text": "申し入れを断って野党に留まる道もあります。筋を通した姿勢は支持者の信頼につながるでしょう。" },
+            { "speaker": "self", "face": "serious", "text": "政権の責任を担うか、距離を置いて監視するか。党の未来を左右する決断だ。" }
+          ],
+          "choices": [
+            {
+              "label": "連立に加わる",
+              "result": "政策の合意文書に署名し、{lead_party}政権へ閣僚を送り出した。",
+              "effects": { "coalition": "join", "relations": { "party": 5 }, "exp": { "policy": 5 } },
+              "next": "end_join"
+            },
+            {
+              "label": "閣外から協力する",
+              "result": "閣僚は出さず、予算などの重要法案に限って賛成すると約束した。",
+              "effects": { "coalition": "outside", "relations": { "press": 3, "supporters": 2 }, "exp": { "policy": 5 } },
+              "next": "end_outside"
+            },
+            {
+              "label": "申し入れを断る",
+              "result": "党の基本理念は曲げられないと伝え、連立の誘いを丁重に断った。",
+              "effects": { "coalition": "decline", "relations": { "supporters": 5, "party": -3 }, "exp": { "election": 5 } },
+              "next": "end_decline"
+            }
+          ]
+        }
+      ],
+      "endings": [
+        {
+          "id": "end_join",
+          "title": "連立政権の一員に",
+          "text": "大臣として政策を動かす力を得た。だが、政権への厳しい批判も一手に引き受けることになる。"
+        },
+        {
+          "id": "end_outside",
+          "title": "閣外協力",
+          "text": "閣僚の椅子を断り、政権の外から是々非々で向き合う道を選んだ。影響力と独自性の両立が問われる。"
+        },
+        {
+          "id": "end_decline",
+          "title": "野党の道",
+          "text": "連立への誘いを退け、対決の道を選んだ。政権は別の枠組みで発足し、次の選挙へ向けた戦いが始まる。"
+        }
+      ]
+    },
+    {
+      "id": "coalition_pm",
+      "title": "首相の座",
+      "summary": "第一党を除いた連合で、自分の党が思想の真ん中にいるため、首相に推される。引き受けるか、ほかの党に譲るかを選ぶ（判断の場面）。",
+      "cast": ["secretary", "other"],
+      "once": false,
+      "start": { "trigger": "decision" },
+      "chapters": [
+        {
+          "id": "c1",
+          "bg": "party_hq",
+          "after_months": [0, 0],
+          "lines": [
+            { "speaker": "narrator", "text": "第一党を除く各党の協議が難航する中、連合の首相候補に{self}を推す声が急浮上した。" },
+            { "speaker": "other", "name": "他党の党首", "text": "どの党とも話ができるのは、真ん中に立つ{party}のあなただ。どうか首相を引き受けてくれ。" },
+            { "speaker": "self", "face": "surprised", "text": "議席数の少ない我が党が政権の頂点に立つことになる。重責だが、本当にまとめ切れるのか。" },
+            { "speaker": "other", "name": "他党の党首", "text": "もちろん、議席の多い我が党の政策も十分に尊重してもらう。それが連合を保つ条件だ。" },
+            { "speaker": "secretary", "face": "serious", "text": "先生、小さな党から総理が出れば歴史的ですが、大所帯の他党に振り回される恐れもあります。" },
+            { "speaker": "secretary", "face": "normal", "text": "大きな党に首相の座を譲り、調整役に徹すれば、党の主張を地道に実現しやすくなります。" },
+            { "speaker": "self", "face": "serious", "text": "政権の顔として荒波に立つか、一歩引いて連合の土台を支えるか。今ここで決めねばならない。" }
+          ],
+          "choices": [
+            {
+              "label": "首相を引き受ける",
+              "result": "各党の党首と固く握手を交わし、新政権の首相になる覚悟を決めた。",
+              "effects": { "coalition": "pm_accept", "relations": { "press": 5 }, "exp": { "media": 10 } },
+              "next": "end_accept"
+            },
+            {
+              "label": "首相は別の党に譲る",
+              "result": "数で勝る党に首相を譲り、自分は連合の調整役を担う道を選んだ。",
+              "effects": { "coalition": "pm_yield", "relations": { "party": 5, "supporters": 3 }, "exp": { "network": 12 } },
+              "next": "end_yield"
+            }
+          ]
+        }
+      ],
+      "endings": [
+        {
+          "id": "end_accept",
+          "title": "連合の首相",
+          "text": "小党の党首から首相へと駆け上がった。立場の異なる各党を束ね、厳しい政権運営が始まる。"
+        },
+        {
+          "id": "end_yield",
+          "title": "連合の要",
+          "text": "首相の座をあえて譲り、各党の橋渡し役を引き受けた。実務の要として政権に欠かせない存在となる。"
+        }
+      ]
+    },
+    {
+      "id": "coalition_call",
+      "title": "連合の呼びかけ",
+      "summary": "与党が少数与党になり、第一党を除いた各党で過半数に届く。野党の党首として各党に呼びかけるかを選ぶ（判断の場面。調整の判定がやや易しい）。",
+      "cast": ["secretary", "other"],
+      "once": false,
+      "start": { "trigger": "decision" },
+      "chapters": [
+        {
+          "id": "c1",
+          "bg": "party_hq",
+          "after_months": [0, 0],
+          "lines": [
+            { "speaker": "narrator", "text": "総選挙の結果、第一党の{lead_party}を中心とする枠組みは、過半数に届かないか僅差となった。" },
+            { "speaker": "secretary", "face": "surprised", "text": "先生、第一党以外の議席を足せば過半数です。{alt}で連合が組めます。" },
+            { "speaker": "other", "name": "党の幹部", "text": "だが、各党は経済や安全保障の考え方が大きく違う。そう簡単に首を縦に振るとは思えんぞ。" },
+            { "speaker": "self", "face": "serious", "text": "政権交代の好機だ。しかし、理念を棚上げした数合わせでは国民の信頼を失う。" },
+            { "speaker": "secretary", "face": "serious", "text": "呼びかけるなら今夜しかありません。他党の党首と直接話し合い、譲歩できる線を探るべきです。" },
+            { "speaker": "other", "name": "党の幹部", "text": "今回は見送って与党の乱れを突き、次の総選挙で自党の議席を伸ばす道もある。どう決断する。" },
+            { "speaker": "self", "face": "serious", "text": "一か八かで連合を呼びかけるか、今は野党として力を蓄えるか。答えはすぐに出さねばならない。" }
+          ],
+          "choices": [
+            {
+              "label": "各党に連合を呼びかける",
+              "result": "夜を徹した協議の末、各党の党首が政権樹立へ向けた合意に頷いた。",
+              "effects": { "coalition": "call", "relations": { "party": 5 }, "exp": { "network": 15 } },
+              "risk": {
+                "ability": "調整",
+                "threshold": 50,
+                "fail_result": "重要政策で折り合いがつかず、各党の党首から連合への協力を断られた。",
+                "fail_effects": { "relations": { "party": -5 }, "exp": { "network": 8 } },
+                "fail_next": "end_fail"
+              },
+              "next": "end_call"
+            },
+            {
+              "label": "今回は見送る",
+              "result": "無理な連合は長続きしないと判断し、野党として体制を立て直すことにした。",
+              "effects": { "relations": { "supporters": 3 }, "exp": { "policy": 10 } },
+              "next": "end_pass"
+            }
+          ]
+        }
+      ],
+      "endings": [
+        {
+          "id": "end_call",
+          "title": "非第一党の連合",
+          "text": "第一党を除いた歴史的な連合政権が動き出した。異なる主張をどう調和させ続けるかが試される。"
+        },
+        {
+          "id": "end_fail",
+          "title": "幻の連合",
+          "text": "水面下の調整は実らず、連合の構想は白紙に戻った。各党との間には、交渉決裂のしこりが残った。"
+        },
+        {
+          "id": "end_pass",
+          "title": "力を蓄える",
+          "text": "性急な政権獲得は見送り、野党第一線での論戦を選んだ。次の選挙での躍進へ向け地道に歩みを進める。"
+        }
+      ]
+    },
+    {
+      "id": "coalition_call_hard",
+      "title": "連合の呼びかけ",
+      "summary": "与党は過半数を保っているが、第一党を除いた各党で過半数に届く。野党の党首として各党に呼びかけるかを選ぶ（判断の場面。調整の判定が難しい）。",
+      "cast": ["secretary", "other"],
+      "once": false,
+      "start": { "trigger": "decision" },
+      "chapters": [
+        {
+          "id": "c1",
+          "bg": "party_hq",
+          "after_months": [0, 0],
+          "lines": [
+            { "speaker": "narrator", "text": "総選挙の結果、第一党の{lead_party}を中心とする枠組みは、過半数に届かないか僅差となった。" },
+            { "speaker": "secretary", "face": "surprised", "text": "先生、第一党以外の議席を足せば過半数です。{alt}で連合が組めます。" },
+            { "speaker": "other", "name": "党の幹部", "text": "だが、各党は経済や安全保障の考え方が大きく違う。そう簡単に首を縦に振るとは思えんぞ。" },
+            { "speaker": "self", "face": "serious", "text": "政権交代の好機だ。しかし、理念を棚上げした数合わせでは国民の信頼を失う。" },
+            { "speaker": "secretary", "face": "serious", "text": "呼びかけるなら今夜しかありません。他党の党首と直接話し合い、譲歩できる線を探るべきです。" },
+            { "speaker": "other", "name": "党の幹部", "text": "今回は見送って与党の乱れを突き、次の総選挙で自党の議席を伸ばす道もある。どう決断する。" },
+            { "speaker": "self", "face": "serious", "text": "一か八かで連合を呼びかけるか、今は野党として力を蓄えるか。答えはすぐに出さねばならない。" }
+          ],
+          "choices": [
+            {
+              "label": "各党に連合を呼びかける",
+              "result": "夜を徹した協議の末、各党の党首が政権樹立へ向けた合意に頷いた。",
+              "effects": { "coalition": "call", "relations": { "party": 5 }, "exp": { "network": 15 } },
+              "risk": {
+                "ability": "調整",
+                "threshold": 65,
+                "fail_result": "重要政策で折り合いがつかず、各党の党首から連合への協力を断られた。",
+                "fail_effects": { "relations": { "party": -5 }, "exp": { "network": 8 } },
+                "fail_next": "end_fail"
+              },
+              "next": "end_call"
+            },
+            {
+              "label": "今回は見送る",
+              "result": "無理な連合は長続きしないと判断し、野党として体制を立て直すことにした。",
+              "effects": { "relations": { "supporters": 3 }, "exp": { "policy": 10 } },
+              "next": "end_pass"
+            }
+          ]
+        }
+      ],
+      "endings": [
+        {
+          "id": "end_call",
+          "title": "非第一党の連合",
+          "text": "第一党を除いた歴史的な連合政権が動き出した。異なる主張をどう調和させ続けるかが試される。"
+        },
+        {
+          "id": "end_fail",
+          "title": "幻の連合",
+          "text": "水面下の調整は実らず、連合の構想は白紙に戻った。各党との間には、交渉決裂のしこりが残った。"
+        },
+        {
+          "id": "end_pass",
+          "title": "力を蓄える",
+          "text": "性急な政権獲得は見送り、野党第一線での論戦を選んだ。次の選挙での躍進へ向け地道に歩みを進める。"
+        }
+      ]
+    },
+    {
+      "id": "doki_vs_senpai_policy",
+      "title": "改革か秩序か",
+      "summary": "党内の政策論争で、改革を急ぐ同期と慎重派の先輩が激しく対立。仲介を求められた主人公はどちらに付くかの選択を迫られる。",
+      "cast": ["doki", "senpai", "secretary"],
+      "start": { "trigger": "monthly", "status": ["議員"], "terms_min": 2, "terms_max": 5 },
+      "chapters": [
+        {
+          "id": "c1",
+          "bg": "diet",
+          "after_months": [3, 7],
+          "lines": [
+            { "speaker": "narrator", "text": "党の政策勉強会を終えた廊下で、同期の{doki}と先輩の{senpai}が厳しい表情で言い争っていた。" },
+            { "speaker": "doki", "face": "serious", "text": "{self}、ちょうどいい所に。古い補助金を削って、新しい産業に予算を回すべきだと思わないか。" },
+            { "speaker": "senpai", "face": "angry", "text": "何を軽々しく言うか。支援を削れば、長年わが党を支えた地元の商店街や業者が立ち行かなくなる。" },
+            { "speaker": "doki", "face": "angry", "text": "既得権を守ってばかりでは党が衰えるだけだ。{self}、俺の改革案に賛同してくれよ。" },
+            { "speaker": "senpai", "face": "serious", "text": "お前まで耳障りのいい言葉に踊らされるな。現場の痛みが分からん輩には、党の舵取りは任せられん。" },
+            { "speaker": "self", "face": "serious", "text": "二人の主張は真っ向から食い違っている。今の段階で、自分の立ち位置をはっきり示すべきだろうか。" }
+          ],
+          "choices": [
+            {
+              "label": "同期の改革案に賛同する",
+              "result": "{doki}は力強く頷いたが、{senpai}は苦い顔で背を向けた。",
+              "effects": { "bonds": { "doki": 10, "senpai": -10 }, "exp": { "policy": 6 } },
+              "flags": ["policy_lean_doki"],
+              "next": "c2"
+            },
+            {
+              "label": "先輩の慎重論を支持する",
+              "result": "{senpai}は満足そうに頷き、{doki}は失望の色を隠さなかった。",
+              "effects": { "bonds": { "senpai": 10, "doki": -10 }, "exp": { "network": 6 } },
+              "flags": ["policy_lean_senpai"],
+              "next": "c2"
+            },
+            {
+              "label": "双方の言い分を持ち帰る",
+              "result": "どちらにも与せず距離を置いたが、二人とも釈然としない様子だった。",
+              "effects": { "bonds": { "doki": -4, "senpai": -4 }, "exp": { "policy": 4 } },
+              "flags": ["policy_neutral"],
+              "next": "c2"
+            }
+          ]
+        },
+        {
+          "id": "c2",
+          "bg": "party_hq",
+          "after_months": [2, 5],
+          "conditions": { "status": ["議員"] },
+          "fallback": "end_fade",
+          "lines": [
+            { "speaker": "narrator", "text": "数か月後、党本部で最終会議が開かれた。{doki}側と{senpai}側が真っ向から割れている。" },
+            { "speaker": "secretary", "face": "serious", "text": "先生、お二人は互いに譲らず、党の幹部も困り果てています。先生の態度が勝負を分ける見込みです。" },
+            { "speaker": "doki", "face": "serious", "text": "{self}、ここで押し切らなければ改革は立ち消えになる。一緒に未来へ向かって踏み出そう。" },
+            { "speaker": "senpai", "face": "serious", "text": "お前がどちらに手を貸すか、地元も重鎮も見ているぞ。義理を忘れたとは言わせるな。" },
+            { "speaker": "self", "face": "serious", "text": "誰かを立てれば、もう一方が離れていく。それでも、自分の答えを出さなければならない。" }
+          ],
+          "choices": [
+            {
+              "label": "同期の陣営に票を投じる",
+              "result": "{doki}の改革案が勢いを増した。{senpai}は冷たい視線を残し席を立った。",
+              "effects": { "bonds": { "doki": 15, "senpai": -15 }, "relations": { "party": -3 }, "exp": { "policy": 10 } },
+              "flags": ["backed_doki"],
+              "next": "c3_doki"
+            },
+            {
+              "label": "先輩の陣営に票を投じる",
+              "result": "{senpai}の顔を立てたことで慎重派が勝った。{doki}は口元を固く結んだ。",
+              "effects": { "bonds": { "senpai": 15, "doki": -15 }, "relations": { "party": 4 }, "exp": { "network": 10 } },
+              "flags": ["backed_senpai"],
+              "next": "c3_senpai"
+            },
+            {
+              "label": "修正案を示し仲裁に挑む",
+              "result": "段階的な移行案を示し、激しい議論の末にようやく二人を同じ席に着かせた。",
+              "effects": { "bonds": { "doki": 6, "senpai": 6 }, "exp": { "network": 8, "policy": 8 } },
+              "risk": {
+                "ability": "調整",
+                "threshold": 62,
+                "fail_result": "八方美人の案だと双方から一蹴され、誰からも信頼を得られずに終わった。",
+                "fail_effects": { "bonds": { "doki": -12, "senpai": -12 }, "relations": { "party": -4 } },
+                "fail_next": "c3_isolated"
+              },
+              "next": "c3_mediator"
+            }
+          ]
+        },
+        {
+          "id": "c3_doki",
+          "bg": "ryotei",
+          "after_months": [2, 4],
+          "conditions": { "status": ["議員"] },
+          "fallback": "end_fade",
+          "lines": [
+            { "speaker": "narrator", "text": "会議の後、祝勝を兼ねた席に{doki}と二人で向かい合った。だが、胸の奥に重いものが残る。" },
+            { "speaker": "doki", "face": "smile", "text": "ありがとう、{self}。お前が踏み切ってくれたおかげで、党内に新しい風を吹かせられた。" },
+            { "speaker": "self", "face": "sad", "text": "その代わり、{senpai}とはすっかり口も利けない関係になってしまったよ。" },
+            { "speaker": "doki", "face": "serious", "text": "政治の世界では、何かを得るために誰かと袂を分かつ時もある。俺たちが先陣を切っていくんだ。" }
+          ],
+          "choices": [
+            {
+              "label": "同期と共に改革を推し進める",
+              "result": "迷いを振り切り、{doki}と肩を並べて新たな政策の実現へ動き出した。",
+              "effects": { "bonds": { "doki": 5 }, "exp": { "policy": 8 } },
+              "next": "end_doki"
+            },
+            {
+              "label": "先輩への配慮も忘れないと誓う",
+              "result": "勝敗とは別に礼節を尽くそうと決めたが、修復の道は険しそうだ。", "effects": { "bonds": { "senpai": 3 }, "exp": {
+"network": 6 } }, "next": "end_doki" } ] }, { "id": "c3_senpai", "bg": "office",
+"after_months": [2, 4], "conditions": { "status": ["議員"] }, "fallback":
+"end_fade", "lines": [ { "speaker": "narrator", "text":
+"地元の後援者との会合を終えた事務所へ、{senpai}が労いの言葉をかけに立ち寄った。" }, { "speaker": "senpai", "face":
+"smile", "text": "よく踏ん張ってくれた。お前が筋を通してくれたおかげで、現場の暮らしが守られたぞ。" }, { "speaker":
+"self", "face": "sad", "text": "しかし、{doki}は今回の決定に深く傷つき、私たちのやり方に反発を強めています。" }, {
+"speaker": "senpai", "face": "normal", "text":
+"若いうちは理想に走るものだ。いずれお前の苦労も分かる日が来る。まずは足元を固めることだな。" } ], "choices": [ { "label":
+"先輩の教えを胸に地盤を固める", "result": "{senpai}の温かい言葉に励まされ、地元の支持団体との絆をさらに深めた。", "effects":
+{ "bonds": { "senpai": 5 }, "jiban_progress": 15, "relations": { "supporters": 4
+} }, "next": "end_senpai" }, { "label": "同期にも理解を求め続けたい", "result":
+"時間をかけてでも{doki}と語り合おうと、静かに決意を固めた。", "effects": { "bonds": { "doki": 3 }, "exp":
+{ "network": 6 } }, "next": "end_senpai" } ] }, { "id": "c3_mediator", "bg":
+"diet", "after_months": [2, 4], "conditions": { "status": ["議員"] }, "fallback":
+"end_fade", "lines": [ { "speaker": "narrator", "text":
+"妥協案がまとまった党内の会議室。{doki}と{senpai}が、ぎこちなくも顔を合わせていた。" }, { "speaker": "doki",
+"face": "normal", "text": "正直、まだ納得しきれてはいない。だが、お前が必死に間を取り持った熱意には折れるよ。" }, {
+"speaker": "senpai", "face": "normal", "text":
+"お前がここまで汗をかくなら、わしも一歩譲ろう。党が割れては元も子もないからな。" }, { "speaker": "self", "face":
+"smile", "text": "誰もが少しずつ痛みを分け合った。この均衡を保つのが、これからの私の役目だ。" } ], "choices": [ {
+"label": "二人と共に政策を詰める", "result": "対立を乗り越えた調整力が評価され、党内での信頼が一気に高まった。", "effects":
+{ "relations": { "party": 6 }, "exp": { "network": 12 } }, "next":
+"end_mediator" }, { "label": "気疲れを癒やし次へ備える", "result":
+"激務の疲れを感じながらも、党の団結を守り切った充実感を噛み締めた。", "effects": { "stamina": 5, "exp": {
+"policy": 10 } }, "next": "end_mediator" } ] }, { "id": "c3_isolated", "bg":
+"home", "after_months": [2, 4], "conditions": { "status": ["議員"] }, "fallback":
+"end_fade", "lines": [ { "speaker": "narrator", "text":
+"党内の対立が決着した夜。誰からも声のかからない自宅で、一日の会議を振り返る。" }, { "speaker": "secretary", "face":
+"sad", "text": "先生、{doki}先生からも{senpai}先生からも、会合の案内が途絶えてしまいました。" }, { "speaker":
+"self", "face": "sad", "text": "どちらの顔も立てようとして、結局は一番大事な決断から逃げてしまったのかもしれない。" }, {
+"speaker": "secretary", "face": "serious", "text":
+"ですが、先生なりの良心で動かれたのです。今は地道に足元の活動からやり直しましょう。" } ], "choices": [ { "label":
+"一人で地元回りを徹底する", "result": "党内の冷ややかな空気を背に、黙々と地元での対話活動に打ち込んだ。", "effects": {
+"jiban_progress": 15, "exp": { "election": 10 } }, "next": "end_isolated" }, {
+"label": "自分の政策を独自に磨き直す", "result": "群れに頼らずとも勝負できるよう、政策の勉強に時間を費やす決意をした。",
+"effects": { "exp": { "policy": 12 } }, "next": "end_isolated" } ] } ],
+"endings": [ { "id": "end_doki", "title": "同期との歩み", "text":
+"同期と改革の道を歩むと決めた。先輩との間には、容易に埋まらない深い溝が残った。" }, { "id": "end_senpai", "title":
+"先輩への義理", "text": "先輩の背中を押し、伝統と地元の信頼を守った。同期の視線は、以前より冷たくなった。" }, { "id":
+"end_mediator", "title": "絶妙な均衡", "text":
+"困難な仲裁をやり遂げ、対立する二人をつなぎ止めた。調整役としての存在感が際立った。" }, { "id": "end_isolated", "title":
+"どちらにも付かず", "text": "中立を保とうとして双方の信頼を失った。党内で孤立する苦しさを味わうことになった。" }, { "id":
+"end_fade", "title": "戦場の移り変わり", "text": "議員としての立場を離れたことで、党内の論争もいつの間にか遠ざかっていった。"
+} ] }, { "id": "doki_vs_senpai_post", "title": "人事の季節", "summary":
+"党の重要な役職や委員会の枠を巡り、先輩からの根回しと同期からの協力を同時に求められ、板挟みになる物語。", "cast": ["senpai",
+"doki", "secretary"], "start": { "trigger": "monthly", "status": ["議員"],
+"terms_min": 3 }, "chapters": [ { "id": "c1", "bg": "ryotei", "after_months":
+[2, 6], "lines": [ { "speaker": "narrator", "text":
+"党の人事異動が噂される季節、{senpai}から個室の料亭へ呼び出された。" }, { "speaker": "senpai", "face":
+"serious", "text": "次の重要部会の座長枠にな、お前の力も借りて俺の息のかかった中堅を据えたいんだ。" }, { "speaker":
+"self", "face": "surprised", "text": "しかし、その椅子は{doki}も強く希望していると聞いていますが。" }, {
+"speaker": "senpai", "face": "serious", "text":
+"あいつにはまだ早い。お前が俺の側で汗をかいてくれれば、いずれお前自身の道も開けるぞ。" }, { "speaker": "self", "face":
+"serious", "text": "長年世話になった先輩からの直々の頼みだ。ここでどう答えるかで今後の関係が変わる。" } ], "choices": [
+{ "label": "先輩の意向に沿うと約束する", "result": "{senpai}は満足そうに盃を傾け、固い握手を求めてきた。",
+"effects": { "bonds": { "senpai": 10 }, "exp": { "network": 5 } }, "flags":
+["post_promised_senpai"], "next": "c2_promised" }, { "label": "公正な選考に委ねると返す",
+"result": "{senpai}は不満げに眉をひそめたが、それ以上は追及しなかった。", "effects": { "bonds": {
+"senpai": -8 }, "exp": { "policy": 5 } }, "flags": ["post_open"], "next":
+"c2_open" } ] }, { "id": "c2_promised", "bg": "diet", "after_months": [1, 3],
+"conditions": { "status": ["議員"] }, "fallback": "end_fade", "lines": [ {
+"speaker": "narrator", "text": "数週間後、党の控え室で{doki}が真剣な眼差しを向けてきた。" }, { "speaker":
+"doki", "face": "serious", "text": "{self}、今度の部会長ポスト、俺が名乗りを上げる。お前が推薦人になってくれないか。"
+}, { "speaker": "self", "face": "sad", "text":
+"（{senpai}との約束が脳裏をよぎる。今ここで断れば、同期との間に深い亀裂が走るだろう。）" }, { "speaker": "doki",
+"face": "serious", "text": "お前が後押ししてくれたら、若手の票が動くんだ。頼む、力を貸してくれ。" } ], "choices":
+[ { "label": "先輩との義理を理由に断る", "result": "{doki}は表情を凍らせ、「お前もそっち側か」と吐き捨てて去った。",
+"effects": { "bonds": { "senpai": 12, "doki": -16 }, "relations": { "party": 4 }
+}, "next": "c3_senpai" }, { "label": "約束を反故にして同期を推す", "result":
+"{doki}は喜んだが、裏切りを知った{senpai}は激怒したという。", "effects": { "bonds": { "doki": 16,
+"senpai": -22 }, "relations": { "party": -5 } }, "next": "c3_doki" }, { "label":
+"今回は譲り次期を待つよう説く", "result": "粘り強い説得が功を奏し、{doki}も渋々ながら今回は引くことに納得した。", "effects":
+{ "bonds": { "senpai": 6, "doki": -4 }, "exp": { "network": 10 } }, "risk": {
+"ability": "調整", "threshold": 65, "fail_result":
+"説得が裏目に出て、先輩からも同期からも不信の目で見られる結果となった。", "fail_effects": { "bonds": { "senpai":
+-12, "doki": -12 } }, "fail_next": "c3_broken" }, "next": "c3_senpai" } ] }, {
+"id": "c2_open", "bg": "diet", "after_months": [1, 3], "conditions": { "status":
+["議員"] }, "fallback": "end_fade", "lines": [ { "speaker": "narrator", "text":
+"人事の決定が目前に迫り、控え室で{doki}から直談判を受けた。" }, { "speaker": "doki", "face": "serious",
+"text": "{senpai}が別の候補を押し込もうとしている。実力本位で選ぶなら、俺に力を貸してくれよ。" }, { "speaker":
+"secretary", "face": "serious", "text":
+"先生、{senpai}先生の方も先生の一票を気にされています。どちらを立てるか決断の時です。" }, { "speaker": "self", "face":
+"serious", "text": "誰かに味方すれば、もう一方の面目は丸潰れになる。どちらの肩を持つべきか。" } ], "choices": [ {
+"label": "同期の推薦人として名を連ねる", "result": "{doki}の推薦人となり、党内での世代交代を強く印象づけた。",
+"effects": { "bonds": { "doki": 14, "senpai": -14 }, "exp": { "media": 8 } },
+"next": "c3_doki" }, { "label": "先輩の推す候補に同調する", "result":
+"組織の秩序を重んじ{senpai}に歩調を合わせた。{doki}は黙って目を伏せた。", "effects": { "bonds": {
+"senpai": 14, "doki": -14 }, "relations": { "party": 4 } }, "next": "c3_senpai"
+} ] }, { "id": "c3_senpai", "bg": "party_hq", "after_months": [2, 4],
+"conditions": { "status": ["議員"] }, "fallback": "end_fade", "lines": [ {
+"speaker": "narrator", "text": "人事は{senpai}の思惑通りに決着した。{senpai}は上機嫌で肩を叩いてきた。" },
+{ "speaker": "senpai", "face": "smile", "text":
+"おかげで党内の落ち着きが保たれた。お前の働きは忘れない。次の改選でも後ろ盾になろう。" }, { "speaker": "self", "face":
+"sad", "text": "ありがとうございます。ただ、{doki}と顔を合わせにくくなったのが気掛かりです。" }, { "speaker":
+"senpai", "face": "normal", "text": "人の上に立つ者はな、すべての人間に好かれようと思ってはいかんのだよ。" } ],
+"choices": [ { "label": "先輩の言葉を胸に刻む", "result": "厳しい政治の現実を受け入れ、組織を動かす側の意識を強めた。",
+"effects": { "exp": { "network": 10 }, "relations": { "party": 3 } }, "next":
+"end_senpai" }, { "label": "地方回りで気を取り直す", "result":
+"党内のしこりを忘れようと、地元の後援者との対話に精を出した。", "effects": { "jiban_progress": 12,
+"relations": { "supporters": 4 } }, "next": "end_senpai" } ] }, { "id":
+"c3_doki", "bg": "office", "after_months": [2, 4], "conditions": { "status":
+["議員"] }, "fallback": "end_fade", "lines": [ { "speaker": "narrator", "text":
+"熾烈な駆け引きの末、{doki}が役職を射止めた。事務所へお礼の電話が入る。" }, { "speaker": "doki", "face":
+"smile", "text": "やったぞ、{self}！お前が腹を括って推してくれたおかげだ。この恩は必ず返すよ。" }, { "speaker":
+"self", "face": "serious", "text": "おめでとう。だが、{senpai}の怒りは相当なものらしい。風当たりが強くなりそうだ。"
+}, { "speaker": "doki", "face": "serious", "text":
+"古い連中に遠慮していては何も変わらない。俺たちで新しい空気を作っていこう。" } ], "choices": [ { "label":
+"同期と新たな連携を固める", "result": "若手議員たちの輪の中で存在感を高め、党内の新しい力となった。", "effects": { "exp":
+{ "policy": 10 }, "relations": { "press": 3 } }, "next": "end_doki" }, {
+"label": "先輩への釈明の手紙を書く", "result": "丁寧な釈明を送ったものの、返事はついに届かなかった。", "effects": {
+"exp": { "network": 6 } }, "next": "end_doki" } ] }, { "id": "c3_broken", "bg":
+"home", "after_months": [2, 4], "conditions": { "status": ["議員"] }, "fallback":
+"end_fade", "lines": [ { "speaker": "narrator", "text":
+"人事の騒動は収まったが、自分の元には誰からの連絡も来なくなった。" }, { "speaker": "secretary", "face": "sad",
+"text": "先生、{senpai}先生も{doki}先生も、こちらの話には取り合ってくれません。" }, { "speaker": "self",
+"face": "sad", "text": "両方にいい顔をして、結局は両方からの信義を失ってしまったか。" }, { "speaker":
+"secretary", "face": "serious", "text": "苦い経験ですが、これも糧です。次の機会へ向け、一から実績を積み上げましょう。"
+} ], "choices": [ { "label": "地元で支持者の声を聞く", "result":
+"党内の人脈が冷え込む中、地元の支援者に救われる思いがした。", "effects": { "relations": { "supporters": 5 },
+"jiban_progress": 12 }, "next": "end_broken" }, { "label": "政策の勉強会に没頭する",
+"result": "人事に左右されない実力をつけようと、夜遅くまで資料を読み込んだ。", "effects": { "exp": { "policy": 12
+} }, "next": "end_broken" } ] } ], "endings": [ { "id": "end_senpai", "title":
+"組織の論理", "text": "先輩との義理を守り抜いた。党内の信頼を得る一方で、同期とは修復しがたい溝ができた。" }, { "id":
+"end_doki", "title": "世代の旗手", "text":
+"同期を押し上げ新たな絆を築いた。その代償として、先輩からの冷たい視線を浴びることになった。" }, { "id": "end_broken",
+"title": "二兎を追った末", "text": "板挟みの中で決断を誤り、先輩と同期の双方から距離を置かれる苦い結果を招いた。" }, { "id":
+"end_fade", "title": "役職争いの外", "text": "議席を離れたことで、党内の人事劇とは無縁の立場へ移ることになった。" } ]
+}, { "id": "leader_race_groundwork", "title": "頂への根回し", "summary":
+"党首選への挑戦を意識し始めた頃、誰に頭を下げて助力を請うかを選ばされる。選んだ相手が味方になり、選ばなかった相手は離れていく。", "cast":
+["secretary", "senpai", "doki"], "start": { "trigger": "monthly", "status":
+["議員"], "terms_min": 3, "terms_max": 5 }, "chapters": [ { "id": "c1", "bg":
+"office", "after_months": [2, 6], "lines": [ { "speaker": "narrator", "text":
+"数か月後に迫った党首選に向け、党内では{self}の出馬を期待する声が出始めた。" }, { "speaker": "secretary", "face":
+"serious", "text": "先生、本気で頂を目指すなら、今のうちに有力者の元へ頭を下げて回る必要があります。" }, { "speaker":
+"self", "face": "serious", "text":
+"古いグループをまとめる{senpai}を頼るか、若手や中堅の顔である{doki}に頼むか。" }, { "speaker": "secretary",
+"face": "serious", "text": "両方と組めれば理想ですが、お二人は考え方が違います。片方を立てれば、片方は臍を曲げます。" }, {
+"speaker": "self", "face": "serious", "text":
+"誰の傘の下に入るかを決めねばならんか。最初の一歩がすべてを左右する。" } ], "choices": [ { "label":
+"先輩の元へ頭を下げに行く", "result": "{senpai}の部屋を訪ね、深々と頭を下げて後ろ盾になってほしいと頼んだ。", "effects": {
+"bonds": { "senpai": 12, "doki": -8 }, "exp": { "network": 8 } }, "next":
+"c2_senpai" }, { "label": "同期の元へ頭を下げに行く", "result":
+"{doki}の前で頭を下げ、同世代の仲間を取りまとめてほしいと頼み込んだ。", "effects": { "bonds": { "doki": 12,
+"senpai": -8 }, "exp": { "media": 8 } }, "next": "c2_doki" } ] }, { "id":
+"c2_senpai", "bg": "ryotei", "after_months": [2, 4], "conditions": { "status":
+["議員"] }, "fallback": "end_fade", "lines": [ { "speaker": "narrator", "text":
+"深夜の料亭で、{senpai}が静かに茶を啜りながらこちらの覚悟を試していた。" }, { "speaker": "senpai", "face":
+"serious", "text": "お前がそこまで頭を下げて来るなら、わしも一肌脱いでやろう。だが条件がある。" }, { "speaker":
+"self", "face": "normal", "text": "どのような条件でしょうか。" }, { "speaker": "senpai",
+"face": "serious", "text": "{doki}の進める若手優遇の人事案を潰し、わしの推薦する古参を優遇すると約束しろ。" }, {
+"speaker": "secretary", "face": "serious", "text":
+"（先生、この条件を飲めば{doki}先生との関係は決定的に壊れます。どうなさいますか。）" } ], "choices": [ { "label":
+"先輩の条件を丸ごと飲む", "result": "{senpai}に固く誓った。知らせを聞いた{doki}は怒りの声を上げた。", "effects": {
+"bonds": { "senpai": 18, "doki": -22 }, "relations": { "party": 5 }, "exp": {
+"network": 10 } }, "next": "c3_senpai" }, { "label": "同期を切る条件だけは断る", "result":
+"{senpai}は「覚悟が足りん」と席を立った。仕方なく{doki}の元へ走った。", "effects": { "bonds": { "senpai":
+-20, "doki": 12 }, "exp": { "policy": 8 } }, "next": "c3_doki" } ] }, { "id":
+"c2_doki", "bg": "party_hq", "after_months": [2, 4], "conditions": { "status":
+["議員"] }, "fallback": "end_fade", "lines": [ { "speaker": "narrator", "text":
+"党本部の狭い会議室で、{doki}が若手議員の名簿を机に広げた。" }, { "speaker": "doki", "face": "serious",
+"text": "お前が頭を下げて来てくれたんだ、俺も腹を括る。ただ、一つだけ約束してくれ。" }, { "speaker": "self", "face":
+"normal", "text": "なんだ、話してくれ。" }, { "speaker": "doki", "face": "serious",
+"text": "{senpai}のような古い実力者とは完全に手を切るんだ。あの人に遠慮してたら勝てない。" }, { "speaker": "self",
+"face": "sad", "text": "これまで世話になった{senpai}を公然と外すのか。大きな賭けになる。" } ], "choices": [
+{ "label": "同期と組み先輩と決別する", "result": "{doki}と固く手を握った。非礼を知った{senpai}は激しく憤った。",
+"effects": { "bonds": { "doki": 18, "senpai": -22 }, "relations": { "press": 4
+}, "exp": { "media": 10 } }, "next": "c3_doki" }, { "label": "先輩との縁は切れないと断る",
+"result": "{doki}は「中途半端だ」と離れ、結局{senpai}の前に再び頭を下げる羽目になった。", "effects": { "bonds":
+{ "doki": -20, "senpai": 10 }, "relations": { "party": 3 } }, "next":
+"c3_senpai" } ] }, { "id": "c3_senpai", "bg": "party_hq", "after_months":
+[2, 4], "conditions": { "status": ["議員"] }, "fallback": "end_fade", "lines": [ {
+"speaker": "narrator", "text": "党首選の足音が近づく中、{senpai}が有力議員たちへ{self}の推薦を説いて回った。"
+}, { "speaker": "senpai", "face": "smile", "text":
+"これで党の重鎮は抑えた。お前はわしの大事な弟子だ。堂々と表舞台へ出ろ。" }, { "speaker": "secretary", "face":
+"serious", "text": "先生、心強い後ろ盾ができました。一方、{doki}先生は対立候補の陣営に入ったようです。" }, {
+"speaker": "self", "face": "serious", "text":
+"誰かの手を取るということは、別の誰かを敵に回すこと。それでも頂へ進むしかない。" } ], "choices": [ { "label":
+"先輩の期待に応え前を向く", "result": "{senpai}との師弟の絆を確かめ合い、党首選への準備を本格化させた。", "effects": {
+"bonds": { "senpai": 5 }, "exp": { "network": 8 } }, "next": "end_senpai" }, {
+"label": "資金を厚くして勝負に備える", "result": "{senpai}の紹介で新たな支援者の輪が広がり、活動資金にも余裕が出た。",
+"effects": { "money": 40, "exp": { "money": 8 } }, "next": "end_senpai" } ] }, {
+"id": "c3_doki", "bg": "station", "after_months": [2, 4], "conditions": {
+"status": ["議員"] }, "fallback": "end_fade", "lines": [ { "speaker": "narrator",
+"text": "世論への発信を強化する街頭演説の後、{doki}と並んで駅前の人波を見つめた。" }, { "speaker": "doki",
+"face": "smile", "text": "若手はまとまったぞ、{self}。お前を担ぐためなら、俺たちはどんな泥でも被る。" }, {
+"speaker": "secretary", "face": "serious", "text":
+"先生、若手からの支持は盤石です。ただ、{senpai}先生は公然と対立陣営へ回りました。" }, { "speaker": "self", "face":
+"serious", "text": "先輩とは対立することになったが、今は同じ時代を駆ける盟友を信じるだけだ。" } ], "choices": [ {
+"label": "同期と肩を組み勢いを高める", "result": "{doki}と強い盟友関係を結び、党内に刷新のうねりを作り出した。",
+"effects": { "bonds": { "doki": 5 }, "exp": { "media": 8 } }, "next": "end_doki"
+}, { "label": "政策の練り上げを急ぐ", "result": "{doki}と共に党首選へ向けた大胆な公約をまとめ上げた。",
+"effects": { "exp": { "policy": 10 }, "relations": { "press": 3 } }, "next":
+"end_doki" } ] } ], "endings": [ { "id": "end_senpai", "title": "師弟の後ろ盾",
+"text": "先輩に頭を下げて師弟の契りを交わし、党首選への足場を固めた。同期とは不和の仲となった。", "effects": {
+"bond_state": { "senpai": "師弟", "doki": "不和" } } }, { "id": "end_doki", "title":
+"盟友との挑戦", "text": "同期に頭を下げて盟友となり、若手票を固めた。面目を潰された先輩とは不和に陥った。", "effects": {
+"bond_state": { "doki": "盟友", "senpai": "不和" } } }, { "id": "end_fade", "title":
+"出馬の断念", "text": "議席を離れたことで、党首選へ向けた水面下の根回しも立ち消えとなった。" } ] }, { "id":
+"leader_race_backroom", "title": "推薦人の約束", "summary":
+"ベテランとして党首選の推薦人集めが大詰めを迎える中、誰に最後の借りを頼むかで、盟友か恩人か、あるいは不和かの明暗が分かれる。", "cast":
+["senpai", "doki", "secretary", "other"], "start": { "trigger": "monthly",
+"status": ["議員"], "terms_min": 4 }, "chapters": [ { "id": "c1", "bg":
+"party_hq", "after_months": [3, 7], "lines": [ { "speaker": "narrator", "text":
+"党首選の告示まで数か月。推薦人の名簿を前に、{secretary}が厳しい数字を突きつけた。" }, { "speaker": "secretary",
+"face": "serious", "text": "先生、あと数人の推薦人が足りません。このままでは党首選への立候補自体が危ういです。" }, {
+"speaker": "other", "name": "選対の幹部", "text":
+"残る票を握っているのは、古参を率いる{senpai}か、中堅を束ねる{doki}のどちらかだ。" }, { "speaker": "self",
+"face": "serious", "text": "どちらのグループも相容れない要求を抱えている。両方に良い顔は通用しない局面だ。" }, {
+"speaker": "secretary", "face": "serious", "text":
+"今夜、どちらの門を叩いて頭を下げるか。その選択で、先生を助ける人と敵に回る人が決まります。" } ], "choices": [ { "label":
+"先輩の力を借りて大恩を受ける", "result": "{senpai}の部屋を訪れ、過去の経緯を問わずに推薦人の融通を頼み込んだ。", "effects":
+{ "bonds": { "senpai": 14, "doki": -10 }, "exp": { "network": 8 } }, "next":
+"c2_senpai" }, { "label": "同期の仲間に頭を下げて頼る", "result":
+"{doki}の事務所へ足を運び、推薦人の確保に力を貸してほしいと頭を下げた。", "effects": { "bonds": { "doki": 14,
+"senpai": -10 }, "exp": { "election": 8 } }, "next": "c2_doki" }, { "label":
+"自力で無所属系の一本釣りを狙う", "result": "二人に頼らず無派閥議員を回り始めたが、双方から冷ややかな目で見られた。", "effects": {
+"bonds": { "senpai": -10, "doki": -10 }, "exp": { "network": 12 } }, "next":
+"c2_solo" } ] }, { "id": "c2_senpai", "bg": "ryotei", "after_months": [1, 3],
+"conditions": { "status": ["議員"] }, "fallback": "end_fade", "lines": [ {
+"speaker": "narrator", "text": "奥座敷で、{senpai}が推薦人の名簿に署名しながら条件を切り出してきた。" }, {
+"speaker": "senpai", "face": "serious", "text":
+"この名簿を渡せばお前の出馬は決まる。だが、党首になったら{doki}一派は干してもらうぞ。" }, { "speaker": "self", "face":
+"surprised", "text": "党を挙げての戦いの後に、同じ仲間の{doki}を外すのですか。" }, { "speaker": "senpai",
+"face": "serious", "text": "わしの顔を立てる気があるなら当然のけじめだ。この大恩にどう報いるつもりだ。" } ],
+"choices": [ { "label": "大恩に応え同期の処遇を飲む", "result":
+"頭を下げて名簿を受け取った。裏を知った{doki}は怒りの言葉を叩きつけた。", "effects": { "bonds": { "senpai": 16,
+"doki": -20 }, "relations": { "party": 4 } }, "next": "c3_senpai" }, { "label":
+"人事に口を挟むならと断る", "result": "{senpai}は名簿を引っ込め、一転して対立陣営への支援を打ち出した。", "effects": {
+"bonds": { "senpai": -20, "doki": 4 }, "exp": { "policy": 8 } }, "next":
+"c3_senpai_fail" } ] }, { "id": "c2_doki", "bg": "office", "after_months":
+[1, 3], "conditions": { "status": ["議員"] }, "fallback": "end_fade", "lines": [ {
+"speaker": "narrator", "text": "夜更けの事務所で、{doki}が同志たちの署名を集めた束を机に置いた。" }, {
+"speaker": "doki", "face": "serious", "text":
+"俺の仲間から推薦人を回す。その代わり、{senpai}が握る古い予算には斬り込んでくれ。" }, { "speaker": "self", "face":
+"serious", "text": "そこまでやれば、{senpai}や古参議員たちが激しく反発するぞ。" }, { "speaker": "doki",
+"face": "serious", "text": "当たり前だ。俺たちは過去のしがらみを断ち切るために、お前に頭を下げられたんだからな。" } ],
+"choices": [ { "label": "同期と手を握り改革を約束する", "result":
+"{doki}と固く誓い合った。噂を聞いた{senpai}は「恩知らずめ」と吐き捨てた。", "effects": { "bonds": {
+"doki": 16, "senpai": -20 }, "relations": { "supporters": 4 } }, "next":
+"c3_doki" }, { "label": "先輩の利権には手を触れぬと返す", "result":
+"{doki}は呆れて名簿をしまい、「臆病者とは組めない」と去っていった。", "effects": { "bonds": { "doki": -20,
+"senpai": 4 }, "exp": { "network": 6 } }, "next": "c3_doki_fail" } ] }, { "id":
+"c2_solo", "bg": "diet", "after_months": [1, 3], "conditions": { "status":
+["議員"] }, "fallback": "end_fade", "lines": [ { "speaker": "narrator", "text":
+"一匹狼で無派閥の議員を回り続けたが、あと二人の壁がどうしても越えられない。" }, { "speaker": "secretary", "face":
+"serious", "text": "先生、{senpai}先生側も{doki}先生側も、先生を孤立させようと圧力をかけています。" }, {
+"speaker": "self", "face": "serious", "text":
+"ここで諦めるわけにはいかない。最後に自分の弁舌で一人を落とすか、頭を下げに行くかだ。" }, { "speaker": "other", "name":
+"選対の幹部", "text": "無派閥のベテランが一人、迷っているぞ。説得できるか、それとも頭を下げに行くかだ。" } ], "choices": [ {
+"label": "無派閥議員の説得に賭ける", "result": "粘り強い対話の末、無派閥の重鎮が推薦人に名を連ねてくれた。", "effects": {
+"relations": { "press": 5 }, "exp": { "media": 12 } }, "risk": { "ability":
+"調整", "threshold": 65, "fail_result": "説得は実らず推薦人が揃わなかった。党内での立場は厳しくなった。",
+"fail_effects": { "relations": { "party": -6 }, "mood": -1 }, "fail_next":
+"end_both_cold" }, "next": "end_solo" }, { "label": "やはり先輩に頭を下げに行く", "result":
+"{senpai}から推薦人を借りた。その代わり{doki}との関係は壊れた。", "effects": { "bonds": { "senpai": 14,
+"doki": -16 } }, "next": "end_senpai" } ] }, { "id": "c3_senpai", "bg":
+"party_hq", "after_months": [1, 3], "conditions": { "status": ["議員"] },
+"fallback": "end_fade", "lines": [ { "speaker": "narrator", "text":
+"告示前夜、必要数を超える推薦人名簿が完成した。{senpai}が満足そうに頷く。" }, { "speaker": "senpai", "face":
+"smile", "text": "これで大手を振って戦えるな。この借りは、お前が頂に立った時に返してもらうぞ。" }, { "speaker":
+"self", "face": "serious", "text": "はい、この御恩は一生忘れません。" }, { "speaker":
+"secretary", "face": "serious", "text":
+"（一方で、{doki}先生は完全に敵陣営へつきました。厳しい党首選になりそうです。）" } ], "choices": [ { "label":
+"先輩の恩を胸に戦いへ臨む", "result": "{senpai}を生涯の恩人と定め、党首選の出陣準備を終えた。", "effects": {
+"bonds": { "senpai": 5 }, "exp": { "network": 10 } }, "next": "end_senpai" }, {
+"label": "支援者への挨拶回りを急ぐ", "result": "名簿を提出する直前まで、各地の支援者へ決意の電話をかけ続けた。", "effects":
+{ "relations": { "supporters": 4 }, "exp": { "election": 8 } }, "next":
+"end_senpai" } ] }, { "id": "c3_doki", "bg": "campaign", "after_months": [1, 3],
+"conditions": { "status": ["議員"] }, "fallback": "end_fade", "lines": [ {
+"speaker": "narrator", "text": "仲間たちの熱気に包まれた事務所で、{doki}が推薦人名簿を手渡してくれた。" }, {
+"speaker": "doki", "face": "smile", "text":
+"やっと揃ったぞ。{senpai}たちの妨害もあったが、俺たちの結束は崩れなかった。" }, { "speaker": "self", "face":
+"serious", "text": "お前が泥を被って集めてくれたんだ。この恩義には、必ず勝利で報いる。" }, { "speaker": "doki",
+"face": "smile", "text": "当たり前だ。お前が党の顔になるんだ、最後まで一緒に走り切るぞ。" } ], "choices": [ {
+"label": "同期と固い握手を交わす", "result": "{doki}との盟友関係が確固たるものとなり、党首選への勢いがついた。",
+"effects": { "bonds": { "doki": 5 }, "exp": { "media": 10 } }, "next":
+"end_doki" }, { "label": "若手議員の熱意を力に変える", "result":
+"集まった仲間を前に演説の練習を重ね、本番へ向けた士気を高めた。", "effects": { "abilities": { "弁舌": 1 }, "exp":
+{ "election": 8 } }, "next": "end_doki" } ] }, { "id": "c3_senpai_fail", "bg":
+"home", "after_months": [1, 3], "conditions": { "status": ["議員"] }, "fallback":
+"end_fade", "lines": [ { "speaker": "narrator", "text":
+"条件を断った夜、{senpai}から「推薦人は出せない」と冷たい連絡が入った。" }, { "speaker": "secretary", "face":
+"serious", "text": "先生、{senpai}先生とこじれた今、{doki}先生と組み直すしかありません。" }, { "speaker":
+"self", "face": "sad", "text": "プライドを捨てて、もう一度{doki}に頭を下げてみるしかないか。" }, {
+"speaker": "secretary", "face": "normal", "text":
+"はい。仲間を見捨てなかった姿勢は、{doki}先生も評価してくれるはずです。" } ], "choices": [ { "label":
+"同期の元へ行き頭を下げる", "result": "事情を聞いた{doki}は苦笑いしつつも協力を受け入れ、名簿を埋めてくれた。", "effects": {
+"bonds": { "doki": 10 } }, "next": "end_doki" }, { "label": "今回は見送り体制を立て直す",
+"result": "党内での根回しに失敗し、{senpai}との対立だけが残る結果となった。", "effects": { "relations": {
+"party": -4 }, "exp": { "policy": 8 } }, "next": "end_senpai_cold" } ] }, {
+"id": "c3_doki_fail", "bg": "home", "after_months": [1, 3], "conditions": {
+"status": ["議員"] }, "fallback": "end_fade", "lines": [ { "speaker": "narrator",
+"text": "{doki}に断られた後、推薦人集めは暗礁に乗り上げてしまった。" }, { "speaker": "secretary", "face":
+"serious", "text": "先生、{doki}先生は他候補の応援へ回ったようです。残る道は{senpai}先生だけです。" }, {
+"speaker": "self", "face": "sad", "text":
+"恥を忍んででも、{senpai}の軍門に下るべきか、それとも潔く身を引くか。" }, { "speaker": "secretary", "face":
+"serious", "text": "今ここで引けば、次の機会がいつ巡ってくるか分かりません。" } ], "choices": [ { "label":
+"先輩の元へ頭を下げに行く", "result": "{senpai}は「最初からそうしろ」と笑い、大恩を売る形で助力を約束した。", "effects": {
+"bonds": { "senpai": 10 } }, "next": "end_senpai" }, { "label": "意地を貫き戦線から降りる",
+"result": "誰の言いなりにもならぬと出馬を断念したが、{doki}との溝は埋まらなかった。", "effects": { "relations": {
+"supporters": 4 }, "exp": { "policy": 8 } }, "next": "end_doki_cold" } ] } ],
+"endings": [ { "id": "end_senpai", "title": "恩人との誓い", "text":
+"先輩に頭を下げて推薦人を得た。先輩を恩人とする一方、同期とは不和の対立へと向かった。", "effects": { "bond_state": {
+"senpai": "恩人", "doki": "不和" } } }, { "id": "end_doki", "title": "盟友の結束",
+"text": "同期に頭を下げて盟友となり、出馬への道を開いた。先輩は離反し、不和の関係となった。", "effects": { "bond_state":
+{ "doki": "盟友", "senpai": "不和" } } }, { "id": "end_solo", "title": "孤高の挑戦",
+"text": "誰にも頭を下げず自力で推薦人を揃えた。二人の先輩と同期からは距離を置かれることになった。", "effects": {
+"bond_state": { "senpai": "不和", "doki": "不和" } } }, { "id": "end_both_cold",
+"title": "潰えた布石", "text": "自力での根回しに敗れ、双方からの信用も失った。党首選への道は険しさを増した。", "effects": {
+"bond_state": { "senpai": "不和", "doki": "不和" } } }, { "id": "end_senpai_cold",
+"title": "折れた交渉", "text": "先輩の条件を蹴った末に交渉が破談。先輩との間には、拭いがたい不和の札が残った。", "effects":
+{ "bond_state": { "senpai": "不和" } } }, { "id": "end_doki_cold", "title":
+"噛み合わぬ理想", "text": "同期との約束を飲みきれず決裂。同期の心は離れ、不和の間柄となってしまった。", "effects": {
+"bond_state": { "doki": "不和" } } }, { "id": "end_fade", "title": "戦場の変更",
+"text": "議席を失ったため、党首選への根回しも中断を余儀なくされた。" } ] }, { "id":
+"doki_reconciliation_or_break", "title": "こじれた友情", "summary":
+"不和となった同期と、共通の課題を通じて向き合う機会が訪れる。難しい関係修復に賭けるか、完全に決裂して別の道を進むかを問われる。", "cast":
+["doki", "secretary", "other"], "start": { "trigger": "monthly", "status":
+["議員"], "bond_state": { "doki": "不和" } }, "chapters": [ { "id": "c1", "bg":
+"diet", "after_months": [3, 7], "lines": [ { "speaker": "narrator", "text":
+"委員会室の廊下で、かつての同期{doki}とすれ違った。互いに目も合わせず通り過ぎようとする。" }, { "speaker": "other",
+"name": "同僚議員", "text": "いつまで意地を張り合ってる。次の地域振興法案は、お前たちが組まないと通らんぞ。" }, {
+"speaker": "doki", "face": "angry", "text": "俺は俺のやり方で通す。今さら馴れ合う気はないさ。" }, {
+"speaker": "secretary", "face": "serious", "text":
+"先生、党内でも二人の不和を心配する声が増えています。このままでは動きにくくなりますよ。" }, { "speaker": "self", "face":
+"serious", "text": "かつて同じ日にバッジを付けた仲間だ。ここで声をかけるか、それとも完全に割り切るか。" } ], "choices": [
+{ "label": "休憩時間に同期を呼び止める", "result": "ぎこちない空気の中、{doki}は渋々ながら立ち止まってこちらを見た。",
+"effects": { "bonds": { "doki": 5 } }, "next": "c2_talk" }, { "label":
+"冷ややかに背中を見送る", "result": "言葉は交わさず自分の仕事に戻った。後援会の幹部は「それでいい」と頷いた。", "effects": {
+"bonds": { "doki": -5 }, "relations": { "supporters": 4 }, "exp": {
+"election": 8 } }, "next": "c2_clash" } ] }, { "id": "c2_talk", "bg": "ryotei",
+"after_months": [2, 4], "conditions": { "status": ["議員"] }, "fallback":
+"end_fade", "lines": [ { "speaker": "narrator", "text":
+"同僚の取り成しで、夜の店に{doki}と二人きりになった。テーブルの上には重い沈黙が流れる。" }, { "speaker": "doki", "face":
+"angry", "text": "今さら何の用だ。あの時の仕打ちを俺が忘れたとでも思っているのか。" }, { "speaker": "self",
+"face": "serious", "text": "お互い、譲れない立場があったんだ。だが、このまま対立を続けても得をするのは他陣営だけだ。" }, {
+"speaker": "doki", "face": "serious", "text":
+"……お前が本気でそう思っているなら、言葉じゃなく態度で示してみろよ。" }, { "speaker": "self", "face": "serious",
+"text": "根深いわだかまりを解くには、相当な誠意と調整力が要る。それとも、ここで決別を告げるか。" } ], "choices": [ {
+"label": "非を認めて手を差し伸べる", "result": "本音を尽くした説得の末、{doki}はため息をついて握手を返してきた。",
+"effects": { "bonds": { "doki": 25 }, "exp": { "network": 12 } }, "risk": {
+"ability": "調整", "threshold": 65, "fail_result":
+"「白々しい」と手を払いのけられ、修復の試みは完全に失敗に終わった。", "fail_effects": { "bonds": { "doki": -18 },
+"exp": { "election": 8 } }, "fail_next": "c3_break" }, "next": "c3_mend" }, {
+"label": "やはり相容れないと席を立つ", "result": "互いの道は交わらないと悟り、代金を置いて先に店を出た。", "effects": {
+"bonds": { "doki": -15 }, "exp": { "election": 12 }, "relations": {
+"supporters": 6 } }, "next": "c3_break" } ] }, { "id": "c2_clash", "bg":
+"party_hq", "after_months": [2, 4], "conditions": { "status": ["議員"] },
+"fallback": "end_fade", "lines": [ { "speaker": "narrator", "text":
+"党本部の部会で、{doki}の推す案と自分の案が真っ向からぶつかった。周囲が息を呑む。" }, { "speaker": "doki", "face":
+"angry", "text": "お前のやり方は地元エゴそのものだ。いつまで古い政治にしがみつくつもりだ。" }, { "speaker":
+"secretary", "face": "serious", "text":
+"先生、今ならまだ一歩引いて対話へ持ち込めます。それとも、論戦で徹底的に叩き潰しますか。" }, { "speaker": "self", "face":
+"serious", "text": "相手の言い分も一理はあるが、ここで引けば支持者たちの顔が立たない。" } ], "choices": [ {
+"label": "頭を下げ共同案の作成を提案する", "result": "意外な歩み寄りに会議室の空気が変わり、{doki}も渋々ながら応じた。",
+"effects": { "bonds": { "doki": 22 }, "exp": { "policy": 10 } }, "risk": {
+"ability": "弁舌", "threshold": 65, "fail_result":
+"{doki}は「今さら茶番だ」と退席し、二人の亀裂は決定的なものとなった。", "fail_effects": { "bonds": { "doki":
+-18 }, "relations": { "supporters": 5 } }, "fail_next": "c3_break" }, "next":
+"c3_mend" }, { "label": "正論で相手の矛盾を突き放す", "result":
+"鋭い追及に{doki}は沈黙した。地元支持者からは喝采が送られた。", "effects": { "bonds": { "doki": -18 },
+"exp": { "media": 12, "election": 8 }, "relations": { "supporters": 6 } },
+"next": "c3_break" } ] }, { "id": "c3_mend", "bg": "diet", "after_months":
+[1, 3], "conditions": { "status": ["議員"] }, "fallback": "end_fade", "lines": [ {
+"speaker": "narrator", "text": "数週間後、法案が満場一致で委員会を通過した。廊下で{doki}が苦笑しながら歩み寄ってきた。"
+}, { "speaker": "doki", "face": "smile", "text":
+"助かったよ、{self}。やっぱりお前と背中を預け合うと、仕事がやりやすいな。" }, { "speaker": "self", "face":
+"smile", "text": "遠回りしたが、お互いの強さも弱さもよく見えた。これからはもう迷わない。" }, { "speaker": "doki",
+"face": "normal", "text": "ああ、もう二度とつまらない意地でぶつかるのはなしにしよう。" } ], "choices": [ {
+"label": "再び盟友として笑い合う", "result": "固い握手を交わし、かつて以上の信頼で結ばれた盟友となった。", "effects": {
+"bonds": { "doki": 8 }, "exp": { "network": 10 } }, "next": "end_mend" }, {
+"label": "法案の仕上げにすぐ取りかかる", "result": "無駄な言葉はいらない。二人は並んで次の会議室へ向かった。", "effects":
+{ "exp": { "policy": 10 }, "relations": { "party": 4 } }, "next": "end_mend" } ]
+}, { "id": "c3_break", "bg": "office", "after_months": [1, 3], "conditions": {
+"status": ["議員"] }, "fallback": "end_fade", "lines": [ { "speaker": "narrator",
+"text": "対立が公然のものとなった夜、事務所には逆に多くの地元の支持者が激励に集まった。" }, { "speaker": "other",
+"name": "後援会長", "text": "見事です先生！誰に気兼ねすることなく、これからも地元のために戦ってください。" }, { "speaker":
+"secretary", "face": "normal", "text":
+"先生、{doki}先生とは別れましたが、後援会の結束はかつてないほど強まっています。" }, { "speaker": "self", "face":
+"serious", "text": "友情は失ったが、背負うべき覚悟はよりはっきりした。この因縁を力に変えて進むしかない。" } ], "choices":
+[ { "label": "地元の期待を力に変えて戦う", "result": "対立を恐れぬ姿勢が支持を広げ、次の選挙への手応えを掴んだ。",
+"effects": { "vote_bonus": 2, "jiban_progress": 20, "exp": { "election": 10 } },
+"next": "end_break" }, { "label": "独自の政策を掲げて突き進む", "result":
+"誰の顔色も窺わぬ一匹狼の覚悟で、政界での存在感を高めた。", "effects": { "abilities": { "弁舌": 1 }, "exp": {
+"media": 12 } }, "next": "end_break" } ] } ], "endings": [ { "id": "end_mend",
+"title": "雪解けの盟友", "text": "深い亀裂を乗り越えて和解を果たした。再び信頼を取り戻し、揺るがぬ盟友となった。", "effects":
+{ "bond_state": { "doki": "盟友" } } }, { "id": "end_break", "title": "決別の因縁",
+"text": "和解の道は閉ざされ、同期とは明確な因縁となった。しかし、迷いを捨てたことで独自の支持が固まった。", "effects": {
+"bond_state": { "doki": "因縁" } } }, { "id": "end_fade", "title": "遠のく影", "text":
+"議席を失い国会を離れたことで、同期との確執も一度幕を下ろすこととなった。" } ] }, { "id":
+"senpai_reconciliation_or_break", "title": "師弟の分岐点", "summary":
+"不和になった党の先輩と、党内の重要局面で顔を合わせる。頭を下げて修復を願うか、完全に袂を分かって自立するかを選ぶ物語。", "cast":
+["senpai", "secretary", "other"], "start": { "trigger": "monthly", "status":
+["議員"], "bond_state": { "senpai": "不和" } }, "chapters": [ { "id": "c1", "bg":
+"party_hq", "after_months": [3, 8], "lines": [ { "speaker": "narrator", "text":
+"党本部の重鎮たちが集まる会合で、{senpai}が自分の姿を見るなり露骨に顔を背けた。" }, { "speaker": "secretary",
+"face": "serious", "text": "先生、{senpai}先生周辺の県連や業界団体からも、こちらの要請が敬遠され始めています。" }, {
+"speaker": "other", "name": "先輩の側近", "text":
+"あの人が機嫌を直さない限り、君の地元予算も党のポストもずっと後回しだぞ。" }, { "speaker": "self", "face":
+"serious", "text": "頭を下げて昔の師弟関係を取り戻しに行くか、それとも先輩の影響力から完全に独立するか。" } ], "choices":
+[ { "label": "先輩の事務所へ挨拶に出向く", "result":
+"門前払いを覚悟で訪ねると、{senpai}は冷たい目つきで部屋へ招き入れた。", "effects": { "bonds": { "senpai": 5 }
+}, "next": "c2_visit" }, { "label": "古い派閥の圧力を突っぱねる", "result":
+"圧力には屈しないと宣言したことで、若手支持者から拍手が湧いた。", "effects": { "bonds": { "senpai": -5 },
+"relations": { "press": 4, "supporters": 4 }, "exp": { "media": 8 } }, "next":
+"c2_defy" } ] }, { "id": "c2_visit", "bg": "office", "after_months": [2, 4],
+"conditions": { "status": ["議員"] }, "fallback": "end_fade", "lines": [ {
+"speaker": "narrator", "text": "{senpai}の事務所の重い扉を開けると、机の向こうから鋭い視線が飛んできた。" }, {
+"speaker": "senpai", "face": "angry", "text":
+"何のつもりだ。今さら俺に頭を下げても、消えた信頼は簡単には戻らんぞ。" }, { "speaker": "self", "face": "serious",
+"text": "これまでの無礼をお詫びします。もう一度、一からご指導をいただきたいのです。" }, { "speaker": "senpai",
+"face": "serious", "text": "ほう……口先だけではないというなら、お前の本気を見せてみろ。" } ], "choices": [ {
+"label": "粘り強く誠意を尽くして説く", "result": "深々と頭を下げ続けた誠意に、{senpai}も「そこまで言うなら」と表情を緩めた。",
+"effects": { "bonds": { "senpai": 25 }, "exp": { "network": 12 } }, "risk": {
+"ability": "調整", "threshold": 65, "fail_result":
+"「遅すぎる」と冷たく突き放され、事務所を後にするほかなかった。", "fail_effects": { "bonds": { "senpai": -18 },
+"relations": { "party": -4 } }, "fail_next": "c3_break" }, "next": "c3_mend" },
+{ "label": "理不尽な要求には引くと告げる", "result": "誇りまで捨てることはできぬと席を立ち、決別を覚悟した。", "effects":
+{ "bonds": { "senpai": -15 }, "exp": { "election": 12 }, "relations": {
+"supporters": 6 } }, "next": "c3_break" } ] }, { "id": "c2_defy", "bg": "hall",
+"after_months": [2, 4], "conditions": { "status": ["議員"] }, "fallback":
+"end_fade", "lines": [ { "speaker": "narrator", "text":
+"地元の市民会館で開いた国政報告会。最前列で支援者たちが固唾を呑んで見守っている。" }, { "speaker": "secretary", "face":
+"serious", "text": "先生、会場の外に{senpai}先生からの使いが来ています。演説の前に話し合いたいそうです。" }, {
+"speaker": "other", "name": "先輩の側近", "text":
+"今なら大先輩も水に流すと言っている。ここで穏便に収めるのが大人の知恵だぞ。" }, { "speaker": "self", "face":
+"serious", "text": "舞台袖から会場を見渡す。支援者は古いしがらみに縛られない自分の姿に期待している。" } ], "choices": [
+{ "label": "控え室で先輩側と和解を模索する", "result": "演説直前の短い交渉で歩み寄り、関係修復の糸口を掴んだ。",
+"effects": { "bonds": { "senpai": 22 }, "exp": { "network": 10 } }, "risk": {
+"ability": "調整", "threshold": 65, "fail_result":
+"条件の折り合いがつかず交渉決裂。先輩側は怒って引き上げた。", "fail_effects": { "bonds": { "senpai": -18 },
+"relations": { "supporters": 5 } }, "fail_next": "c3_break" }, "next": "c3_mend"
+}, { "label": "演壇に立ち世代交代を訴える", "result": "長老支配との決別を高らかに宣言し、会場は割れんばかりの歓声に包まれた。",
+"effects": { "bonds": { "senpai": -20 }, "exp": { "media": 12, "election": 10 },
+"relations": { "supporters": 8 } }, "next": "c3_break" } ] }, { "id": "c3_mend",
+"bg": "party_hq", "after_months": [1, 3], "conditions": { "status": ["議員"] },
+"fallback": "end_fade", "lines": [ { "speaker": "narrator", "text":
+"数日後、{senpai}から「一度食事に行こう」と連絡が入った。長い冬の終わりを感じた。" }, { "speaker": "senpai", "face":
+"smile", "text": "お前も図太くなったな。まあ、ぶつかることも勉強のうちだ。これからはまた力を合わせよう。" }, { "speaker":
+"self", "face": "smile", "text": "ありがとうございます。先輩の経験に学びながら、精一杯やっていきます。" }, {
+"speaker": "secretary", "face": "smile", "text":
+"（先生、これで党内の風向きも一変します。本当に良かったです。）" } ], "choices": [ { "label": "再び師弟として教えを乞う",
+"result": "かつての師弟関係を取り戻し、党内での足場が一気に安定した。", "effects": { "bonds": { "senpai": 8
+}, "relations": { "party": 6 } }, "next": "end_mend" }, { "label":
+"党内の人脈づくりを再開する", "result": "{senpai}の計らいで多くの有力議員と顔を繋ぎ、人脈を広げた。", "effects": {
+"exp": { "network": 12 } }, "next": "end_mend" } ] }, { "id": "c3_break", "bg":
+"street", "after_months": [1, 3], "conditions": { "status": ["議員"] },
+"fallback": "end_fade", "lines": [ { "speaker": "narrator", "text":
+"先輩の傘下から完全に離れた朝、{district}の駅前に一人で立ち、マイクを握った。" }, { "speaker": "secretary",
+"face": "normal", "text": "先生、{senpai}先生の支援はもう望めません。ですが、自力の支援者が増えています。" }, {
+"speaker": "self", "face": "serious", "text":
+"後ろ盾を失ったのは痛いが、誰の顔色も見ずに自分の信念を語れる自由を手に入れた。" }, { "speaker": "other", "name":
+"通りの有権者", "text": "誰の言いなりにもならないあんたを応援してるよ。負けるな！" } ], "choices": [ { "label":
+"自前の地盤を徹底して鍛える", "result": "後ろ盾に頼らぬ草の根の運動が実を結び、選挙区での支持が深まった。", "effects": {
+"vote_bonus": 2, "jiban_progress": 20, "exp": { "election": 12 } }, "next":
+"end_break" }, { "label": "弁舌を武器に世論へ訴え続ける", "result":
+"独立独歩の姿勢が注目され、メディアや有権者からの評価が高まった。", "effects": { "abilities": { "弁舌": 1 },
+"relations": { "press": 5 }, "exp": { "media": 12 } }, "next": "end_break" } ] }
+], "endings": [ { "id": "end_mend", "title": "再生した師弟", "text":
+"長い冷戦を経て先輩と和解した。不和は解け、再び揺るがぬ師弟の絆を取り戻した。", "effects": { "bond_state": { "senpai":
+"師弟" } } }, { "id": "end_break", "title": "独り立ちの因縁", "text":
+"先輩と完全に決別し因縁の相手となった。だが、自力で戦う覚悟が支持者を熱く動かした。", "effects": { "bond_state": {
+"senpai": "因縁" } } }, { "id": "end_fade", "title": "過ぎ去った日々", "text":
+"議席を離れたことで、先輩との長年の確執も遠い過去の出来事となった。" } ] }, { "id": "pm_secretary_kantei",
+"title": "官邸の灯り", "summary":
+"首相就任後、苦楽を共にした秘書を官邸へ連れていくか地元に置くかを選び、激務の中で秘書との信頼と健康に向き合う物語。", "cast":
+["secretary", "other"], "start": { "trigger": "post_change", "status": ["議員"],
+"post": ["pm"] }, "chapters": [ { "id": "c1", "bg": "office", "after_months":
+[1, 2], "conditions": { "post": ["pm"] }, "fallback": "end_stepdown", "lines": [
+{ "speaker": "narrator", "text": "首相就任からまもなく、官邸の執務室には各省庁から派遣された精鋭の秘書官が並んだ。" }, {
+"speaker": "other", "name": "首席秘書官", "text":
+"総理、政務の秘書官を一人お選びください。地元の秘書の{secretary}氏を呼ばれますか。" }, { "speaker": "secretary",
+"face": "surprised", "text": "先生、私のような者が官邸の中枢に入ってよいものでしょうか。地元の守りも大事です。" }, {
+"speaker": "self", "face": "serious", "text":
+"慣れない官邸で{secretary}に寄り添ってもらうか、それとも愛着ある地元を託すか。" } ], "choices": [ { "label":
+"秘書を官邸へ呼び寄せる", "result": "{secretary}を政務秘書官に据え、二人三脚で官邸の業務を始めた。", "effects": {
+"bonds": { "secretary": 15 }, "relations": { "secretary": 5, "party": -2 },
+"exp": { "network": 8 } }, "next": "c2_kantei" }, { "label": "地元事務所の守りを託す",
+"result": "地元の要として{district}に残るよう頼み、官邸へは一人で向かった。", "effects": { "bonds": {
+"secretary": -4 }, "relations": { "supporters": 5 }, "exp": { "election": 8 } },
+"next": "c2_local" } ] }, { "id": "c2_kantei", "bg": "diet", "after_months":
+[2, 4], "conditions": { "post": ["pm"] }, "fallback": "end_stepdown", "lines": [
+{ "speaker": "narrator", "text":
+"官邸の夜は短い。未明の新聞読みから深夜の国会対策まで、{secretary}は休む暇もない。" }, { "speaker": "other",
+"name": "首席秘書官", "text": "総理、{secretary}氏は官僚との調整に無理を重ね、ここ数日眠れていません。" }, {
+"speaker": "secretary", "face": "sad", "text":
+"大丈夫です、先生。私が倒れたら、先生の本当の声を聞いてくれる人がいなくなりますから。" }, { "speaker": "self", "face":
+"serious", "text": "顔色は紙のように白い。ここで休ませれば業務が滞るが、無理をさせれば取り返しがつかない。" } ], "choices":
+[ { "label": "強制的に数日の休養を命じる", "result": "業務の遅れを覚悟で休ませると、{secretary}は涙ぐんで感謝した。",
+"effects": { "bonds": { "secretary": 14 }, "relations": { "secretary": 6 },
+"stamina": -6, "approval": -1 }, "next": "c3" }, { "label": "踏ん張りどころだと励ます",
+"result": "叱咤に応え{secretary}は懸命に働き抜き、官邸の歯車が見事に噛み合った。", "effects": { "bonds": {
+"secretary": 6 }, "approval": 1, "exp": { "policy": 12 } }, "risk": { "ability":
+"組織", "threshold": 62, "fail_result": "{secretary}が過労で倒れて入院し、官邸の無理な勤務実態が批判された。",
+"fail_effects": { "bonds": { "secretary": -16 }, "relations": { "secretary": -8,
+"press": -4 }, "approval": -2 }, "fail_next": "c3" }, "next": "c3" } ] }, {
+"id": "c2_local", "bg": "home", "after_months": [2, 4], "conditions": { "post":
+["pm"] }, "fallback": "end_stepdown", "lines": [ { "speaker": "narrator",
+"text": "官邸と{district}は遠い。電話越しの{secretary}の声が日ごとに掠れていく。" }, { "speaker":
+"secretary", "face": "sad", "text": "先生、地元では総理が遠くなったという声が出ています。対応に追われていて……。" },
+{ "speaker": "other", "name": "首席秘書官", "text":
+"総理、週末の地方遊説を削ってでも地元へ戻られますか。それとも秘書に抑えさせますか。" }, { "speaker": "self", "face":
+"serious", "text": "一国の首相として全国を回るべきか、原点である地元と秘書を労わるべきか。" } ], "choices": [ {
+"label": "週末に地元へ帰り秘書を労う", "result": "疲れを押して地元へ戻り、{secretary}と膝を突き合わせて支持者を回った。",
+"effects": { "bonds": { "secretary": 14 }, "stamina": -10, "relations": {
+"supporters": 5 } }, "next": "c3" }, { "label": "政務優先を伝え地元を任せる", "result":
+"厳しい電話のあと、{secretary}が必死に走り回り地元の不満を鎮めた。", "effects": { "approval": 1, "exp": {
+"election": 10 }, "bonds": { "secretary": 4 } }, "risk": { "ability": "調整",
+"threshold": 62, "fail_result": "地元との意思疎通が崩れ、{secretary}との信頼にも深い傷がついた。",
+"fail_effects": { "bonds": { "secretary": -16 }, "relations": { "secretary": -8,
+"supporters": -5 }, "approval": -1 }, "fail_next": "c3" }, "next": "c3" } ] }, {
+"id": "c3", "bg": "office", "after_months": [2, 4], "conditions": { "post":
+["pm"] }, "fallback": "end_stepdown", "lines": [ { "speaker": "narrator",
+"text": "大きな国会山場を越えた深夜、誰もいなくなった執務室で{secretary}とお茶を飲んだ。" }, { "speaker":
+"secretary", "face": "smile", "text":
+"先生、初めて街頭に立った日を覚えていますか。あの頃からは想像もできない場所に来ましたね。" }, { "speaker": "self", "face":
+"normal", "text": "お前がいなければ、ここまで辿り着くことはできなかった。本当にすまないと思っている。" }, { "speaker":
+"secretary", "face": "smile", "text": "何をおっしゃいますか。総理になっても、先生はいつまでも私の先生です。" } ],
+"choices": [ { "label": "これからも二人三脚で歩むと誓う", "result":
+"変わらぬ絆を確かめ合い、翌日からの厳しい政務への活力を得た。", "effects": { "bonds": { "secretary": 10 },
+"mood": 1, "approval": 1 }, "next": "end_trust" }, { "label": "首相としての孤独な責任を背負う",
+"result": "一番近い人の思いさえも胸にしまい、国の舵取りに集中する覚悟を決めた。", "effects": { "abilities": {
+"政策": 1 }, "exp": { "policy": 12 }, "approval": 1 }, "next": "end_solitude" } ]
+} ], "endings": [ { "id": "end_trust", "title": "変わらぬ背中", "text":
+"頂に立っても秘書との絆は揺るがなかった。一番近い理解者に支えられ、政権は安定感を増した。" }, { "id": "end_solitude",
+"title": "孤独な頂", "text": "秘書の献身を胸に刻みつつ、首相として誰にも頼れぬ最終責任を引き受ける覚悟を固めた。" }, { "id":
+"end_stepdown", "title": "官邸を去る日", "text": "首相の座を降りたことで、官邸での慌ただしい日々にも一区切りがついた。"
+} ] }, { "id": "pm_doki_cabinet", "title": "閣僚の椅子と友情", "summary":
+"内閣の重要人事を前に、共に歩んできた同期を閣僚に抜擢するか、党内の均衡を保つために見送るかで悩む首相の物語。", "cast": ["doki",
+"senpai", "secretary"], "start": { "trigger": "monthly", "status": ["議員"],
+"post": ["pm"] }, "chapters": [ { "id": "c1", "bg": "party_hq", "after_months":
+[2, 5], "conditions": { "post": ["pm"] }, "fallback": "end_stepdown", "lines": [
+{ "speaker": "narrator", "text": "内閣の看板となる重要閣僚の席が空いた。党内では次の起用を巡って憶測が飛び交っている。" },
+{ "speaker": "doki", "face": "serious", "text":
+"総理、俺にそのポストを任せてくれないか。お前が描く改革を、現場のトップとして形にしたいんだ。" }, { "speaker": "senpai",
+"face": "serious", "text": "総理、同期を重用すれば身内びいきと叩かれます。ここは他から起用すべきです。" }, {
+"speaker": "secretary", "face": "serious", "text":
+"先生、{doki}先生への友情と、総理としての公平な人事。どちらを優先されますか。" }, { "speaker": "self", "face":
+"serious", "text": "政権の推進力を取るか、党内の融和と世論の納得を取るか。人事は総理の専権事項だが、重い。" } ], "choices":
+[ { "label": "同期を重要閣僚に抜擢する", "result":
+"{doki}を閣僚に起用した。{senpai}は眉をひそめ、野党は一斉に批判を始めた。", "effects": { "bonds": {
+"doki": 15, "senpai": -10 }, "relations": { "press": -3 }, "approval": -1 },
+"next": "c2_appointed" }, { "label": "同期を見送り他派から起用する", "result":
+"党内の均衡を優先し他から選んだ。{doki}は黙って目を伏せ、部屋を出て行った。", "effects": { "bonds": { "doki": -15,
+"senpai": 10 }, "relations": { "party": 5 }, "approval": 1 }, "next":
+"c2_skipped" } ] }, { "id": "c2_appointed", "bg": "diet", "after_months":
+[2, 4], "conditions": { "post": ["pm"] }, "fallback": "end_stepdown", "lines": [
+{ "speaker": "narrator", "text": "新閣僚の就任早々、国会の委員会では身内びいきの人事ではないかと激しい追及が続いた。" },
+{ "speaker": "doki", "face": "sad", "text":
+"すまない、{self}……いや、総理。俺が答弁でもたついたせいで、政権に迷惑をかけている。" }, { "speaker": "senpai",
+"face": "serious", "text": "だから言ったのです。世論の風当たりは強い。今からでも距離を置いた姿勢を見せねば。" }, {
+"speaker": "self", "face": "serious", "text":
+"自分が選んだ大臣だ。ここで盾になって守り抜くか、それとも厳しく突き放すか。" } ], "choices": [ { "label":
+"総理として同期を全力で庇う", "result": "「結果で証明する」と堂々と答弁し、{doki}も次第に実力を認められた。", "effects": {
+"bonds": { "doki": 10 }, "approval": 2, "exp": { "media": 15 } }, "risk": {
+"ability": "弁舌", "threshold": 65, "fail_result":
+"庇うほど「身内に甘い」と批判が広がり、内閣支持率が大きく落ち込んだ。", "fail_effects": { "approval": -3,
+"relations": { "press": -6 }, "bonds": { "doki": 4 } }, "fail_next":
+"c3_distance" }, "next": "c3_comrade" }, { "label": "同期に厳しく自律を求める", "result":
+"公私のけじめを厳しく言い渡したことで批判は収まったが、二人の距離は広がった。", "effects": { "bonds": { "doki": -10 },
+"relations": { "party": 4 }, "approval": 1 }, "next": "c3_distance" } ] }, {
+"id": "c2_skipped", "bg": "ryotei", "after_months": [2, 4], "conditions": {
+"post": ["pm"] }, "fallback": "end_stepdown", "lines": [ { "speaker":
+"narrator", "text": "人事から数か月、閣僚を外れた{doki}が党内で官邸に批判的な勉強会を始めたと知らされた。" }, {
+"speaker": "secretary", "face": "serious", "text":
+"先生、{doki}先生は総理が志を忘れたとこぼしているそうです。党が割れかねません。" }, { "speaker": "doki", "face":
+"angry", "text": "呼んだのはお前か、総理。どうせ古い連中の顔色を見て、俺を切り捨てたんだろう。" }, { "speaker":
+"self", "face": "serious", "text": "誤解だと言いたい。だが、首相の座にいる自分がどう語れば同期の心に届くだろうか。" }
+], "choices": [ { "label": "二人きりで本音を明かし詫びる", "result":
+"首相としての苦悩を包み隠さず語り、{doki}もようやく理解を示してくれた。", "effects": { "bonds": { "doki": 18 },
+"exp": { "network": 12 } }, "risk": { "ability": "調整", "threshold": 65,
+"fail_result": "「総理の理屈だ」と受け入れられず、二人の溝は決定的になってしまった。", "fail_effects": { "bonds":
+{ "doki": -16 }, "relations": { "party": -5 } }, "fail_next": "c3_distance" },
+"next": "c3_comrade" }, { "label": "党の規律を優先し距離を置く", "result":
+"総理として私情は挟めないと突き放し、党内の引き締めを図った。", "effects": { "bonds": { "doki": -12 },
+"relations": { "party": 5 }, "approval": 1 }, "next": "c3_distance" } ] }, {
+"id": "c3_comrade", "bg": "diet", "after_months": [2, 4], "conditions": {
+"post": ["pm"] }, "fallback": "end_stepdown", "lines": [ { "speaker":
+"narrator", "text": "激しい国会を乗り越えた夕方、{doki}が控え室へ書類を抱えて顔を覗かせた。" }, { "speaker":
+"doki", "face": "smile", "text": "お前が総理になって、正直俺たちの関係は終わるかと思った。でも、立場が変わっても仲間だな。"
+}, { "speaker": "self", "face": "smile", "text":
+"国を動かす立場になって分かった。お前のように本音でぶつかってくれる存在が、どれほど貴重か。" }, { "speaker": "doki", "face":
+"smile", "text": "よし、次の法案も俺に任せろ。総理の背中はしっかり支えてやるよ。" } ], "choices": [ { "label":
+"同志として新たな連携を誓う", "result": "首相と同期の新たな信頼関係が築かれ、政権に力強い推進力が生まれた。", "effects": {
+"bonds": { "doki": 6 }, "approval": 1, "exp": { "policy": 10 } }, "next":
+"end_comrade" }, { "label": "公の立場を忘れぬよう釘を刺す", "result":
+"親しき中にも規律を保つことで、周囲からも認められる強い関係となった。", "effects": { "relations": { "party": 5 },
+"exp": { "network": 8 } }, "next": "end_comrade" } ] }, { "id": "c3_distance",
+"bg": "party_hq", "after_months": [2, 4], "conditions": { "post": ["pm"] },
+"fallback": "end_stepdown", "lines": [ { "speaker": "narrator", "text":
+"官邸の会議を終えて党本部へ戻ると、{doki}が別の議員たちと談笑しながら通り過ぎた。" }, { "speaker": "secretary",
+"face": "sad", "text": "先生、昔から総理に友人はいないと申します。寂しいですが、これが頂の景色なのでしょう。" }, {
+"speaker": "self", "face": "sad", "text":
+"同じ夢を追った同期さえ、政権の論理の前では一人の議員として扱うしかないのか。" }, { "speaker": "senpai", "face":
+"normal", "text": "それでいいのです、総理。すべての責任を一人で負うのが、この椅子の重みですからな。" } ], "choices": [ {
+"label": "孤独を受け入れ職務に徹する", "result": "私情を完全に切り離し、冷静な判断力で政権を運営していく決意を固めた。",
+"effects": { "abilities": { "調整": 1 }, "approval": 1, "exp": { "policy": 8 } },
+"next": "end_lonely" }, { "label": "政権の安定を何より優先する", "result":
+"党内のバランスを保ち続け、大きな波風を立てずに政局を乗り切った。", "effects": { "relations": { "party": 5 },
+"exp": { "network": 8 } }, "next": "end_lonely" } ] } ], "endings": [ { "id":
+"end_comrade", "title": "頂で繋ぐ友情", "text":
+"首相という重い立場を超えて同期との信頼を守り抜いた。最強の理解者が政権を支え続ける。" }, { "id": "end_lonely", "title":
+"総理に友なし", "text": "権力の頂点で同期と距離を置く道を選んだ。孤独と引き換えに、冷徹な政権運営を貫く。" }, { "id":
+"end_stepdown", "title": "人事の余韻", "text":
+"首相の任期を終えたことで、閣僚人事を巡る緊迫したやり取りにも区切りがついた。" } ] }, { "id": "pm_coalition_bargain",
+"title": "政権維持の代償", "summary":
+"重要予算の成立を前に、連立を組む他党の党首から強硬な政策要求を突きつけられる。政権維持か自党の理念かを問われる首相の物語。", "cast":
+["secretary", "senpai", "other"], "start": { "trigger": "monthly", "status":
+["議員"], "post": ["pm"] }, "chapters": [ { "id": "c1", "bg": "ryotei",
+"after_months": [3, 6], "conditions": { "post": ["pm"] }, "fallback":
+"end_stepdown", "lines": [ { "speaker": "narrator", "text":
+"予算案の採決を控え、政権を支える他党の党首と深夜の料亭で向き合った。" }, { "speaker": "other", "name": "他党の党首",
+"text": "総理、我が党が掲げる大規模給付策を今すぐ予算に組み込んでくれ。さもなくば政権協力は白紙だ。" }, { "speaker": "self",
+"face": "serious", "text": "そんな巨額の財源を急ごしらえすれば、国の財政計画が根底から崩れてしまう。" }, {
+"speaker": "other", "name": "他党の党首", "text":
+"我々にも支持者への約束がある。政権を保ちたいなら、痛み分けで飲んでもらうしかないな。" }, { "speaker": "secretary",
+"face": "serious", "text": "（先生、要求を飲めば自党の反発は必至です。かといって断れば、予算が通らず政権が揺らぎます。）" } ],
+"choices": [ { "label": "要求を飲み予算成立を優先する", "result":
+"苦渋の末に条件を受け入れた。連立相手の顔色は和らいだが、胸には重荷が残った。", "effects": { "approval": -1,
+"relations": { "party": -5 }, "exp": { "network": 10 } }, "next": "c2_concede"
+}, { "label": "財源の筋が通らないと拒絶する", "result":
+"「国の将来に責任を持てない案は飲めない」と断り、相手は席を蹴って去った。", "effects": { "relations": { "party": 4,
+"press": 3 }, "approval": 1 }, "next": "c2_refuse" } ] }, { "id": "c2_concede",
+"bg": "party_hq", "after_months": [1, 3], "conditions": { "post": ["pm"] },
+"fallback": "end_stepdown", "lines": [ { "speaker": "narrator", "text":
+"合意内容が伝わるやいなや、党本部には自党の幹部や{senpai}が血相を変えて詰めかけた。" }, { "speaker": "senpai",
+"face": "angry", "text": "総理、他党の言いなりになるとは何事ですか！我が党の看板政策が丸潰れではありませんか。" }, {
+"speaker": "secretary", "face": "serious", "text":
+"先生、党内の反発が収まりません。このままでは予算案に造反者が出かねない状況です。" }, { "speaker": "self", "face":
+"serious", "text": "政権を保つための苦渋の譲歩だった。だが、この怒りをどう鎮めるかが問われている。" } ], "choices": [ {
+"label": "党の幹部を直接説得して回る", "result": "一人ひとりに政権維持の意義を説き、党内の不満をぎりぎりで抑え込んだ。",
+"effects": { "relations": { "party": 7 }, "bonds": { "senpai": 8 }, "exp": {
+"network": 12 } }, "risk": { "ability": "調整", "threshold": 65, "fail_result":
+"「総理の独断だ」と反発が拡大し、党内不和と支持率低下を招いてしまった。", "fail_effects": { "relations": { "party":
+-8 }, "bonds": { "senpai": -10 }, "approval": -2 }, "fail_next": "c3" }, "next":
+"c3" }, { "label": "首相の権限を盾に押し切る", "result":
+"「責任はすべて私が取る」と強硬に押し切り、党内には冷ややかな空気が残った。", "effects": { "relations": { "party": -5
+}, "bonds": { "senpai": -8 }, "exp": { "policy": 10 }, "approval": -1 }, "next":
+"c3" } ] }, { "id": "c2_refuse", "bg": "diet", "after_months": [1, 3],
+"conditions": { "post": ["pm"] }, "fallback": "end_stepdown", "lines": [ {
+"speaker": "narrator", "text": "決裂を受けて、相手の党は委員会の審議を欠席し始めた。政局は一気に緊迫の度を深める。" }, {
+"speaker": "secretary", "face": "serious", "text":
+"先生、各社が連立崩壊の危機と一斉に報じています。予算が通らねば政権の命取りです。" }, { "speaker": "senpai", "face":
+"serious", "text": "総理、相手の顔を立てる妥協案を探るか、いっそ解散をちらつかせて強気で押すか、決断の時です。" }, {
+"speaker": "self", "face": "serious", "text":
+"相手にどこまで歩み寄れるか。国会の時計の針が、一分一秒と迫ってくる。" } ], "choices": [ { "label":
+"財源を絞った代替案を再提示する", "result": "期限を区切った現実的な修正案を示し、ようやく他党の党首を交渉の席へ戻した。", "effects":
+{ "approval": 2, "exp": { "policy": 15 } }, "risk": { "ability": "政策",
+"threshold": 65, "fail_result": "付け焼き刃の案だと突っぱねられ、審議停滞で内閣支持率が落ち込んだ。",
+"fail_effects": { "approval": -3, "relations": { "press": -5 } }, "fail_next":
+"c3" }, "next": "c3" }, { "label": "解散総選挙をちらつかせ牽制する", "result":
+"解散風を吹かせたことで相手も選挙を恐れて折れ、審議は何とか動き出した。", "effects": { "approval": -2, "relations":
+{ "press": 2 }, "exp": { "election": 12 } }, "risk": { "ability": "調整",
+"threshold": 65, "fail_result": "強気の脅しが裏目に出て相手を硬化させ、内閣支持率も低下した。",
+"fail_effects": { "approval": -3, "relations": { "party": -4 } }, "fail_next":
+"c3" }, "next": "c3" } ] }, { "id": "c3", "bg": "tv", "after_months": [1, 3],
+"conditions": { "post": ["pm"] }, "fallback": "end_stepdown", "lines": [ {
+"speaker": "narrator", "text": "激しい駆け引きを経て、首相官邸での記者会見を迎えた。無数のフラッシュが焚かれる。" }, {
+"speaker": "other", "name": "記者", "text":
+"総理、今回の決着は他党への屈服か、それとも強権的な政権運営か、どう説明されますか。" }, { "speaker": "self", "face":
+"serious", "text": "連立や他党との協調は常に綱渡りだ。国民に向けて、自分が守ろうとしたものを語らねば。" }, { "speaker":
+"secretary", "face": "serious", "text": "（先生、最後の一言で世論の受け止め方が決まります。）" } ],
+"choices": [ { "label": "政権の安定と実績の重要性を訴える", "result":
+"予算を成立させ暮らしを守り抜いた現実的な成果を強調し、一定の納得を得た。", "effects": { "approval": 1, "exp": {
+"media": 10 } }, "next": "end_stability" }, { "label": "筋を通した政権運営の姿勢を語る",
+"result": "国の将来から逃げない姿勢を力強く訴え、支持者の熱い共感を呼んだ。", "effects": { "approval": 1,
+"relations": { "supporters": 5 } }, "next": "end_principle" } ] } ], "endings":
+[ { "id": "end_stability", "title": "綱渡りの舵取り", "text":
+"困難な交渉の末に政権の枠組みを守り抜いた。妥協を恐れぬ調整力が政権に安定をもたらした。" }, { "id": "end_principle",
+"title": "譲れぬ一線", "text": "政権の危機に直面しても国の筋を通す姿勢を貫いた。厳しい批判を浴びつつも首相の信念を示した。" }, {
+"id": "end_stepdown", "title": "連立交渉の果て", "text":
+"首相の職を離れたことで、政権維持を巡る張り詰めた交渉も終わりを告げた。" } ] }, { "id": "pm_historic_decision",
+"title": "未来への決断", "summary":
+"歴代政権が先送りしてきた痛みを伴う抜本改革に挑むか、国民負担を抑え安定した運営を貫くか、首相として歴史的選択を迫られる。", "cast":
+["secretary", "senpai", "other"], "start": { "trigger": "monthly", "status":
+["議員"], "post": ["pm"] }, "chapters": [ { "id": "c1", "bg": "diet",
+"after_months": [3, 7], "conditions": { "post": ["pm"] }, "fallback":
+"end_stepdown", "lines": [ { "speaker": "narrator", "text":
+"官邸の有識者会議から、少子化と社会保障の危機に関する厳しい報告書が提出された。" }, { "speaker": "other", "name":
+"会議の座長", "text": "総理、痛みを伴う抜本改革を今行わねば、十年後に国の制度が立ち行かなくなります。" }, { "speaker":
+"senpai", "face": "serious", "text": "しかし総理、そんな案を出せば国民の猛反発を招き、内閣支持率は一気に急落しますぞ。"
+}, { "speaker": "secretary", "face": "serious", "text":
+"歴代の首相も選挙を恐れて先送りしてきた難題です。先生はどう判断なさいますか。" }, { "speaker": "self", "face":
+"serious", "text": "支持率を下げてでも未来のために手を着けるか、今の暮らしの安定を優先するか。" } ], "choices": [ {
+"label": "批判を覚悟で抜本改革に踏み切る", "result": "「誰かがやらねばならない」と改革案の策定を指示した。官邸に緊張が走った。",
+"effects": { "approval": -2, "relations": { "party": -3 }, "exp": { "policy": 12
+} }, "next": "c2_bold" }, { "label": "国民負担を抑えた緩やかな案にする", "result":
+"急激な痛みは避けるべきと判断し、段階的で穏健な見直し案を選んだ。", "effects": { "approval": 1, "relations": {
+"supporters": 4 }, "exp": { "network": 8 } }, "next": "c2_gradual" } ] }, {
+"id": "c2_bold", "bg": "street", "after_months": [2, 4], "conditions": { "post":
+["pm"] }, "fallback": "end_stepdown", "lines": [ { "speaker": "narrator",
+"text": "改革案が報道された途端、街頭やメディアで国民への負担押し付けだと激しい逆風が吹き荒れた。" }, { "speaker": "senpai",
+"face": "angry", "text": "総理、支持団体からも抗議が殺到しています。このままでは次の選挙で党が全滅しますぞ！" }, {
+"speaker": "secretary", "face": "serious", "text":
+"先生、批判は想像以上です。ご自身で世論に説明するか、黙って法案を仕上げるかです。" }, { "speaker": "self", "face":
+"serious", "text": "正しいと信じた道でも、理解されなければ政権が潰れる。嵐の真っ只中へ踏み出すべきか。" } ], "choices": [
+{ "label": "テレビ討論に自ら出て正面から語る", "result":
+"危機感を率直に語りかけた言葉が胸を打ち、世論の空気がわずかに変わり始めた。", "effects": { "approval": 2,
+"relations": { "press": 5 }, "exp": { "media": 16 } }, "risk": { "ability":
+"弁舌", "threshold": 70, "fail_result": "厳しい追及に言葉を詰まらせ、かえって国民の反発と支持率急落を招いた。",
+"fail_effects": { "approval": -3, "relations": { "press": -6, "supporters": -5 }
+}, "fail_next": "c3" }, "next": "c3" }, { "label": "批判に耐え静かに法案を仕上げる", "result":
+"雑音には答えず実務に没頭し、睡眠時間を削って精緻な法案を完成させた。", "effects": { "stamina": -10, "approval":
+-2, "exp": { "policy": 15 } }, "next": "c3" } ] }, { "id": "c2_gradual", "bg":
+"party_hq", "after_months": [2, 4], "conditions": { "post": ["pm"] },
+"fallback": "end_stepdown", "lines": [ { "speaker": "narrator", "text":
+"穏健な改革案に対し、党内や関係団体からは「さすが総理、現実的だ」と安堵の声が上がった。" }, { "speaker": "other", "name":
+"記者", "text": "しかし世間では、結局は痛みを先送りしただけではないかという批判的な記事も目立っています。" }, { "speaker":
+"secretary", "face": "serious", "text":
+"先生、今からでも踏み込んだ項目を一つ加えますか。それとも、社会の安心を優先し続けますか。" }, { "speaker": "self", "face":
+"serious", "text": "国民の生活を守ることと、未来への責任を果たすこと。その境界線はどこにあるのだろう。" } ], "choices": [
+{ "label": "重点分野だけでも抜本策を追加する", "result": "丁寧な調整で一部の重点改革を追加することに成功し、評価が上向いた。",
+"effects": { "approval": 2, "exp": { "policy": 14 } }, "risk": { "ability":
+"政策", "threshold": 65, "fail_result": "方針がぶれていると党内外から批判を受け、支持率も下がってしまった。",
+"fail_effects": { "approval": -2, "relations": { "party": -5 } }, "fail_next":
+"c3" }, "next": "c3" }, { "label": "社会の安心感を守る意義を貫く", "result":
+"急激な変化を避け暮らしを守る方針を貫き、党と支援者の信頼を固めた。", "effects": { "approval": 1, "relations": {
+"party": 5, "supporters": 5 } }, "next": "c3" } ] }, { "id": "c3", "bg": "diet",
+"after_months": [2, 4], "conditions": { "post": ["pm"] }, "fallback":
+"end_stepdown", "lines": [ { "speaker": "narrator", "text":
+"ついに本会議での採決の日が来た。議場の緊張感が最高潮に達し、野党席から怒号が飛ぶ。" }, { "speaker": "senpai", "face":
+"serious", "text": "総理、採決の瞬間に向け、我々与党は一致結束しています。堂々と演壇へお立ちください。" }, { "speaker":
+"secretary", "face": "serious", "text": "先生、どのような評価を下されようとも、この決断は日本の歴史にずっと残ります。"
+}, { "speaker": "self", "face": "serious", "text":
+"壇上のライトを浴びながら、一人の政治家として自分が何を大切にしたのかを胸に問う。" } ], "choices": [ { "label":
+"百年後の国を見据えて採決に臨む", "result": "将来の世代へ責任を果たす覚悟を胸に、一票を投じる議場を見つめた。", "effects": {
+"abilities": { "政策": 2 }, "exp": { "policy": 12 } }, "next": "c4" }, { "label":
+"今を生きる人々の暮らしを想う", "result": "目の前の一人ひとりの生活を守り抜く信念を噛み締め、採決を見届けた。", "effects": {
+"abilities": { "組織": 1, "知名度": 1 }, "exp": { "election": 12 } }, "next": "c4" }
+] }, { "id": "c4", "bg": "home", "after_months": [2, 4], "conditions": { "post":
+["pm"] }, "fallback": "end_stepdown", "lines": [ { "speaker": "narrator",
+"text": "法案が成立した静かな夜、公邸の机には最新の世論調査の数字が置かれていた。" }, { "speaker": "secretary",
+"face": "normal", "text": "先生、これで一つの大きな仕事が終わりました。支持率の数字がすべてを物語るわけではありません。" }, {
+"speaker": "self", "face": "normal", "text":
+"今日の決断が正しかったのか、それとも過ちだったのか。答えが出るのはずっと先のことだ。" }, { "speaker": "secretary",
+"face": "smile", "text": "それでも、先生は逃げずに向き合われました。どうか今夜はゆっくりお休みください。" } ],
+"choices": [ { "label": "歴史の評価は未来に委ねる", "result":
+"目先の人気にとらわれず己の良心に従った誇りを胸に、深く息を吐いた。", "effects": { "mood": 1, "approval": -1,
+"abilities": { "政策": 1 } }, "next": "end_historian" }, { "label":
+"国民の納得を得て前へ進める", "result": "これからも国民と丁寧に対話を続け、支持と成果を積み上げようと誓った。", "effects": {
+"approval": 2, "relations": { "supporters": 5 } }, "next": "end_pragmatic" } ] }
+], "endings": [ { "id": "end_historian", "title": "時代を動かした決断", "text":
+"支持率の低下を恐れず将来のための決断を下した。同時代の批判を超え、歴史に名を刻む政治家となった。" }, { "id": "end_pragmatic",
+"title": "暮らしを守る舵取り", "text": "急激な混乱を避け、国民の納得と安心を大切にして難局を乗り切った。現実的な指導者として評価された。"
+}, { "id": "end_stepdown", "title": "未完の議論", "text":
+"首相の座を降りたことで、歴史的課題への取り組みは次の政権へと引き継がれることになった。" } ] } ] }
 
-`gemini_naturalness_terms.md` の全51項目についての判定です。
-
-| 番号 | 用語 | 判定 | 言い換えの案 | 理由 |
-|---|---|---|---|---|
-| T1 | 議員人生 | そのまま | — | ゲームの主題が一目で分かり、日本語として自然。 |
-| T2 | 活動・地図・党内・内閣・自分 | 言い換える | 1. 活動・地図・自党・内閣・能力<br>2. 活動・地図・政党・内閣・経歴 | 野党党首のとき他党との会談まで「党内」の画面に含まれており意味が矛盾する。また「自分」はタブ名としてやや素朴すぎ、見出し（T3）に合わせて「能力」や「経歴」にする方が自然。 |
-| T3 | 今月の活動 / 全国の情勢 / 能力と経歴 | そのまま | — | いずれも各画面の内容と合っており自然。 |
-| T4 | 記録 | そのまま | — | 年表や履歴の意味として自然。 |
-| T5 | 大事なこと / すべて / 自分 / 政局 | 言い換える | 1. 主な記録 / すべて / 個人 / 政局<br>2. 主要 / すべて / 自身 / 政局 | 「大事なこと」は幼く説明的。「自分」も「政局」と対比する分類名としては「個人」や「自身」の方が座りがよい。 |
-| T6 | 遊び方（？） | そのまま | — | 一般的で分かりやすい。 |
-| T7 | 通常モード / プロモード | 言い換える | 1. 標準モード / 詳細モード（短縮：標準 / 詳細）<br>2. 通常表示 / 数値表示 | 難易度の切り替えではなく「数字をすべて出すかどうか」の表示切り替えなので、「プロ」では上級者向け難易度のよう誤解を招く。 |
-| T8 | 秘書の助言（全部 / 警告だけ / 出さない） | そのまま | — | 平易で意味がすぐ通じる。 |
-| T9 | 続きから / ファイルから読み込む / セーブを消す | そのまま | — | ゲームの操作として一般的。 |
-| T10 | 同じ世界でもう一度 / 新しい世界で遊ぶ | 言い換える | 1. 同じ顔ぶれでもう一度 / 新しい顔ぶれで遊ぶ<br>2. 同じ情勢でもう一度 / 新しい情勢で遊ぶ | 現実の日本を舞台にした政治ゲームでは「世界」という言葉がファンタジーやRPGのように浮く。議員や情勢の配置を指す「顔ぶれ」「情勢」が自然。 |
-| S1 | 出自（新人・世襲・名門） | 言い換える | 1. 出身（一般・世襲・名門）<br>2. 背景（叩き上げ・世襲・名門） | 「世襲」や「名門」も初出馬時は「新人」であるため、「新人」と「世襲・名門」を並べると分類の軸が噛み合わない。「出自」もやや硬いため「出身」「背景」が自然。 |
-| S2 | 出馬の道（小選挙区・引退する現職の後継・比例名簿） | 言い換える | 1. 出馬方法（小選挙区・挑戦 / 小選挙区・後継 / 比例単独）<br>2. 立候補の形（他党区に挑戦 / 現職の後継 / 比例名簿） | 「出馬の道」は作る側の造語。また「引退する現職の後継」も小選挙区から出るため、「小選挙区」と並列にすると区分が曖昧になる。 |
-| S3 | 地元の県 / 出られる区 | 言い換える | 1. 地元の都道府県 / 立候補できる区<br>2. 地元 / 出馬できる選挙区 | 東京・北海道・大阪・京都も選べるなら「県」は不正確。「出られる区」も口語的・説明的すぎる。 |
-| S4 | 経歴類型 | 言い換える | 1. 前職<br>2. 経歴 | 学術や統計用語のような硬い造語で、ゲームの選択画面では不自然。 |
-| S5 | 地方議員からの叩き上げ、官僚出身の政策通、経済人、知名度型、専門職、議員秘書出身、学者・国際派、組織内候補、首長経験の行政型、現場の代弁者、安全保障の実務家、汎用 | 言い換える | 1. 地方議員出身、元官僚、経済人、著名人・タレント、専門職、元議員秘書、学者・研究者、組織内候補、首長出身、市民活動家、防衛・安保出身、一般会社員<br>2. 地方議員、官僚出身、実業家、メディア・著名人、弁護士・専門職、秘書出身、研究者・国際派、組織内候補、元知事・市長、福祉・市民派、安保専門家、標準 | 「知名度型」「行政型」「汎用」は能力値から逆算したようなシステム用語・造語であり、実在の前職・経歴の名前として不揃い。特に人の経歴を「汎用」とするのは不自然。 |
-| S6 | 家系（なし・地方の名士・世襲・名門） | 言い換える | 1. 出身背景（一般・地方の名士・世襲・名門）<br>2. 家柄（一般家庭・地方の名士・政治家一族・名門） | 「家系：なし」は先祖が存在しないように見えおかしい。また「世襲」も家系の名前ではないため「政治家一族」にするか、見出しを「出身背景」とする方が自然。 |
-| N1 | 体力 / 体力の上限 | そのまま | — | ゲームの数値として自然。 |
-| N2 | やる気 | そのまま | — | 育成ゲーム由来の語だが、日常語として政治活動の場でも不自然ではない。 |
-| N3 | 資金（万円） | そのまま | — | 一般的で自然。 |
-| N4 | 地盤（1〜4） / 地盤の進み具合 | 言い換える | 1. 地盤 / 地盤の定着度（または、次段階まで）<br>2. 地盤 / 地盤固め | 「地盤」は本物の選挙用語で適切だが、「地盤の進み具合」は説明的な造語。 |
-| N5 | 経験点（選挙・政策・人脈・発信・資金） | 言い換える | 1. 経験点（選挙・政策・人脈・発信・調達）<br>2. 経験点（選挙・政策・人脈・広報・財務） | 「経験点」自体は育成ゲーム寄せとして通じるが、所持金（N3）と能力（N6）と名前が三重に重複している「資金」だけは「資金の経験点」という奇妙な表現になるため変えた方がよい。 |
-| N6 | 能力（弁舌・政策・調整・知名度・組織・資金）とランク（S〜G） | 言い換える | 1. 能力（弁舌・政策・調整・知名度・組織・資金力）とランク（S〜G）<br>2. 能力（弁舌・政策・調整・知名度・組織・調達力）とランク（S〜G） | 「弁舌」「政策」「調整」「知名度」「組織」は非常に適切。ただ「資金」だけ所持金（N3）と重なり「資金の能力が高い」という不自然な文を生むため「資金力」「調達力」が自然。 |
-| N7 | 関係（秘書・党の幹部・後援会・地元紙・県議団） | 言い換える | 1. 関係（秘書・党幹部・後援会・地元紙・地方議会）<br>2. つながり（秘書・党執行部・後援会・地元紙・地方議員） | 「党の幹部」は政治報道では「党幹部」が一般的。また47都道府県が対象のため、都・道・府でも「県議団」になるのは事実と矛盾する。 |
-| N8 | 当選回数による区分（新人・中堅・ベテラン・重鎮） | そのまま | — | 政界や選挙報道で実際に使われる区分で自然。 |
-| N9 | 情勢 / 優勢・やや優勢・やや劣勢・劣勢 / 得票の見込み | そのまま | — | 実際の選挙報道と同じ言葉で臨場感があり自然。 |
-| N10 | 内閣支持率 / 与党の結束 / 長期政権の疲れ | 言い換える | 1. 内閣支持率 / 与党の結束 / 政権疲れ<br>2. 内閣支持率 / 与党の結束 / 長期政権の緩み | 「内閣支持率」「与党の結束」は自然だが、「長期政権の疲れ」は少しぎこちない。「政権疲れ」「長期政権の緩み」が実際の政治報道で使われる言い方。 |
-| N11 | 思想の5つの軸（経済：市場重視／再分配重視、財政：積極財政／財政規律、安保：抑止重視／対話重視、社会：伝統重視／多様性重視、統治：改革・分権／安定） | そのまま | — | いずれの表現も中立的で意味が通りやすい。 |
-| N12 | 信念 / 党への忠誠 | そのまま | — | パラメータ名として分かりやすく、政治ドラマでも違和感がない。 |
-| N13 | 得意分野（財政・税制、経済・産業、農林水産、厚生・労働、教育、国土・交通、外交、安全保障、法務・治安、地方・行政） | そのまま | — | 実際の省庁や議会の分野と合っており自然。 |
-| N14 | 性格（野心家／無欲、大胆／慎重、誠実／狡猾、温厚／短気、社交的／孤高、寛容／執念深い） | そのまま | — | 性格を表す言葉として自然。 |
-| A1 | 地元回り、街頭演説、政策勉強会、資金集め、党務、県議と連携、地域行事、体力づくり、趣味の時間、休養 | 言い換える | 1. （「県議と連携」を）地方議員と連携<br>2. （「県議と連携」を）地方議会と連携 | 東京・北海道・大阪・京都を選んだ場合に「県議」と出るのは矛盾するため。「地元回り」などの他の項目はすべて自然でリアル。 |
-| A2 | 公務 | 言い換える | 1. 職務<br>2. 政務 | 大臣の仕事は「公務」で正しいが、与党三役や野党の「幹事長」「影の大臣」など政党側の仕事まで「公務」と呼ぶのは政治用語の誤用になる。 |
-| A3 | おすすめ / 実行する | そのまま | — | 画面のボタンとして自然。 |
-| A4 | 特殊能力（金・青・赤・緑） | 言い換える | 1. 持ち味（秀逸・強み・弱点・気質）<br>2. 資質（特技・強み・弱点・個性） | 育成ゲーム寄せの意図は分かるが、「失言癖」「一匹狼」「名門の看板」まで「特殊能力」と呼ぶのは政治の場面で浮く。さらに「金・青・赤・緑」の色分類は他ゲームの前提知識がないと意味が伝わらない。 |
-| A5 | コツ / コツをつかむ / 覚える | 言い換える | 1. きっかけ / きっかけをつかむ / 身につける<br>2. 手応え / 手応えを得る / 習得する | 演説などには「コツ」でよいが、「霞が関人脈」「県議とのパイプ」などを「コツをつかむ」「覚える」とするのは意味が不自然。 |
-| A6 | 政権の行動（法案の準備、国会に提出、各党と協議、根回し、記者会見、解散） | そのまま | — | 中身が本物の政治の言葉で統一されており自然。 |
-| A7 | 党首の行動（野党党首会談、党首討論、失政の追及、対案の発表、選挙協力の締結、内閣不信任案の提出） | 言い換える | 1. （「選挙協力の締結」を）選挙協力の合意<br>2. （「選挙協力の締結」を）選挙協力 | 「協力を締結」という組み合わせはやや不自然（締結は協定・条約などに使う）。他の項目は本物の政治用語で適切。 |
-| A8 | 協力度 / 追い風 / 対案の準備 | 言い換える | 1. 協力度 / 追い風 / 用意した対案<br>2. 協力度 / 追い風 / 対案の蓄積 | 「対案の準備」が数値の名前に使われているため、説明文で「対案の準備をためる」という不自然な日本語が生まれている。 |
-| A9 | 野党の役職（幹事長、政調会長、国対委員長、選対委員長、影の大臣） | 説明を添える | 幹事長＝党の運営や選挙を統括する要職、政調会長＝党の政策をまとめる責任者、国対委員長＝国会審議の日程や他党との折衝役、選対委員長＝選挙の戦略や公認を担う役職、影の大臣＝政権交代に備え、担当分野ごとに政府を追及する野党の役員 | いずれも本物の政治・報道用語だが、政治に詳しくない人には役割の違いが分かりにくいため、画面の注釈や遊び方に短い説明を添えるとよい。 |
-| A10 | 党首選に立候補する | そのまま | — | 自然で分かりやすい。 |
-| E1 | 総選挙の開票結果 / 当選確実 / 前回比 | そのまま | — | 選挙報道そのままの表現で臨場感があり自然。 |
-| E2 | 浪人 / 候補 | 説明を添える | 「浪人」＝落選し、次の選挙での返り咲きを目指している元議員や候補者のこと（なお「候補」は単体では何の候補か曖昧なため、表示枠が許せば「候補者」や「新人候補」が望ましい） | 「浪人」は味のある本物の政治俗語だが、一般の人には受験浪人と紛らわしく説明が必要。 |
-| E3 | 比例名簿の順位 | そのまま | — | 本物の言葉であり、ゲーム内の画面でも仕組みが説明されているためそのまま通じる。 |
-| E4 | 山場の場面 | 言い換える | 1. 節目（または政治の節目）<br>2. 転機（または山場） | 「山場」と「場面」の意味が重なっており、内部の分類名がそのまま出たような説明的表現。 |
-| E5 | 出来事 / 選んだこと | 言い換える | 1. 出来事 / 選択<br>2. 出来事 / 選んだ対応 | 「選んだこと」は画面のラベルとしてはやや幼く説明的。 |
-| R1 | 物語 / 第2章（2 / 4） / この章を飛ばす / 会話の履歴 | そのまま | — | ゲームの進行表示・操作として分かりやすく自然。 |
-| R2 | 結末 | そのまま | — | 自然。 |
-| R3 | ライバル / 同期 / 党の先輩 / 秘書 | そのまま | — | 政界を舞台にした人物の役回りとして自然。 |
-| R4 | あなたとの関係（とても良い・良い・ふつう・悪い・とても悪い） | 言い換える | 1. 親交（親密・良好・普通・不和・険悪）<br>2. 相手との関係（良好・やや良好・普通・悪い・険悪） | 「とても良い〜とても悪い」という段階表現がアンケート用紙のように機械的。人間関係を表す言葉の方が自然。 |
-| R5 | 間柄（好敵手・因縁・盟友・師弟・恩人・不信） | 言い換える | 1. 間柄（好敵手・因縁・盟友・師弟・恩人・不和）<br>2. 間柄（好敵手・因縁・盟友・師弟・恩人・対立） | 「不信」は感情を表す言葉であり、二者の「間柄」の名札としては他の「盟友」「好敵手」などと品詞・性質が揃っていない。 |
-| R6 | 地元の事務所、選挙事務所、駅前、商店街、公民館、国会、党本部、料亭、自宅、病院、被災地、テレビ局 | そのまま | — | 政治家の活動場所としていずれも自然。 |
-
----
-
-# 2. 文章の中の不自然な言葉の表
-
-`gemini_naturalness_texts.md` の中から、不自然・説明的・造語・浮いている・分かりにくい政治用語に当たる箇所を、重要なものから順に挙げています。（同じ表現が複数箇所に出るものは、主要な箇所を挙げたうえで関連箇所を併記・整理しています）
-
-| 番号 | 元の文 | 気になる言葉 | 修正案 | 種類 |
-|---|---|---|---|---|
-| game/career:800 | 対案の準備が足りません（{opp.proposals}/{P.cost}）。政調会長が毎月ためてくれます。 | 対案の準備（〜ためてくれます） | 用意した対案が足りません（{opp.proposals}/{P.cost}）。政調会長が毎月進めてくれます。 | 造語 |
-| app/views:498 | 対案の準備が足りない（{opp?.proposals ?? 0}/{OPP.actions.proposal.cost}。政調会長が毎月ためる） | 対案の準備（〜ためる） | 用意した対案が足りない（{opp?.proposals ?? 0}/{OPP.actions.proposal.cost}。政調会長が毎月進める） | 造語 |
-| app/views:544 | 対案の準備 {OPP.actions.proposal.cost}たまると「対案の発表」ができる。政調会長が毎月ためる | 対案の準備（〜ためる） | 対案の蓄積 {OPP.actions.proposal.cost}たまると「対案の発表」ができる。政調会長が毎月進める | 造語 |
-| game/advice:46 | 党首の行動があと{state.opp.actionPoints}回残っています。党内の画面で、ほかの野党との会談や党首討論を進めましょう。 | 党内の画面で、ほかの野党との会談 | 党首の行動があと{state.opp.actionPoints}回残っています。自党の画面で、ほかの野党との会談や党首討論を進めましょう。 | 説明的 |
-| career-27 | 支援者の会合を回って献金を集める。資金の能力が高いほど多く集まる。 | 資金の能力 | 支援者の会合を回って献金を集める。資金力の能力が高いほど多く集まる。 | 造語 |
-| app/views:262 | {e.name}の経験点 {state.exp[e.id]} 「自分」の画面で能力を上げるのに使う | 「自分」の画面（および経験点名「資金」） | {e.name}の経験点 {state.exp[e.id]} 「能力」の画面で能力を上げるのに使う | 説明的 |
-| app/main:374 | このブラウザに保存している続き（{saved}）は消えます。新しく始めますか？ 残すときは、先に「続きから」で開いて「自分」の画面からファイルに書き出してください。 | 保存している続き / 「自分」の画面 | このブラウザに保存しているプレイデータ（{saved}）は消えます。新しく始めますか？ 残すときは、先に「続きから」で開いて「能力」の画面からファイルに書き出してください。 | 造語 |
-| app/main:651 | このブラウザに保存している続き（{…}）を消しますか？ 消すと元に戻せません。 | 保存している続き | このブラウザに保存しているセーブデータ（{…}）を消しますか？ 消すと元に戻せません。 | 造語 |
-| app/views:659 | 状態はこのブラウザに自動で保存され、最初の画面の「続きから」で再開できる。「自分」の画面からファイルへの書き出しと読み込みができる。 | 状態 / 「自分」の画面 | 進行状況はこのブラウザに自動で保存され、最初の画面の「続きから」で再開できる。「能力」の画面からファイルへの書き出しと読み込みができる。 | 説明的 |
-| game/career:867 | この出自と政党では、その出馬の道と選挙区からは出馬できません。 | 出自 / 出馬の道 / その〜と〜からは出馬できません | この出身と政党では、その立候補の形と選挙区では出馬できません。 | 造語 |
-| app/views:110 | 出馬の道と地元の県を選ぶ | 出馬の道 / 地元の県 | 出馬方法と地元の都道府県を選ぶ | 造語 |
-| app/views:190 | 比例名簿の道 党の幹部との関係が80で1位、12下がるごとに1つ下がる。党の比例の当選者数に入れば当選 | 比例名簿の道 / 党の比例の当選者数に入れば当選 | 比例単独での出馬 党幹部との関係が80で1位、12下がるごとに1つ下がる。党が獲得した比例議席の枠内に入れば当選 | 造語 |
-| app/views:651 | 任期満了か解散で行う。小選挙区では、党への支持（内閣支持率による風を含む）に本人の地盤、知名度、後援会・地元紙・県議団との関係、選挙資金が上乗せされる。活動の画面の情勢の棒で見込みが分かる。比例名簿の道では、党の幹部との関係で名簿の順位が決まる。 | 情勢の棒 / 比例名簿の道 / 県議団 | 任期満了か解散で行う。小選挙区では、党への支持（内閣支持率による風を含む）に本人の地盤、知名度、後援会・地元紙・地方議会との関係、選挙資金が上乗せされる。活動の画面の情勢グラフで見込みが分かる。比例単独では、党幹部との関係で名簿の順位が決まる。 | 造語 |
-| app/views:657 | 状態の帯（日付や資金の並び）の「記録」で、自分に起きたことと政局の動き（政権の行動、採決、政界の出来事）を月ごとに振り返れる。「大事なこと」では、総選挙や就任、政権交代などの山場と、出来事の結果だけを出す。 | 状態の帯 / 大事なこと | 上部の情報欄（日付や資金の並び）の「記録」で、個人の出来事と政局の動き（政権の行動、採決、政界の出来事）を月ごとに振り返れる。「主な記録」では、総選挙や就任、政権交代などの節目と、出来事の結果だけを出す。 | 造語 |
-| app/views:653 | 地盤（1〜4）は「地元回り」「地域行事」「県議と連携」で固まり、半年続けて地元の活動をしないと1段下がる。関係（秘書、党の幹部、後援会、地元紙、県議団）は放っておくと40に戻っていく。数字や棒にマウスを乗せるか長押しすると、何に効くかが出る。 | 県議 / 1段下がる / 棒 / 何に効くかが出る | 地盤（1〜4）は「地元回り」「地域行事」「地方議員と連携」で固まり、半年続けて地元の活動をしないと1段階下がる。関係（秘書、党幹部、後援会、地元紙、地方議会）は放っておくと40に戻っていく。数字やグラフにマウスを乗せるか長押しすると、効果の説明が表示されます。 | 説明的 |
-| app/views:213 | {place}の情勢（揺らぎを除いた見込み） {all} | 揺らぎを除いた見込み | {place}の情勢（平常時の基礎的な見込み） {all} | 説明的 |
-| career-31 | 県議会議員と地元の会合を回る。県議団との関係が深まると、県議が地元の票を固めてくれる。 | 県議会議員 / 県議団 / 県議 | 地方議員と地元の会合を回る。地方議会との関係が深まると、地元の議員が票を固めてくれる。 | 説明的 |
-| app/main:281 | {info} 県を押すと、その県の議員を表示します。県の色はその県で小選挙区の議席が最も多い党、赤い太枠の県が自分の地元です。 {mapLegend(w.roster)} | 県 | {info} 都道府県を押すと、その地域の議員を表示します。色は小選挙区の議席が最も多い党、赤い太枠が自分の地元です。 {mapLegend(w.roster)} | 説明的 |
-| life_events-18 | 地元の県議会議員から「一度ゆっくり飲みましょう」と誘われた。県議団は地元の票をまとめる力を持っている。 | 県議会議員 / 県議団（2文目のシステム解説） | 地元の地方議員から「一度ゆっくり飲みましょう」と誘われた。地方議員は地元の票をまとめる力を持っている。 | 説明的 |
-| activity_flavor-41 | 県庁近くの喫茶店で県議と向き合い、地域の切実な要望を聞き取った。 | 県庁 / 県議（activity_flavor-42〜50にも「県議」「県政」「県議会」がある） | 庁舎近くの喫茶店で地方議員と向き合い、地域の切実な要望を聞き取った。 | 説明的 |
-| stories-477 | 党の処分リスクを恐れず地元を守り抜いた姿は語り草となり、強固なドブ板の絆となった。 | ドブ板の絆 | 党の処分を恐れず地元を守り抜いた姿は語り草となり、地元との揺るぎない絆となった。 | 造語 |
-| stories-298 | 清潔な姿勢は評価されたが、{senpai}は少し寂しそうだった。 | 清潔な姿勢 | 潔白な姿勢は評価されたが、{senpai}は少し寂しそうだった。（または「清廉な姿勢」「クリーンな姿勢」） | 硬い・翻訳調 |
-| stories-140 | 先生、耳寄りですが少し気になる情報が入りました。 | 耳寄りですが少し気になる | 先生、真偽は定かではありませんが、気になる情報が入りました。 | 硬い・翻訳調 |
-| stories-128 | 今度こそ圧倒的な差をつけると告ぐ | 告ぐ | 今度こそ圧倒的な差をつけると告げる | 硬い・翻訳調 |
-| stories-480 | 政治の現実を知りて | 知りて | 政治の現実を知って | 硬い・翻訳調 |
-| life_events-423 | 現地を見て防護柵の設置を動く | 設置を動く | 現地を見て防護柵の設置に向けて動く | 硬い・翻訳調 |
-| life_events-403 | 問題の背景を丁寧に取材し、記者からも一目置かれた。 | 取材し | 問題の背景を丁寧に調べ上げ、記者からも一目置かれた。 | 硬い・翻訳調 |
-| life_events-363 | 地道な歩き回りが評価され、ドブ板選挙のコツを掴んだ。 | 地道な歩き回り | 地道に地元を歩いたことが評価され、ドブ板選挙のコツを掴んだ。 | 造語 |
-| stories-369 | 感情を交えない主従の線引きは徹底されたが、心の奥にはわずかな壁が残った。 | 主従の線引き | 感情を交えない仕事上の線引きは徹底されたが、心の奥にはわずかな壁が残った。 | 硬い・翻訳調 |
-| stories-447 | 大きな歓声が上がったが、背中に重い十字架を背負った。 | 背中に重い十字架を背負った | 大きな歓声が上がったが、重い責任を背負うことになった。 | 硬い・翻訳調 |
-| stories-465 | 採決の余波も落ち着いた国会。議事堂の廊下で、自分の取った道の結果を見つめ直す。 | 自分の取った道の結果を見つめ直す | 採決の余波も落ち着いた国会。議事堂の廊下で、自らの決断がもたらした結果を噛み締める。 | 硬い・翻訳調 |
-| stories-315 | 議席を失うなどの変化が重なり、先輩の遺産を受け継ぐ機会は失われた。 | 議席を失うなどの変化が重なり | 自身の落選や政局の変化が重なり、先輩の遺産を受け継ぐ機会は失われた。 | 説明的 |
-| stories-230 | 奔走虚しく、会議は処分ありきで閉じられた。 | 会議は処分ありきで閉じられた | 奔走虚しく、会議は処分ありきのまま終わった。 | 硬い・翻訳調 |
-| stories-470 | 孤立を恐れず地元の代弁者を貫く | 地元の代弁者を貫く | 孤立を恐れず地元の代弁者であり続ける | 硬い・翻訳調 |
-| stories-118 | 党を超えた地域課題を議論する | 地域課題を議論する | 党を超えて地域の課題を議論する | 硬い・翻訳調 |
-| stories-133 | 立場は違えど街を想う芯は同じ。二人の切磋琢磨は{district}の政治を熱くした。 | 街を想う芯 | 立場は違えど街を想う思いは同じ。二人の切磋琢磨は{district}の政治を活気づけた。 | 硬い・翻訳調 |
-| stories-210 | （以前、{senpai}は「若いうちの暴走は足を掬われる」と言っていたな……） | 暴走は足を掬われる | （以前、{senpai}は「若いうちに暴走すれば足を掬われる」と言っていたな……） | 硬い・翻訳調 |
-| stories-238 | 再起への政策プランを共に練る | 政策プラン | 再起に向けた政策案を共に練る | 硬い・翻訳調 |
-| stories-429 | 異論はあるかもしれんが、党の幹部一任だ。採決では党議拘束をかける。全員賛成しろ。 | 党の幹部一任 | 異論はあるかもしれんが、党執行部一任だ。採決では党議拘束をかける。全員賛成しろ。 | 説明的 |
-| life_events-349 | 発信を見た人が足を運んでくれ、商工会から感謝された。 | 発信を見た人 | SNSの投稿を見た人が足を運んでくれ、商工会から感謝された。 | 造語 |
-| life_events-386 | 数字の感覚が甘いと思われ、話が浅く終わってしまった。 | 話が浅く終わってしまった | 数字の感覚が甘いと思われ、踏み込んだ話ができずに終わった。 | 硬い・翻訳調 |
-| life_events-417 | 現場の切実な声を吸収し、住民目線の感覚が磨かれた。 | 住民目線の感覚が磨かれた | 現場の切実な声を聞き、生活者の実感を掴んだ。 | 説明的 |
-| life_events-468 | 街頭で立ち止まる人が増え、辻説法の感覚を掴んだ。 | 辻説法の感覚を掴んだ | 街頭で立ち止まる人が増え、街頭演説のコツを掴んだ。 | 造語 |
-| life_events-481 | 決意表明を力強くぶち上げる | ぶち上げる | 決意表明を力強く語る | 硬い・翻訳調 |
-| life_events-550 | 法制局との折衝をやり遂げ、政策通として成長した。 | 政策通として成長した | 法制局との折衝をやり遂げ、政策への理解が一段と深まった。 | 硬い・翻訳調 |
-| life_events-573 | 見事な差配でしこりを残さず、根回しの神髄を見せた。 | 根回しの神髄を見せた | 見事な差配でしこりを残さず調整し切った。 | 硬い・翻訳調 |
-| life_events-587 | 国民の暮らしの重みを再確認し、政治への情熱が燃えた。 | 政治への情熱が燃えた | 国民の暮らしの重みを再確認し、政治への思いが一層強まった。 | 硬い・翻訳調 |
-| activity_flavor-24 | 現場の担当者から聞いた実情と制度の隙間に、思わず唸ってしまった。 | 実情と制度の隙間 | 現場の担当者から聞いた実情と制度のズレに、思わず唸ってしまった。 | 硬い・翻訳調 |
-| bills-16 | 市場・安定寄り。再分配を重んじる野党は強く反対する。 | 市場・安定寄り。再分配を重んじる野党は | 産業や電力の安定供給を重視。脱原発や生活重視を掲げる野党は強く反対する。 | 説明的 |
-| bills-50 | 財政規律・安定派が賛成。地方の裁量縮小に改革派や野党が反発しやすい。 | 財政規律・安定派 | 財政規律や慎重姿勢を重んじる議員が賛成。地方の裁量縮小に改革派や野党が反発しやすい。 | 造語 |
-| bills-38 | 対話を重んじる公正党や民権党が賛成。抑止重視の保守派は実効性に懐疑。 | 実効性に懐疑 | 対話を重んじる公正党や民権党が賛成。抑止重視の保守派は実効性に懐疑的だ。 | 硬い・翻訳調 |
-| bills-2 | 3月末までに成立させないと支持率が大きく下がる。思想の偏りがないので野党も反対しにくい。 | 思想の偏りがないので | 3月末までに成立させないと支持率が大きく下がる。生活や行政に不可欠なため野党も反対しにくい。 | 説明的 |
-| app/views:267 | 地盤UP | 地盤UP | 地盤↑（または「地盤強化」） | 浮いたゲーム用語 |
-| game/advice:57 | 先生、顔色が悪いですよ（体力{state.stamina}）。体力を使う活動をすると{…}%の確率で倒れます。今月は休養にしましょう。 | {…}%の確率で倒れます | 先生、顔色が悪いですよ（体力{state.stamina}）。体に負担がかかる活動をすると倒れる危険が{…}%あります。今月は休養にしましょう。（※可能なら確率の数値を隠すのが自然） | 浮いたゲーム用語 |
-| game/advice:58 | 先生、疲れがたまっています（体力{state.stamina}）。20を切ると、体力を使う活動の途中で倒れることがあります。そろそろ休養を。 | 20を切ると、体力を使う活動の途中で | 先生、疲れがたまっています（体力{state.stamina}）。20を下回るほど消耗すると、活動の途中で倒れることがあります。そろそろ休養を。 | 浮いたゲーム用語 |
-| game/advice:131 | 党の幹部との関係が{state.relations.party}です。25を切ると役職に就けません。党務で顔をつないでおきましょう。 | 党の幹部との関係が〜です。25を切ると | 党幹部との関係が{state.relations.party}と冷えています。25を下回るほど信頼を失うと役職に就けません。党務で顔をつないでおきましょう。 | 浮いたゲーム用語 |
-| game/advice:138 | やる気が落ちています。経験点の伸びが鈍るので、趣味の時間で気分転換をしてください。 | 経験点の伸びが鈍るので | やる気が落ちています。活動の実りが減ってしまうので、趣味の時間で気分転換をしてください。 | 浮いたゲーム用語 |
-| game/advice:167 | 今は急ぎの用事はありません。地盤が{p.jiban}から上がるまで、進み具合はあと{Math.max(0, need - state.jibanProgress)}です。地元回りを続けましょう。 | 進み具合はあと〜です | 今は急ぎの用事はありません。地盤が{p.jiban}からもう一段固まるまで、あと{Math.max(0, need - state.jibanProgress)}です。地元回りを続けましょう。 | 造語 |
-| game/career:1101 | 特殊能力「{sk.name}」が外れた | 特殊能力〜が外れた | 持ち味「{sk.name}」を失った | 浮いたゲーム用語 |
-| game/career:1138 | 特殊能力「{l.name}」は上位の能力に置き換わった。 | 上位の能力に置き換わった | 持ち味「{l.name}」が磨かれ、さらに高い境地へ成長した。 | 浮いたゲーム用語 |
-| game/career:1223 | 。【コツ】「{sk.name}」のコツをつかんだ（Lv{state.skillHints[sk.id]}） | 【コツ】 / Lv | 。【きっかけ】「{sk.name}」のきっかけをつかんだ（段階{state.skillHints[sk.id]}） | 浮いたゲーム用語 |
-| app/views:303 | {sk.name}（{COLOR_NAMES[sk.color]}の特殊能力） {sk.description} | {COLOR_NAMES[sk.color]}の特殊能力 | {sk.name}（{COLOR_NAMES[sk.color]}） {sk.description}（※COLOR_NAMES を色名ではなく「長所」「欠点」などの分類にする） | 浮いたゲーム用語 |
-| app/views:332 | 特殊能力 {…} 身につけられる特殊能力 条件の回数をこなすと月末に身につく。活動でコツをつかめば、回数が足りなくても経験点を払って覚えられる。 {next} | 経験点を払って覚えられる（および特殊能力・コツ） | 持ち味 {…} 身につけられる持ち味 条件の回数をこなすと月末に身につく。活動できっかけをつかめば、回数が足りなくても経験点を使って習得できる。 {next} | 浮いたゲーム用語 |
-| app/views:440 | {face(p.name.surname, p.party)} {esc(p.name.displayName)} {s.age}歳・{esc(p.archetype)}・{esc(s.origin)}・当選{p.terms}回 基礎能力（経験点を使って上げる） {rows} {skillSection(state, world)} 経験点 {exp} 地盤 {pips} {p.jiban} （次まで {esc(s.jibanProgress)}） 関係 {rel} 党首選 {leader} 経歴 {ach} 画面のモード {modeSwitch(mode, adviceLevel)} セーブ {…} ファイルに書き出す ファイルから読み込む 同じ世界で最初から 新しい世界で最初から | 同じ世界で最初から 新しい世界で最初から | {face(p.name.surname, p.party)} {esc(p.name.displayName)} {s.age}歳・{esc(p.archetype)}・{esc(s.origin)}・当選{p.terms}回 基礎能力（経験点を使って上げる） {rows} {skillSection(state, world)} 経験点 {exp} 地盤 {pips} {p.jiban} （次まで {esc(s.jibanProgress)}） 関係 {rel} 党首選 {leader} 経歴 {ach} 表示モード {modeSwitch(mode, adviceLevel)} セーブ {…} ファイルに書き出す ファイルから読み込む 同じ顔ぶれで最初から 新しい顔ぶれで最初から | 浮いたゲーム用語 |
-| app/main:348 | {…} 議員人生の終わり {esc(state.over)} {…} 同じ世界でもう一度 新しい世界で遊ぶ | 同じ世界でもう一度 新しい世界で遊ぶ | {…} 議員人生の終わり {esc(state.over)} {…} 同じ顔ぶれでもう一度 新しい顔ぶれで遊ぶ | 浮いたゲーム用語 |
-| app/views:77 | チャリン! | チャリン! | 政治資金集めにしては軽薄で浮くため、「よし!」や「感謝!」などトーンに合う掛け声にする | 浮いたゲーム用語 |
-| skills-6 | 討論や答弁で負けない。出来事の弁舌の判定に強く、街頭演説の経験点が増える。 | 出来事の弁舌の判定（skills-26, 38, 68も同様） | 討論や答弁で負けない。出来事で弁舌の成否に有利になり、街頭演説の経験点が増える。 | 説明的 |
-| game/career:609 | 公務（{state.post}）：{…} | 公務 | 職務（{state.post}）：{…} | 説明的 |
-| app/views:655 | 自分の党が野党のときは、当選を重ねると幹事長、政調会長、国対委員長、選対委員長、影の大臣に就き、公務でほかの野党との協力度を上げたり、対案の準備をためたりする。野党の党首になると、党内の画面で、ほかの野党との会談、党首討論、失政の追及、対案の発表、選挙協力（候補者の一本化）、内閣不信任案の提出を毎月使える。選挙協力を結んだ党とは、小選挙区で一方が候補を降ろし、その党の票の一部がもう一方に移る。 | 公務 / 対案の準備をためたり / 党内の画面 | 自分の党が野党のときは、当選を重ねると幹事長、政調会長、国対委員長、選対委員長、影の大臣に就き、職務でほかの野党との協力度を上げたり、対案を蓄えたりする。野党の党首になると、自党の画面で、ほかの野党との会談、党首討論、失政の追及、対案の発表、選挙協力（候補者の一本化）、内閣不信任案の提出を毎月使える。選挙協力を結んだ党とは、小選挙区で一方が候補を降ろし、その党の票の一部がもう一方に移る。 | 説明的 |
-| game/career:1360 | 選ぶ物語はありません。 | 選ぶ物語はありません | 現在選べる物語の選択肢はありません。（または「進行中の物語はありません。」）（game/career:1388「選ぶ出来事はありません。」も同様） | 説明的 |
-| game/career:1812 | {state.leaderTermEnd.year}年{state.leaderTermEnd.month}月（与党の党首の任期切れ） | 党首の任期切れ | {state.leaderTermEnd.year}年{state.leaderTermEnd.month}月（与党党首の任期満了） | 説明的 |
-| app/views:474 | 当選3回以上で、党の幹部との関係が50以上なら立候補できる（党首は生涯3期まで）。今は当選{world.player.terms}回・党の幹部 {state.relations.party}。 | 生涯3期まで / 党の幹部 | 当選3回以上で、党幹部との関係が50以上なら立候補できる（党首は通算3期まで）。今は当選{world.player.terms}回・党幹部 {state.relations.party}。 | 説明的 |
-| app/views:552 | 党首になると、ほかの野党との会談、党首討論、追及、対案、選挙協力、不信任案を自分で動かせる。 | を自分で動かせる | 党首になると、ほかの野党との会談、党首討論、追及、対案の発表、選挙協力、不信任案の提出を自分で決められる。 | 説明的 |
-| game/career:525 | 首相は党首の任期の上限に達し、退いた。 | 党首の任期の上限に達し | 首相は党首の任期満了を迎え、退任した。 | 説明的 |
-| game/advice:135 | 後援会との関係が{state.relations.supporters}と冷えています。選挙の票に響くので、地域行事に顔を出しましょう。 | 関係が〜と冷えています |
-前回の続き（`game/advice:135` の行から）です。
-
-| 番号 | 元の文 | 気になる言葉 | 修正案 | 種類 |
-|---|---|---|---|---|
-| game/advice:135 | 後援会との関係が{state.relations.supporters}と冷えています。選挙の票に響くので、地域行事に顔を出しましょう。 | 関係が{state.relations.supporters}と冷えています | 後援会との関係が{state.relations.supporters}まで冷えています。選挙の票に響くので、地域行事に顔を出しましょう。 | 硬い・翻訳調 |
-| app/views:789 | もう1回で決定 | もう1回で決定 | もう一度押すと決定 | 説明的 |
-| app/main:323 | {esc(r.title)} 選んだこと：{esc(r.choice)} {esc(r.text)} {…} 閉じる | 選んだこと | {esc(r.title)} 選択：{esc(r.choice)} {esc(r.text)} {…} 閉じる | 説明的 |
-| app/views:99 | {…} ファイルから読み込む 画面のモード {modeSwitch(mode, adviceLevel)} {…} | 画面のモード | {…} ファイルから読み込む 表示モード {modeSwitch(mode, adviceLevel)} {…} | 説明的 |
-| character_tables-20 | 知名度型 | 知名度型 | 著名人・タレント | 造語 |
-| character_tables-25 | 首長経験の行政型 | 行政型 | 首長出身（または、元知事・市長） | 造語 |
-| character_tables-26 | 現場の代弁者 | 現場の代弁者 | 市民活動家（または、福祉・市民派） | 説明的 |
-| character_tables-28 | 汎用 | 汎用 | 一般会社員（または、標準） | 造語 |
-| character_tables-33 | なし | なし（家系の項目として） | 一般 | 説明的 |
-| opposition-3 | 国対委員長 | 国対委員長（および opposition-1, 2, 4, 5 の役職） | 言葉はそのまま残し、「国対委員長（国会での審議日程や他党との折衝役）」のように画面や遊び方に一言説明を添える | 分かりにくい政治用語 |
-| events-87 | 党議拘束を外れるような動きは看過できません。直ちに説得に当たります。 | 党議拘束 | 言葉はそのまま残し、「（党が決めた方針に、所属議員が採決で従う決まり）」などの用語解説を添える | 分かりにくい政治用語 |
-| dialogue-25 | {year}年度予算は年度内に成立しなかった。政府は暫定予算でしのぐことになった。 | 暫定予算 | 言葉はそのまま残し、「（本予算が成立するまでのつなぎとして組む短期の予算）」などの説明を添える | 分かりにくい政治用語 |
-| life_events-435 | 二連ポスター貼り | 二連ポスター | 言葉はそのまま残し、本文（`life_events-436`）や説明で「（選挙前にも貼れる、弁士と候補者が並んだ政治活動用ポスター）」と補う | 分かりにくい政治用語 |
-| life_events-540 | 廊下でのぶら下がり | ぶら下がり | 「廊下でのぶら下がり取材」とするか、意味が分かるよう「（移動中の政治家に記者が歩きながら質問する取材）」と軽く補う | 分かりにくい政治用語 |
-| events-76 | 政治の信頼を根底から揺るがす問題だ。参考人招致を求める。 | 参考人招致 | 言葉はそのまま残し、必要に応じて解説（「国会に関係者を呼んで事情を聞く手続き」）を用意する | 分かりにくい政治用語 |
-| life_events-571 | 党三役として全国から届く公認申請をさばく。競合する選挙区の扱いが難しい。 | 党三役 | 言葉はそのまま残し、「（幹事長・総務会長・政調会長という党の中核となる3つの要職）」と解説を添える | 分かりにくい政治用語 |
-| skills-52 | 比例頼み | 比例頼み | 言葉はそのまま残し、説明文（`skills-53`）に「（小選挙区で負けても比例での復活当選に頼る状態）」という補足を添える | 分かりにくい政治用語 |
-| stories-31 | 元首長の実務派 | 首長 | 説明文（`stories-32`）で「地方自治体の長」と補われているため言葉自体はそのままにし、必要なら読み（しゅちょう）や「知事・市区町村長」を添える | 分かりにくい政治用語 |
-| events-134 | 閣僚や党の役職を巡り、水面下で猟官運動のような動きが見られます。 | 猟官運動 | 本物の言葉だが難語のため、「（大臣や要職のポストを狙って働きかける動き）」と補うか、会話文として「ポスト狙いの動き」にしても自然 | 分かりにくい政治用語 |
-| life_events-111 | 浪人の暮らし | 浪人 | 政治俗語としてそのまま残し、初めて出る場面で「（落選中で次の選挙を目指している無職の元議員・候補者）」の意味が伝わるようにする | 分かりにくい政治用語 |
-| life_events-547 | 議員立法の勉強会 | 議員立法 | 言葉はそのまま残し、「（内閣ではなく国会議員が発議して作る法案）」といった解説を用語集などで補う | 分かりにくい政治用語 |
-| dialogue-2 | {year}年1月。少数与党のまま、石橋内閣が発足した。 | 少数与党 | 言葉はそのまま残し、「（与党の議席が衆議院の過半数に届いていない状態）」と解説を添える | 分かりにくい政治用語 |
-
-### 補足：日本語の自然さ以外の気づき
-本題とは少し外れますが、文章一覧の中に開発・内部処理用の文言が混ざっています。もしプレイヤーが操作する画面に出る場合は差し替えが必要です。
-- `game/game:390`：「任期満了。総選挙は次の段階で実装します。」（未実装時の仮メッセージが残っている）
-- `game/career:571`：「政権の行動は draft / submit / talk / nemawashi / press / dissolve です。」（内部コマンド名の英語・ローマ字がそのまま出ている）
-
----
-
-# 3. 全体の傾向
-
-作る側（AI）が繰り返している不自然な言い方の癖を5点にまとめました。
-
-1. **カタカナを避けて和語にしようとした結果の「説明的な造語」**
-   ルート・バー・ゲージ・セーブデータなどの語を使わずに表現しようとして、「出馬の道」「比例名簿の道」「情勢の棒」「状態の帯」「地盤の進み具合」「保存している続き」「大事なこと」といった、日常でもニュースでも他ゲームでも使われない奇妙な名詞句が繰り返し生まれています。カタカナを避ける場合でも、「方法」「グラフ」「情報欄」「プレイ状況」「主な記録」など、日本語として定着している言葉を選ぶ方が自然です。
-
-2. **ゲーム内部の変数名や仕様を、地の文やキャラクターのセリフに直接持ち込む癖**
-   「知名度型」「行政型」「汎用」「安定派」「資金の能力」「資金の経験点」「発信を見た人」「揺らぎを除いた見込み」「出来事の弁舌の判定」「再分配を重んじる野党は（原発再稼働に）強く反対する」など、設計上の分類名や計算パラメータがそのまま文章に露出しています。また、秘書の助言でも「{…}%の確率で倒れます」「20を切ると」「25を切ると」「経験点の伸びが鈍るので」と、生身の人間ではなくゲームシステムがルールを解説するような口調になっています。
-
-3. **同じ名詞の重複・動作と名詞のミスマッチ・分類軸の不揃い**
-   - 所持金・能力名・経験点名の3つすべてに「資金」が使われており、「資金の能力が高いほど」のような不自然な文を生んでいます。
-   - 「対案の準備をためる」「選ぶ物語はありません」「選んだこと」「家系：なし」など、動作や名詞の組み合わせが噛み合っていない箇所が目立ちます。
-   - 「小選挙区 / 引退する現職の後継」「新人 / 世襲・名門」のように、同じグループの選択肢なのに分類の観点がズレて重複・矛盾している箇所があります。
-
-4. **全国47都道府県を対象にしながら「県」「県議」で固定してしまう癖**
-   「地元の県」「赤い太枠の県」「県議と連携」「県議団」「県議会議員」「県庁」「県政」など、すべて「県」前提で書かれているため、東京都・北海道・大阪府・京都府を選んだプレイヤーには事実と矛盾する違和感が生じます。「都道府県」「地方議員」「地方議会」に揃える必要があります。同様に、大臣だけでなく党役員や「影の大臣」の仕事まで「公務」で一括りにしてしまっています。
-
-5. **他ジャンルのゲーム用語と、突然混ざる古風・翻訳調の比喩**
-   「特殊能力（金・青・赤・緑）」「コツLv」「経験点を払う」「特殊能力が外れた」「上位の能力に置き換わった」「同じ世界で」「地盤UP」「チャリン!」など、育成ゲームやRPG由来の表現が硬派な政治の文脈で浮いている場面があります。一方で物語文には、「告ぐ」「知りて」「主従の線引き」「十字架を背負った」「ドブ板の絆」「清潔な姿勢」「政治への情熱が燃えた」のように、唐突に時代がかった文語や大げさな翻訳調の比喩が混ざる癖が見られます。
