@@ -6,8 +6,8 @@ import { ABILITIES, TABLES, centerOf } from "./tables.js";
 import type { Abilities, Archetype, Lineage, TermTier } from "./tables.js";
 import { IDEOLOGY_AXES, PARTIES, partyById } from "./parties.js";
 import type { Ideology, Party } from "./parties.js";
-import { SMD_SEATS, initialSeatPlan, prefWeight } from "./districts.js";
-import type { PrefCode } from "./districts.js";
+import { DISTRICTS, PREF_CODES, districtsOf, initialSeatPlan, prefOfDistrict, prefWeight } from "./districts.js";
+import type { DistrictId, PrefCode } from "./districts.js";
 import scenario from "../../data/game/scenario.json";
 import { rollNpcSkills } from "./skills.js";
 
@@ -34,8 +34,8 @@ export interface Member {
   abilities: Abilities;
   /** 当選した区分。議員でない候補者や浪人中の元議員は「なし」 */
   seat: "小選挙区" | "比例" | "なし";
-  /** 小選挙区の議員はその県。比例の議員と議員でない人は null */
-  district: PrefCode | null;
+  /** 小選挙区の議員はその区（districts.ts の DistrictId）。比例の議員と議員でない人は null */
+  district: DistrictId | null;
   /** 地元の県。小選挙区の議員は選挙区と同じ。比例の議員は次に小選挙区から出るときの候補地 */
   home: PrefCode;
   /** 地元（home）での地盤（1〜4） */
@@ -58,8 +58,10 @@ export interface Member {
 interface FixedMember {
   role: string;
   party: string;
-  /** 小選挙区の議員の選挙区。比例の議員（seat が「比例」）にはない */
-  district?: PrefCode;
+  /** 小選挙区の議員の県。比例の議員（seat が「比例」）にはない */
+  pref?: PrefCode;
+  /** 小選挙区の議員の区の番号。書かなければ、その県で開始時点に自党が持つ区のうち番号の最も若い区 */
+  district_no?: number;
   seat?: "比例";
   /** 比例の議員の地元の県 */
   home?: PrefCode;
@@ -82,7 +84,15 @@ interface FixedMember {
 
 export const FIXED_MEMBERS = (scenario as unknown as { fixed_members: FixedMember[] }).fixed_members;
 
-function fixedToMember(f: FixedMember, id: number): Member {
+/** 固定キャラクターの小選挙区（開始時点にその党が持つ区でなければ投げる） */
+function fixedDistrict(f: FixedMember, plan: Map<DistrictId, string>): DistrictId {
+  const ds = districtsOf(f.pref!);
+  const d = f.district_no ? ds.find((x) => x.no === f.district_no) : ds.find((x) => plan.get(x.id) === f.party);
+  if (!d || plan.get(d.id) !== f.party) throw new Error(`${f.role}の選挙区（県${f.pref}・${f.district_no ?? "?"}区）が${f.party}の議席になっていません`);
+  return d.id;
+}
+
+function fixedToMember(f: FixedMember, id: number, district: DistrictId | null): Member {
   return {
     id,
     party: f.party,
@@ -95,8 +105,8 @@ function fixedToMember(f: FixedMember, id: number): Member {
     tier: f.tier,
     abilities: { ...f.abilities },
     seat: f.seat === "比例" ? "比例" : "小選挙区",
-    district: f.seat === "比例" ? null : f.district!,
-    home: f.seat === "比例" ? f.home! : f.district!,
+    district: f.seat === "比例" ? null : district,
+    home: f.seat === "比例" ? f.home! : f.pref!,
     jiban: f.jiban,
     specialties: [...f.specialties],
     traits: [...f.traits],
@@ -200,7 +210,7 @@ function rollIdeology(party: Party, rand: Rand): Ideology {
 }
 
 /** 生成する人の立場。「なし」は議員でない新人候補（当選0回） */
-export type SeatAssignment = { seat: "小選挙区"; district: PrefCode } | { seat: "比例"; home: PrefCode } | { seat: "なし"; home: PrefCode };
+export type SeatAssignment = { seat: "小選挙区"; district: DistrictId } | { seat: "比例"; home: PrefCode } | { seat: "なし"; home: PrefCode };
 
 interface Generator {
   rand: Rand & { state: number };
@@ -223,7 +233,7 @@ async function generateMember(g: Generator, party: Party, assignment: SeatAssign
   const birthYear = START_YEAR - age;
   const gender: Gender = rand() < FEMALE_RATE ? "女" : "男";
   const name = await g.names.generate({ gender, birthYear });
-  const home = assignment.seat === "小選挙区" ? assignment.district : assignment.home;
+  const home = assignment.seat === "小選挙区" ? prefOfDistrict(assignment.district) : assignment.home;
   const abilities = rollAbilities(arch, tier, lineage, rand);
   const jiban = rollJiban(tier, lineage, assignment.seat, rand);
   const specialties = rollSpecialties(arch, rand);
@@ -253,7 +263,6 @@ async function generateMember(g: Generator, party: Party, assignment: SeatAssign
   };
 }
 
-const PREF_CODES: PrefCode[] = Array.from({ length: SMD_SEATS }, (_, i) => i + 1);
 
 /** 議員や候補者を作り続ける道具。名前の重複を避けるため、ゲームを通して一つを使い続ける */
 export interface MemberFactory {
@@ -296,7 +305,7 @@ export async function createWorld(data: NameData, seed: number): Promise<{ roste
 }
 
 /**
- * 開始時点の衆議院（定数76）の名簿を作る。小選挙区47の当選者と比例29の当選者を、
+ * 開始時点の衆議院の名簿を作る。小選挙区289の当選者と比例の当選者を、
  * initialSeatPlan() の割り当てに従って生成する。比例の議員の地元は、県の大きさ（2024年の小選挙区の数）の比で選ぶ。
  */
 export async function generateRoster(data: NameData, seed: number): Promise<Member[]> {
@@ -309,19 +318,19 @@ async function buildRoster(g: Generator): Promise<Member[]> {
   // 固定キャラクターの名前を先に登録し、生成する議員と同姓同名にならないようにする
   for (const f of FIXED_MEMBERS) g.names.reserve(f.name.surname + f.name.givenName, f.name.surnameKana + f.name.givenNameKana);
   const members: Member[] = [];
-  for (const pref of PREF_CODES) {
-    const fixed = FIXED_MEMBERS.find((f) => f.seat !== "比例" && f.district === pref);
+  const fixedAt = new Map(FIXED_MEMBERS.filter((f) => f.seat !== "比例").map((f) => [fixedDistrict(f, plan.smd), f]));
+  for (const d of DISTRICTS) {
+    const fixed = fixedAt.get(d.id);
     if (fixed) {
-      if (plan.smd.get(pref) !== fixed.party) throw new Error(`${fixed.role}の選挙区（${pref}）が${fixed.party}の議席になっていません`);
-      members.push(fixedToMember(fixed, ++g.nextId));
+      members.push(fixedToMember(fixed, ++g.nextId, d.id));
       continue;
     }
-    members.push(await generateMember(g, partyById(plan.smd.get(pref)!), { seat: "小選挙区", district: pref }));
+    members.push(await generateMember(g, partyById(plan.smd.get(d.id)!), { seat: "小選挙区", district: d.id }));
   }
   for (const party of PARTIES) {
     // 比例の固定キャラクター（小さな党の党首など）は、その党の比例の枠を1つ使う
     const fixedPr = FIXED_MEMBERS.filter((f) => f.seat === "比例" && f.party === party.id);
-    for (const f of fixedPr) members.push(fixedToMember(f, ++g.nextId));
+    for (const f of fixedPr) members.push(fixedToMember(f, ++g.nextId, null));
     for (let i = fixedPr.length; i < (plan.pr.get(party.id) ?? 0); i++) {
       const home = pick(PREF_CODES, prefWeight, g.rand);
       members.push(await generateMember(g, party, { seat: "比例", home }));

@@ -5,10 +5,10 @@
       "title": "石橋内閣、発足",
       "variants": [
         [
-          { "speaker": "narrator", "text": "{year}年1月。少数与党のまま、石橋内閣が船出した。" },
+          { "speaker": "narrator", "text": "{year}年1月。少数与党のまま、石橋内閣が発足した。" },
           { "speaker": "pm", "text": "国民の皆さんに納得していただける政治を、一つずつ積み上げていきたい。" },
           { "speaker": "chief_cabinet_secretary", "text": "総理、まずは予算です。3月末までに通さなければなりません。" },
-          { "speaker": "secretary_general", "text": "うちと公正党だけでは過半数に届きません。どこかの野党と話をつける必要があります。" },
+          { "speaker": "secretary_general", "text": "うちと公正党だけでは過半数に届きません。どこかの野党と折り合いをつける必要があります。" },
           { "speaker": "opposition_leader", "text": "数で押し切れない以上、政府には丁寧に説明を尽くしてもらいます。" }
         ]
       ]

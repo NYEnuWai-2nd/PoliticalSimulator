@@ -8,7 +8,8 @@ import { ageOf, generateRoster } from "./roster.js";
 import type { Member } from "./roster.js";
 import { ABILITIES, TABLES, centerOf, rankOf } from "./tables.js";
 import { IDEOLOGY_AXES, PARTIES } from "./parties.js";
-import { HOUSE_SEATS, MAJORITY, PR_SEATS, SMD_SEATS, initialSeatPlan, largestRemainder } from "./districts.js";
+import { DISTRICTS, HOUSE_SEATS, MAJORITY, PR_SEATS, SMD_SEATS, districtName, districtStrength, districtsOf, findDistrict, initialSeatPlan, largestRemainder, prefOfDistrict } from "./districts.js";
+import seats2024 from "../../data/stats/shugiin_2024_seats.json";
 
 const data = { surnames, givenNames, exclusion } as unknown as NameData;
 const sum = (xs: number[]) => xs.reduce((a, b) => a + b, 0);
@@ -43,8 +44,18 @@ describe("生成の表", () => {
 });
 
 describe("選挙区と開始時点の議席", () => {
-  it("定数は小選挙区47と比例29の76、過半数は39", () => {
-    expect([SMD_SEATS, PR_SEATS, HOUSE_SEATS, MAJORITY]).toEqual([47, 29, 76, 39]);
+  it("定数は小選挙区289と比例176の465、過半数は233（2024年と同じ）", () => {
+    expect([SMD_SEATS, PR_SEATS, HOUSE_SEATS, MAJORITY]).toEqual([289, 176, 465, 233]);
+  });
+
+  it("県ごとの区の数は2024年と同じで、区の名前は「東京7区」の形", () => {
+    expect(districtsOf(13)).toHaveLength(30);
+    expect(districtsOf(31)).toHaveLength(2);
+    expect(districtsOf(1)).toHaveLength(12);
+    expect(DISTRICTS.every((d, i) => d.id === i + 1)).toBe(true);
+    expect(districtName(findDistrict(13, 7)!.id)).toBe("東京7区");
+    expect(districtName(findDistrict(1, 1)!.id)).toBe("北海道1区");
+    expect(districtName(findDistrict(26, 2)!.id)).toBe("京都2区");
   });
 
   it("最大剰余法は合計を保ち、比に沿って配る", () => {
@@ -54,14 +65,25 @@ describe("選挙区と開始時点の議席", () => {
     expect(m.get("b")).toBe(17);
   });
 
-  it("全県に1人ずつ小選挙区の当選者がいて、政党ごとの数は2024年の小選挙区の比に従う（沖縄の上書きを除く）", () => {
+  it("開始時点の議席は、小選挙区は県ごと・政党ごとに、比例は政党ごとに2024年の当選者数と同じ", () => {
     const plan = initialSeatPlan();
-    expect(plan.smd.size).toBe(47);
+    expect(plan.smd.size).toBe(289);
     const count: Record<string, number> = {};
     for (const p of plan.smd.values()) count[p] = (count[p] ?? 0) + 1;
-    expect(count).toEqual({ minsei: 20, minken: 17, sasshin: 4, kyowa: 2, kosei: 1, independent: 2, shusan: 1 });
-    expect(sum([...plan.pr.values()])).toBe(29);
-    expect(Object.fromEntries(plan.pr)).toEqual({ minsei: 10, minken: 7, kosei: 3, kyowa: 3, sasshin: 2, reimei: 2, shusan: 1, sankaku: 1 });
+    expect(count).toEqual(seats2024.smd_total);
+    for (const [pref, c] of Object.entries(seats2024.smd_by_prefecture)) {
+      const got: Record<string, number> = {};
+      for (const d of districtsOf(Number(pref))) got[plan.smd.get(d.id)!] = (got[plan.smd.get(d.id)!] ?? 0) + 1;
+      expect(got, pref).toEqual(c);
+    }
+    expect(sum([...plan.pr.values()])).toBe(176);
+    expect(Object.fromEntries(plan.pr)).toEqual(seats2024.pr_total);
+  });
+
+  it("県の中では党が交互に区を持つ（千葉は民政党と民権党が7ずつ）", () => {
+    const plan = initialSeatPlan();
+    const chiba = districtsOf(12).map((d) => plan.smd.get(d.id));
+    expect(chiba.slice(0, 4)).toEqual(["minsei", "minken", "minsei", "minken"]);
   });
 
   it("開始時点は少数与党（民政党と公正党で過半数に届かない）", () => {
@@ -70,14 +92,10 @@ describe("選挙区と開始時点の議席", () => {
     expect(seatsOf("minsei") + seatsOf("kosei")).toBeLessThan(MAJORITY);
   });
 
-  it("2024年に強かった党に県を渡す（大阪は刷新、北海道は民権党）", () => {
-    const plan = initialSeatPlan();
-    expect(plan.smd.get(27)).toBe("sasshin");
-    expect(plan.smd.get(1)).toBe("minken");
-  });
-
-  it("沖縄は手で決めた上書きで集産党になる", () => {
-    expect(initialSeatPlan().smd.get(47)).toBe("shusan");
+  it("区の強さは、2024年にその区を取った党が高い（同じ県でも区で違う）", () => {
+    const [a, b] = districtsOf(12);
+    expect(districtStrength(a.id, a.base)).toBeGreaterThan(districtStrength(b.id, a.base));
+    expect(districtStrength(a.id, "minsei") + districtStrength(a.id, "minken")).toBeCloseTo(1);
   });
 });
 
@@ -97,7 +115,7 @@ describe("generateRoster", () => {
     expect(roster).toHaveLength(HOUSE_SEATS);
     expect(new Set(roster.map((m) => m.name.surname + m.name.givenName)).size).toBe(HOUSE_SEATS);
     const districts = roster.filter((m) => m.seat === "小選挙区").map((m) => m.district);
-    expect(new Set(districts).size).toBe(47);
+    expect(new Set(districts).size).toBe(SMD_SEATS);
     for (const m of roster) {
       expect(ageOf(m)).toBeGreaterThanOrEqual(TABLES.min_age);
       expect(ageOf(m)).toBeLessThanOrEqual(88);
@@ -110,7 +128,7 @@ describe("generateRoster", () => {
       expect(m.home).toBeGreaterThanOrEqual(1);
       expect(m.home).toBeLessThanOrEqual(47);
       if (m.seat === "小選挙区") {
-        expect(m.district).toBe(m.home);
+        expect(prefOfDistrict(m.district!)).toBe(m.home);
         expect(m.jiban).toBeGreaterThanOrEqual(2);
         if (m.lineage === "世襲" || m.lineage === "名門") expect(m.jiban).toBeGreaterThanOrEqual(3);
       } else {

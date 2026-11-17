@@ -8,7 +8,10 @@ import { restoreFactory } from "./roster.js";
 import type { FactorySnapshot, Member } from "./roster.js";
 import type { NameData } from "../data/nameData.js";
 
-export const SAVE_VERSION = 1;
+/** 2：小選挙区を289区にした（議員の district が県から区の番号に変わった） */
+export const SAVE_VERSION = 2;
+/** これより古いセーブデータは形が違うので読めない */
+const MIN_SAVE_VERSION = 2;
 const FORMAT = "seiji-career-save";
 
 export interface SaveData {
@@ -51,12 +54,13 @@ export function parseSave(input: string | unknown): SaveData {
     try {
       data = JSON.parse(input);
     } catch {
-      throw new Error("セーブデータの形式ではありません（JSON として読めない）");
+      throw new Error("セーブデータの形式ではありません（ファイルの中身を読み取れません）");
     }
   }
   const d = data as Partial<SaveData>;
   if (!d || d.format !== FORMAT) throw new Error("議員人生モードのセーブデータではありません");
   if (typeof d.version !== "number" || d.version > SAVE_VERSION) throw new Error("このゲームより新しい版のセーブデータです");
+  if (d.version < MIN_SAVE_VERSION) throw new Error("小選挙区が47区だったころの古いセーブデータは読めません（289区に変えたため）");
   if (!d.state || !d.world?.roster || !d.world.player || !d.world.factory) throw new Error("セーブデータが壊れています");
   return d as SaveData;
 }

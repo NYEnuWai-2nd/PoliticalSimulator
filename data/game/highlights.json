@@ -22,7 +22,7 @@
       "text": "{old_pm}首相が退き、{new_pm}が新しい首相に就いた。",
       "variants": [
         [
-          { "speaker": "old_pm", "text": "後のことは、新しい総裁に託したい。" },
+          { "speaker": "old_pm", "text": "後のことは、新しい党首に託したい。" },
           { "speaker": "new_pm", "text": "前首相の路線を引き継ぎつつ、私の色も出していく。" },
           { "speaker": "secretary", "text": "先生、人事が動きますね。党の幹部の顔ぶれも変わりそうです。" }
         ],
@@ -53,7 +53,7 @@
           { "speaker": "secretary", "text": "先生、おめでとうございます！ 地元の皆さんにもすぐ知らせます。" }
         ],
         [
-          { "speaker": "secretary", "text": "先生、官邸から呼び込みの電話です。{post}だそうです！" },
+          { "speaker": "secretary", "text": "先生、官邸から呼び出しの電話です。{post}だそうです！" },
           { "speaker": "pm", "text": "期待している。結果で応えてほしい。" }
         ]
       ]

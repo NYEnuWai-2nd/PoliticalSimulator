@@ -1885,3 +1885,10 @@
     font-size: 13px;
   }
 }
+
+/* 地図：県の小選挙区の一覧（289区にしたので、1県に複数の区が並ぶ） */
+.map-rows { display: grid; gap: 2px; margin-top: 4px; }
+.map-row { display: flex; align-items: center; gap: 6px; padding: 2px 4px; flex-wrap: wrap; }
+.map-row .map-dist { min-width: 3.4em; font-weight: 700; font-variant-numeric: tabular-nums; }
+.map-row small { font-size: 12px; }
+.map-row.me { background: #fff3c4; }

@@ -7,14 +7,14 @@ import { createWorld } from "./roster.js";
 import type { Member } from "./roster.js";
 import { formGovernment, formInitialGovernment, INITIAL_RULING, rulingOf } from "./cabinet.js";
 import { formCoalition, leaderElection, pickLeader, seatsOf } from "./politics.js";
-import { MAJORITY } from "./districts.js";
+import { HOUSE_SEATS, MAJORITY } from "./districts.js";
 import { chooseEvent, govAction, isPrimeMinister, startCareer, startOptions, takeTurn } from "./career.js";
 
 const data = { surnames, givenNames, exclusion } as unknown as NameData;
 
-/** 議員の党を書き換えて、仮の議席配分を作る */
+/** 議員の党を書き換えて、仮の議席配分を作る。counts は定数76のときの数で書き、今の定数の比に広げる */
 function reassign(roster: Member[], counts: Record<string, number>): Member[] {
-  const parties = Object.entries(counts).flatMap(([p, n]) => Array(n).fill(p) as string[]);
+  const parties = Object.entries(counts).flatMap(([p, n]) => Array(Math.round((n * HOUSE_SEATS) / 76)).fill(p) as string[]);
   return roster.map((m, i) => ({ ...m, party: parties[i] ?? "independent" }));
 }
 

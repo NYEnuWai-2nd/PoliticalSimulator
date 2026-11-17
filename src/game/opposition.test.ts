@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { initialSeatPlan } from "./districts.js";
 import surnames from "../../data/names/surnames.json";
 import givenNames from "../../data/names/given_names.json";
 import exclusion from "../../data/names/exclude_real_politicians.json";
@@ -14,9 +15,9 @@ const data = { surnames, givenNames, exclusion } as unknown as NameData;
 async function minkenLeader(seed = 4) {
   const { roster, factory } = await createWorld(data, seed);
   const opt = startOptions(roster, "minken", "newcomer").find((o) => o.route === "smd")!;
-  const r = await startCareer({ roster, government: formInitialGovernment(roster), factory }, { origin: "newcomer", party: "minken", pref: opt.pref, route: "smd", archetype: "local" }, seed);
+  const r = await startCareer({ roster, government: formInitialGovernment(roster), factory }, { origin: "newcomer", party: "minken", pref: opt.pref, district: opt.district, route: "smd", archetype: "local" }, seed);
   r.state.status = "議員";
-  r.world.player = { ...r.world.player, terms: 5, seat: "小選挙区", district: opt.pref };
+  r.world.player = { ...r.world.player, terms: 5, seat: "小選挙区", district: opt.district! };
   r.state.leaders.minken = r.world.player.id;
   return r;
 }
@@ -129,7 +130,7 @@ describe("開始時点の党首（固定キャラクター）", () => {
     expect(names("sankaku")).toBe("神山 宗一");
     const yamana = world.roster.find((m) => m.name.displayName === "山元 二郎")!;
     expect(yamana.seat).toBe("比例");
-    expect(world.roster.filter((m) => m.party === "reimei").length).toBe(2);
+    expect(world.roster.filter((m) => m.party === "reimei").length).toBe(initialSeatPlan().pr.get("reimei"));
   });
 
   it("固定キャラクターの名前は、実在の議員と漢字・読みが一致しない", async () => {

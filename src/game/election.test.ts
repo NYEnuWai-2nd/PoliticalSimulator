@@ -41,13 +41,13 @@ describe("ドント式と全国の支持", () => {
 });
 
 describe("総選挙", () => {
-  it("小選挙区47・比例29の議員が選ばれ、同じ人が二重に当選しない", async () => {
+  it("小選挙区と比例の定数どおりに議員が選ばれ、同じ人が二重に当選しない", async () => {
     const { result } = await elect(1, 33);
     expect(result.roster).toHaveLength(HOUSE_SEATS);
     expect(new Set(result.roster.map((m) => m.id)).size).toBe(HOUSE_SEATS);
     expect(result.roster.filter((m) => m.seat === "小選挙区")).toHaveLength(SMD_SEATS);
     expect(result.roster.filter((m) => m.seat === "比例")).toHaveLength(PR_SEATS);
-    expect(new Set(result.roster.filter((m) => m.seat === "小選挙区").map((m) => m.district)).size).toBe(47);
+    expect(new Set(result.roster.filter((m) => m.seat === "小選挙区").map((m) => m.district)).size).toBe(SMD_SEATS);
     for (const m of result.roster) expect(m.terms).toBeGreaterThanOrEqual(1);
   });
 

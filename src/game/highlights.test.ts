@@ -1,5 +1,6 @@
 // 記録の重みとまとめ、山場の場面、総選挙の前回比、コツ、推移への助言
 import { describe, expect, it } from "vitest";
+import { HOUSE_SEATS } from "./districts.js";
 import surnames from "../../data/names/surnames.json";
 import givenNames from "../../data/names/given_names.json";
 import exclusion from "../../data/names/exclude_real_politicians.json";
@@ -49,7 +50,7 @@ describe("山場の場面と総選挙の前回比", () => {
       expect(state.log.some((l) => l.level === "major" && l.text.startsWith(`【${h.title}】`))).toBe(true);
     }
     expect(state.elections.length).toBeGreaterThan(1);
-    for (const e of state.elections) expect(e.prevSeats?.reduce((a, x) => a + x.total, 0)).toBe(76);
+    for (const e of state.elections) expect(e.prevSeats?.reduce((a, x) => a + x.total, 0)).toBe(HOUSE_SEATS);
     // 2回目以降の小選挙区の選挙には、前回の自分の得票率が入る
     expect(state.elections.slice(1).some((e) => e.prevShare !== undefined)).toBe(true);
   }, 120_000);

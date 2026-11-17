@@ -14,6 +14,7 @@ import { PARTIES, partyById } from "../game/parties.js";
 import { ABILITIES, TABLES, rankOf } from "../game/tables.js";
 import type { Ability } from "../game/tables.js";
 import { PREFECTURES } from "../map/japanMap.js";
+import { districtById, districtName } from "../game/districts.js";
 import {
   ACTIVITIES,
   EXP_TYPES,
@@ -26,6 +27,7 @@ import {
   chooseEvent,
   startCareer,
   startOptions,
+  findStartOption,
   takeTurn,
   govAction,
   govBills,
@@ -50,7 +52,7 @@ const HELP = `議員人生モード（CLI 版） ${VERSION_LABEL}
 
 始める前のコマンド
   options                          出自・政党・経歴類型・出馬の道の一覧
-  prefs <出自> <政党>              出馬できる道と県の一覧（例: prefs newcomer minsei）
+  prefs <出自> <政党>              出馬できる道と区の一覧（例: prefs newcomer minsei）
   start <出自> <政党> <道> <県> <経歴類型>
                                    始める（例: start newcomer minsei smd 15 local）。県はコードか県名
 
@@ -141,7 +143,7 @@ function optionsReply(s: Session): Reply {
     "政党: " + data.parties.map((p) => `${p.id}（${p.name}・${p.seats}議席）`).join("、"),
     "経歴類型: " + data.archetypes.map((a) => `${a.id}（${a.name}）`).join("、"),
     "出馬の道: " + data.routes.map((r) => `${r.id}（${r.name}）`).join("、"),
-    "次に prefs <出自> <政党> で出馬できる県を見てください。",
+    "次に prefs <出自> <政党> で出馬できる区を見てください。",
   ].join("\n");
   return { ok: true, message: text, data };
 }
@@ -150,20 +152,31 @@ function prefsReply(s: Session, origin: string, party: string): Reply {
   if (!ORIGINS.some((o) => o.id === origin)) return { ok: false, message: `出自は ${ORIGINS.map((o) => o.id).join(" / ")} のどれかです。` };
   if (!PARTIES.some((p) => p.id === party)) return { ok: false, message: "その政党はありません。options で一覧を見てください。" };
   const opts = startOptions(s.base.roster, party, origin as OriginId);
-  const data = opts.map((o) => ({ route: o.route, pref: o.pref, prefName: PREFECTURES[o.pref - 1].name, note: o.note }));
-  const lines = data.filter((d) => d.route !== "pr").map((d) => `  ${d.route} ${d.pref} ${d.prefName}：${d.note}`);
+  const data = opts.map((o) => ({
+    route: o.route,
+    pref: o.pref,
+    prefName: PREFECTURES[o.pref - 1].name,
+    ...(o.district ? { place: `${o.pref}-${districtById(o.district).no}`, district: districtName(o.district) } : {}),
+    note: o.note,
+  }));
+  const lines = data.filter((d) => d.route !== "pr").map((d) => `  ${d.route} ${d.place} ${d.district}：${d.note}`);
   if (data.some((d) => d.route === "pr")) lines.push("  pr <1〜47の県>：比例名簿（地元の県はどこでもよい。順位は党の幹部との関係で決まる）");
-  return { ok: true, message: `出馬できる道と県（${opts.length}件）\n${lines.join("\n")}`, data };
+  return { ok: true, message: `出馬できる道と区（${opts.length}件。区は「県-番号」で指定する）\n${lines.join("\n")}`, data };
 }
 
 async function startReply(s: Session, args: string[]): Promise<Reply> {
   if (s.state) return { ok: false, message: "もう始まっています。" };
   const [origin, party, route, prefArg, archetype] = args;
-  const pref = prefCode(prefArg ?? "");
-  if (!origin || !party || !route || !pref || !archetype) return { ok: false, message: "使い方: start <出自> <政党> <道> <県> <経歴類型>（例: start newcomer minsei smd 15 local）" };
+  // 区は「県-番号」（13-7）。県だけ（13、東京）なら、その県でその道の最初の区
+  const [prefPart, noPart] = (prefArg ?? "").split("-");
+  const pref = prefCode(prefPart);
+  if (!origin || !party || !route || !pref || !archetype)
+    return { ok: false, message: "使い方: start <出自> <政党> <道> <県-区の番号> <経歴類型>（例: start newcomer minsei smd 15-1 local）" };
   if (!TABLES.archetypes.some((a) => a.id === archetype)) return { ok: false, message: "その経歴類型はありません。options で一覧を見てください。" };
+  const opt = findStartOption(s.base.roster, party, origin as OriginId, route as RouteId, noPart ? `${pref}-${noPart}` : String(pref));
+  if (!opt) return { ok: false, message: "その出馬の道と選挙区からは出馬できません。prefs <出自> <政党> で一覧を見てください。" };
   try {
-    const { state, world } = await startCareer(s.base, { origin: origin as OriginId, party, route: route as RouteId, pref, archetype }, s.seed);
+    const { state, world } = await startCareer(s.base, { origin: origin as OriginId, party, route: route as RouteId, pref, district: opt.district, archetype }, s.seed);
     s.state = state;
     s.world = world;
     return { ok: true, message: `${state.log.at(-1)!.text}\n${statusText(s)}` };
@@ -205,7 +218,7 @@ function statusText(s: Session): string {
   const rel = RELATIONS.map((r) => `${r.name}${sum.relations[r.id]}`).join(" ");
   const lines = [
     `【${sum.date}】${sum.name}（${sum.age}歳・${sum.party}・${sum.origin}・${sum.status}${sum.post ? "・" + sum.post : ""}・当選${sum.terms}回）`,
-    `地元 ${sum.pref}／道 ${sum.route}${sum.prRank ? `（比例名簿 ${sum.prRank}位の見込み）` : ""}`,
+    `地元 ${sum.district ?? sum.pref}／道 ${sum.route}${sum.prRank ? `（比例名簿 ${sum.prRank}位の見込み）` : ""}`,
     `体力 ${sum.stamina}　やる気 ${sum.mood}/5　資金 ${sum.money}万円　地盤 ${sum.jiban}（次まで ${sum.jibanProgress}）`,
     `能力 ${ab}`,
     `経験点 ${exp}`,

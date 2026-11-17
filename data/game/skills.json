@@ -197,7 +197,7 @@
       "id": "dobuita",
       "name": "ドブ板",
       "color": "blue",
-      "description": "地元を歩くのが苦にならない。地元回りの経験点と地盤の固まり方が増える。",
+      "description": "地元を歩くのが苦にならない。地元回りの経験点が増え、地盤が固まりやすくなる。",
       "effects": {
         "exp": {
           "local": 1.3
@@ -240,7 +240,7 @@
       "id": "senmon_touben",
       "name": "専門家答弁",
       "color": "blue",
-      "description": "専門分野の質問に強い。出来事の政策の判定に強く、勉強会の経験点が増える。",
+      "description": "専門分野の質問に強い。出来事の政策の判定に強く、政策勉強会の経験点が増える。",
       "effects": {
         "risk": {
           "政策": 10
@@ -303,7 +303,7 @@
       "id": "kokusai",
       "name": "国際感覚",
       "color": "blue",
-      "description": "海外の事情に明るい。勉強会と公務の経験点が増える。",
+      "description": "海外の事情に明るい。政策勉強会と公務の経験点が増える。",
       "effects": {
         "exp": {
           "study": 1.15,
@@ -329,7 +329,7 @@
       "id": "genba_no_koe",
       "name": "現場の声",
       "color": "blue",
-      "description": "現場の人の話を聞くのがうまい。後援会との関係と地域行事の経験点が増える。",
+      "description": "現場の人の話を聞くのがうまい。後援会との関係が上がりやすく、地域行事の経験点が増える。",
       "effects": {
         "relations": {
           "supporters": 1.3
@@ -384,7 +384,7 @@
       "id": "hasshinryoku",
       "name": "発信力",
       "color": "blue",
-      "description": "言葉が広まりやすい。街頭演説の経験点と地元紙との関係が上がりやすい。",
+      "description": "言葉が広まりやすい。街頭演説の経験点が増え、地元紙との関係が上がりやすい。",
       "effects": {
         "exp": {
           "speech": 1.15
@@ -478,7 +478,7 @@
       "id": "chousei_heta",
       "name": "調整下手",
       "color": "red",
-      "description": "根回しが苦手。党の幹部と県議団との関係が上がりにくい。",
+      "description": "根回しが苦手。党の幹部や県議団との関係が上がりにくい。",
       "effects": {
         "relations": {
           "party": 0.7,
@@ -495,7 +495,7 @@
       "id": "enjou",
       "name": "炎上体質",
       "color": "red",
-      "description": "発言が燃えやすい。街頭演説のあとに炎上することがある。",
+      "description": "発言が問題になりやすい。街頭演説のあとに炎上することがある。",
       "effects": {
         "mishap": {
           "activities": [

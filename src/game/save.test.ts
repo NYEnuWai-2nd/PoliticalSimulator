@@ -56,9 +56,10 @@ describe("セーブデータ", () => {
   }, 60_000);
 
   it("ほかのデータや壊れたデータは理由をつけて断る", () => {
-    expect(() => parseSave("not json")).toThrow(/JSON/);
+    expect(() => parseSave("not json")).toThrow(/セーブデータの形式ではありません/);
     expect(() => parseSave({ format: "other" })).toThrow(/セーブデータではありません/);
     expect(() => parseSave({ format: "seiji-career-save", version: 999 })).toThrow(/新しい版/);
-    expect(() => parseSave({ format: "seiji-career-save", version: 1 })).toThrow(/壊れて/);
+    expect(() => parseSave({ format: "seiji-career-save", version: 1 })).toThrow(/古い/);
+    expect(() => parseSave({ format: "seiji-career-save", version: 2 })).toThrow(/壊れて/);
   });
 });

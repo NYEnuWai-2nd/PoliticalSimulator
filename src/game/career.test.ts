@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { HOUSE_SEATS, prefOfDistrict } from "./districts.js";
 import surnames from "../../data/names/surnames.json";
 import givenNames from "../../data/names/given_names.json";
 import exclusion from "../../data/names/exclude_real_politicians.json";
@@ -41,15 +42,15 @@ describe("始め方", () => {
     const { roster } = await createWorld(data, 1);
     const holder = (p: number) => roster.find((m) => m.seat === "小選挙区" && m.district === p);
     const opts = startOptions(roster, "minsei", "newcomer");
-    for (const o of opts.filter((x) => x.route === "smd")) expect(holder(o.pref)?.party).not.toBe("minsei");
+    for (const o of opts.filter((x) => x.route === "smd")) expect(holder(o.district!)?.party).not.toBe("minsei");
     for (const o of opts.filter((x) => x.route === "successor")) {
-      expect(holder(o.pref)?.party).toBe("minsei");
-      expect(2026 - holder(o.pref)!.birthYear).toBeGreaterThanOrEqual(career.routes.successor_min_age);
+      expect(holder(o.district!)?.party).toBe("minsei");
+      expect(2026 - holder(o.district!)!.birthYear).toBeGreaterThanOrEqual(career.routes.successor_min_age);
     }
     expect(opts.filter((x) => x.route === "pr")).toHaveLength(47);
     for (const o of startOptions(roster, "minsei", "hereditary")) {
-      expect(holder(o.pref)?.party).toBe("minsei");
-      expect(holder(o.pref)?.fixedRole).toBeUndefined();
+      expect(holder(o.district!)?.party).toBe("minsei");
+      expect(holder(o.district!)?.fixedRole).toBeUndefined();
     }
   });
 
@@ -68,7 +69,7 @@ describe("始め方", () => {
     const { roster, factory } = await createWorld(data, 1);
     const held = roster.find((m) => m.seat === "小選挙区" && m.party === "minsei" && !m.fixedRole)!.district!;
     await expect(
-      startCareer({ roster, government: formInitialGovernment(roster), factory }, { origin: "newcomer", party: "minsei", pref: held, route: "smd", archetype: "local" }, 1),
+      startCareer({ roster, government: formInitialGovernment(roster), factory }, { origin: "newcomer", party: "minsei", pref: prefOfDistrict(held), district: held, route: "smd", archetype: "local" }, 1),
     ).rejects.toThrow();
   });
 });
@@ -178,13 +179,13 @@ describe("プレイレポートを受けた直し", () => {
 });
 
 describe("総選挙とその後", () => {
-  it("総選挙のあとも続き、当選すれば議員、落選すれば浪人になり、名簿は76人のまま", async () => {
+  it("総選挙のあとも続き、当選すれば議員、落選すれば浪人になり、名簿は定数のまま", async () => {
     const { state, world } = await begin("newcomer", "minsei", 5);
     await play(state, world, 60, (t) => (t % 4 === 3 ? "rest" : "local"));
     expect(state.elections.length).toBeGreaterThanOrEqual(1);
     expect(state.over).toBeUndefined();
     expect(state.status).toBe(state.elections.at(-1)!.won ? "議員" : "浪人");
-    expect(world.roster).toHaveLength(76);
+    expect(world.roster).toHaveLength(HOUSE_SEATS);
     expect(world.roster.some((m) => m.id === world.player.id)).toBe(state.status === "議員");
     expect(state.parentId).toBeUndefined();
   }, 120000);

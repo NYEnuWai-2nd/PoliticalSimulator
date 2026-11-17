@@ -1,12 +1,12 @@
 // 総選挙（設計は docs/design.md の「総選挙」）
-// 画面には依存しない。全国の政党支持を決め、県ごとに候補者を立てて得票を計算し、比例をドント式で配る。
+// 画面には依存しない。全国の政党支持を決め、小選挙区ごとに候補者を立てて得票を計算し、比例をドント式で配る。
 import rulesRaw from "../../data/game/rules.json";
 import { PARTIES, partyById } from "./parties.js";
 import type { Member, MemberFactory } from "./roster.js";
 import { INITIAL_RULING } from "./cabinet.js";
 import type { Ruling } from "./cabinet.js";
-import { PR_SEATS, SMD_SEATS, dhondt, prefStrength, prefWeight } from "./districts.js";
-import type { PrefCode } from "./districts.js";
+import { DISTRICTS, PREF_CODES, PR_SEATS, dhondt, districtStrength, prefOfDistrict, prefStrength, prefWeight } from "./districts.js";
+import type { DistrictId, PrefCode } from "./districts.js";
 import { TABLES } from "./tables.js";
 import { skillVote } from "./skills.js";
 import { applyPacts } from "./opposition.js";
@@ -16,13 +16,15 @@ const E = rulesRaw.election;
 /** 選挙協力をする小さい連立相手（全国の支持が小さく、現職の県だけで候補を立てる） */
 const SMALL_PARTNERS = new Set(["kosei"]);
 
-/** 選挙協力：与党第一党が立てない県では、その票の一部が連立相手に流れる */
-function addPartnerTransfer(local: Record<string, number>, running: string[], support: Record<string, number>, pref: PrefCode, ruling: Ruling): void {
+/** 区での党の票の基礎（全国の支持 × 区での強さ） */
+const localVote = (support: Record<string, number>, d: DistrictId, party: string) =>
+  (support[party] ?? 0) * (E.regional_base + E.regional_strength * districtStrength(d, party));
+
+/** 選挙協力：与党第一党が立てない区では、その票の一部が連立相手に流れる */
+function addPartnerTransfer(local: Record<string, number>, running: string[], support: Record<string, number>, d: DistrictId, ruling: Ruling): void {
   for (const partner of ruling.partners)
-    if (running.includes(partner) && !running.includes(ruling.party))
-      local[partner] += (support[ruling.party] ?? 0) * (E.regional_base + E.regional_strength * prefStrength(pref, ruling.party)) * E.partner_transfer;
+    if (running.includes(partner) && !running.includes(ruling.party)) local[partner] += localVote(support, d, ruling.party) * E.partner_transfer;
 }
-const PREFS: PrefCode[] = Array.from({ length: SMD_SEATS }, (_, i) => i + 1);
 
 export interface Candidacy {
   member: Member;
@@ -31,6 +33,7 @@ export interface Candidacy {
 }
 
 export interface DistrictResult {
+  district: DistrictId;
   pref: PrefCode;
   /** 得票率の高い順 */
   candidates: Candidacy[];
@@ -45,7 +48,7 @@ export interface ElectionResult {
   smd: DistrictResult[];
   /** 政党ごとの比例の当選者 */
   pr: Record<string, Member[]>;
-  /** 新しい議員の名簿（小選挙区47・比例29） */
+  /** 新しい議員の名簿（小選挙区と比例） */
   roster: Member[];
   /** 落選して浪人になった人（元議員と、落選した新人候補） */
   ronin: Member[];
@@ -65,8 +68,8 @@ export interface ElectionInput {
   /** 内閣支持率（%）。基準からのずれが全国の風になる */
   approval: number;
   factory: MemberFactory;
-  /** 決まった候補者（プレイヤーなど）。その県のその党の候補として必ず立てる */
-  forced?: { pref: PrefCode; party: string; member: Member; bonus?: number }[];
+  /** 決まった候補者（プレイヤーなど）。その区のその党の候補として必ず立てる */
+  forced?: { district: DistrictId; party: string; member: Member; bonus?: number }[];
   /** 比例名簿に決まった順位で載せる候補（プレイヤーなど）。rank は0から */
   forcedPr?: { party: string; member: Member; rank: number }[];
   /** 今回の選挙で引退させる議員（プレイヤーに地盤を譲る親など） */
@@ -107,13 +110,14 @@ export function nationalSupport(approval: number, rand: () => number, ruling: Ru
   return out;
 }
 
-/** その県で候補者を立てる政党 */
-export function partiesRunning(pref: PrefCode, incumbentParty: string | undefined, ruling: Ruling = INITIAL_RULING): string[] {
+/** その区で候補者を立てる政党（県の中で2024年に議席を取った党と、いつも立てる党） */
+export function partiesRunning(district: DistrictId, incumbentParty: string | undefined, ruling: Ruling = INITIAL_RULING): string[] {
+  const pref = prefOfDistrict(district);
   const set = new Set<string>();
   if (incumbentParty && !partyById(incumbentParty).is_independent) set.add(incumbentParty);
   for (const id of E.always_run) set.add(id);
   for (const p of PARTIES) if (!p.is_independent && !p.appears_later && prefStrength(pref, p.id) > 0) set.add(p.id);
-  // 連立相手が現職の県では、与党第一党は候補を立てない（選挙協力）。連立相手は現職の県でだけ立てる
+  // 連立相手が現職の区では、与党第一党は候補を立てない（選挙協力）。連立相手は現職の区でだけ立てる
   for (const partner of ruling.partners.filter((p) => SMALL_PARTNERS.has(p))) {
     if (incumbentParty === partner) set.delete(ruling.party);
     else set.delete(partner);
@@ -138,9 +142,9 @@ function tierNameFor(terms: number): string {
 }
 
 /** 当選した人を議員として更新する */
-function elect(m: Member, seat: "小選挙区" | "比例", pref: PrefCode | null): Member {
+function elect(m: Member, seat: "小選挙区" | "比例", district: DistrictId | null): Member {
   const terms = m.terms + 1;
-  return { ...m, terms, tier: tierNameFor(terms), seat, district: seat === "小選挙区" ? pref : null, home: pref ?? m.home };
+  return { ...m, terms, tier: tierNameFor(terms), seat, district: seat === "小選挙区" ? district : null, home: district ? prefOfDistrict(district) : m.home };
 }
 
 /** 落選した人を浪人にする。元議員は地盤が少し減る */
@@ -163,10 +167,11 @@ export async function runElection(input: ElectionInput): Promise<ElectionResult>
   const used = new Set<number>();
   const ronin = [...input.ronin];
 
-  async function candidateFor(party: string, pref: PrefCode): Promise<{ member: Member; incumbent: boolean; bonus?: number }> {
-    const forced = input.forced?.find((f) => f.pref === pref && f.party === party);
-    if (forced) return { member: forced.member, incumbent: forced.member.seat === "小選挙区" && forced.member.district === pref, bonus: forced.bonus };
-    const inc = sitting.find((m) => m.seat === "小選挙区" && m.district === pref && m.party === party);
+  async function candidateFor(party: string, d: DistrictId): Promise<{ member: Member; incumbent: boolean; bonus?: number }> {
+    const pref = prefOfDistrict(d);
+    const forced = input.forced?.find((f) => f.district === d && f.party === party);
+    if (forced) return { member: forced.member, incumbent: forced.member.seat === "小選挙区" && forced.member.district === d, bonus: forced.bonus };
+    const inc = sitting.find((m) => m.seat === "小選挙区" && m.district === d && m.party === party);
     if (inc) return { member: inc, incumbent: true };
     // 地元の浪人のうち、当選回数の多い人を優先する
     const r = ronin.filter((m) => m.party === party && m.home === pref && !used.has(m.id)).sort((a, b) => b.terms - a.terms || a.id - b.id)[0];
@@ -176,21 +181,21 @@ export async function runElection(input: ElectionInput): Promise<ElectionResult>
 
   // 小選挙区
   const smd: DistrictResult[] = [];
-  for (const pref of PREFS) {
-    const incumbent = sitting.find((m) => m.seat === "小選挙区" && m.district === pref);
-    let running = partiesRunning(pref, incumbent?.party, ruling);
-    // 決まった候補者の党は、その県で必ず候補を立てる
-    for (const f of input.forced ?? []) if (f.pref === pref && !running.includes(f.party)) running.push(f.party);
+  for (const { id: district, pref } of DISTRICTS) {
+    const incumbent = sitting.find((m) => m.seat === "小選挙区" && m.district === district);
+    let running = partiesRunning(district, incumbent?.party, ruling);
+    // 決まった候補者の党は、その区で必ず候補を立てる
+    for (const f of input.forced ?? []) if (f.district === district && !running.includes(f.party)) running.push(f.party);
     const local: Record<string, number> = {};
-    for (const p of running) local[p] = (support[p] ?? 0) * (E.regional_base + E.regional_strength * prefStrength(pref, p));
-    // 選挙協力：与党第一党が立てない県では、その票の一部が連立相手に流れる
-    addPartnerTransfer(local, running, support, pref, ruling);
+    for (const p of running) local[p] = localVote(support, district, p);
+    // 選挙協力：与党第一党が立てない区では、その票の一部が連立相手に流れる
+    addPartnerTransfer(local, running, support, district, ruling);
     // 野党の選挙協力（候補者の一本化）：相手が候補を降ろし、票の一部が移る
     running = applyPacts(local, running, input.pacts ?? []);
     const localTotal = Object.values(local).reduce((a, b) => a + b, 0) || 1;
     const entries: { member: Member; raw: number }[] = [];
     for (const p of running) {
-      const { member, incumbent: isInc, bonus } = await candidateFor(p, pref);
+      const { member, incumbent: isInc, bonus } = await candidateFor(p, district);
       used.add(member.id);
       entries.push({ member, raw: Math.max(0.01, local[p] / localTotal + personalVote(member, isInc, rand) + (bonus ?? 0)) });
     }
@@ -201,7 +206,7 @@ export async function runElection(input: ElectionInput): Promise<ElectionResult>
     }
     const sum = entries.reduce((a, e) => a + e.raw, 0);
     const candidates = entries.map((e) => ({ member: e.member, share: e.raw / sum })).sort((a, b) => b.share - a.share || a.member.id - b.member.id);
-    smd.push({ pref, candidates, winner: candidates[0].member });
+    smd.push({ district, pref, candidates, winner: candidates[0].member });
   }
 
   // 比例：ドント式で配り、党の名簿の上から当選させる
@@ -225,8 +230,8 @@ export async function runElection(input: ElectionInput): Promise<ElectionResult>
     }
     while (elected.length < n) {
       // 新人の地元は県の大きさ（2024年の小選挙区の数）の比で選ぶ
-      let r = rand() * PREFS.reduce((a, x) => a + prefWeight(x), 0);
-      const home = PREFS.find((x) => (r -= prefWeight(x)) <= 0) ?? PREFS[PREFS.length - 1];
+      let r = rand() * PREF_CODES.reduce((a, x) => a + prefWeight(x), 0);
+      const home = PREF_CODES.find((x) => (r -= prefWeight(x)) <= 0) ?? PREF_CODES[PREF_CODES.length - 1];
       elected.push(await factory.create(p, { seat: "なし", home }));
     }
     pr[p.id] = elected;
@@ -236,13 +241,13 @@ export async function runElection(input: ElectionInput): Promise<ElectionResult>
   const roster: Member[] = [];
   for (const d of smd) {
     const w = d.winner;
-    let won = elect(w, "小選挙区", d.pref);
+    let won = elect(w, "小選挙区", d.district);
     // 大きく勝つと地盤が固まる
     if (d.candidates[0].share > 0.5 && rand() < E.jiban_win_gain) won = { ...won, jiban: clamp(won.jiban + 1, 1, 4) };
     if (won.jiban < 2) won = { ...won, jiban: 2 };
     roster.push(won);
   }
-  for (const p of PARTIES) for (const m of pr[p.id] ?? []) roster.push(elect(m, "比例", m.home));
+  for (const p of PARTIES) for (const m of pr[p.id] ?? []) roster.push(elect(m, "比例", null));
 
   // 落選した人：選挙区で負けた候補、比例の名簿で届かなかった現職、今回出なかった浪人
   const electedIds = new Set(roster.map((m) => m.id));
@@ -275,7 +280,7 @@ export function seatSummary(roster: Member[]): { party: string; smd: number; pr:
  * entries は立候補する党と候補者（いなければ平均的な新人として扱う）。
  */
 export function estimateDistrict(
-  pref: PrefCode,
+  district: DistrictId,
   approval: number,
   entries: { party: string; member?: Member; incumbent: boolean; bonus?: number }[],
   ruling: Ruling = INITIAL_RULING,
@@ -283,8 +288,8 @@ export function estimateDistrict(
 ): { party: string; member?: Member; share: number }[] {
   const support = nationalSupport(approval, () => 0.5, ruling, extra.bonus);
   const local: Record<string, number> = {};
-  for (const p of entries.map((e) => e.party)) local[p] = (support[p] ?? 0) * (E.regional_base + E.regional_strength * prefStrength(pref, p));
-  addPartnerTransfer(local, entries.map((e) => e.party), support, pref, ruling);
+  for (const p of entries.map((e) => e.party)) local[p] = localVote(support, district, p);
+  addPartnerTransfer(local, entries.map((e) => e.party), support, district, ruling);
   // 選挙協力で候補を降ろした党は、見込みの一覧から外す
   const running = applyPacts(local, entries.map((e) => e.party), extra.pacts ?? []);
   entries = entries.filter((e) => running.includes(e.party));

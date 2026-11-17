@@ -206,7 +206,8 @@ export function startDrafting(state: GameState, ctx: GameContext, billId: string
   state.actionPoints--;
   bs.status = "準備中";
   const minister = ministerFor(ctx, b);
-  const msg = `${billName(state, b)}の準備を${minister.name.displayName}に指示した。`;
+  const post = ctx.government.find((a) => a.member.id === minister.id)?.post.name;
+  const msg = `${billName(state, b)}の準備を${post ? `${post}の` : ""}${minister.name.displayName}に指示した。`;
   log(state, "行動", msg);
   return { ok: true, message: msg };
 }
@@ -360,7 +361,7 @@ export function endTurn(state: GameState, ctx: GameContext): void {
   if (state.approval < R.approval.no_confidence_threshold) {
     const result = noConfidenceVote(ctx.roster, voteContext(state), state.approval, () => rand(state));
     if (result.passed) {
-      log(state, "採決", `内閣不信任案が賛成${result.yes}・反対${result.no}で可決された。石橋内閣は総辞職した。`, result);
+      log(state, "採決", `内閣不信任案が賛成${result.yes}・反対${result.no}で可決された。内閣は総辞職した。`, result);
       pushScene(state, ctx, "no_confidence_pass", { yes: result.yes, no: result.no });
       state.over = "内閣不信任案が可決され、内閣は総辞職した。";
       return;

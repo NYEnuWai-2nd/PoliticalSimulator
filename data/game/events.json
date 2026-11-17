@@ -39,7 +39,7 @@
       "lines": [
         {
           "speaker": "narrator",
-          "text": "週刊誌が、{member}の政治資金をめぐる疑惑を報じた。"
+          "text": "週刊誌が{member}の政治資金をめぐる疑惑を報じた。"
         },
         {
           "speaker": "member",
@@ -64,7 +64,7 @@
       "lines": [
         {
           "speaker": "narrator",
-          "text": "発表された景気指標が、市場の予想を上回った。"
+          "text": "発表された景気指標が市場の予想を上回った。"
         },
         {
           "speaker": "chief_cabinet_secretary",

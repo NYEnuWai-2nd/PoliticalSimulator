@@ -104,6 +104,7 @@
     "support_noise": 1,
     "regional_base": 0.7,
     "regional_strength": 0.8,
+    "district_lean": 0.7,
     "partner_transfer": 0.6,
     "personal_jiban": 0.08,
     "personal_fame": 0.002,

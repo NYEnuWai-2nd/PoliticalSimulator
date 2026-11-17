@@ -1,17 +1,14 @@
 // 選挙区と開始時点の議席（設計は docs/design.md の4節と6節）
+// 小選挙区は2024年と同じく289区。県ごとの区の数も2024年と同じにする。区の境界は持たず、県と番号だけを持つ。
 import seats2024 from "../../data/stats/shugiin_2024_seats.json";
-import scenario from "../../data/game/scenario.json";
+import rulesRaw from "../../data/game/rules.json";
 import { PARTIES } from "./parties.js";
-
-/** 小選挙区（都道府県ごとに1区） */
-export const SMD_SEATS = 47;
-/** 全国一つの比例区 */
-export const PR_SEATS = 29;
-export const HOUSE_SEATS = SMD_SEATS + PR_SEATS;
-export const MAJORITY = Math.floor(HOUSE_SEATS / 2) + 1;
+import { PREFECTURES } from "../map/japanMap.js";
 
 /** 都道府県コード（1〜47） */
 export type PrefCode = number;
+/** 小選挙区の番号（1〜289。県の順、県の中では区の番号の順） */
+export type DistrictId = number;
 
 interface Seats2024 {
   smd_total: Record<string, number>;
@@ -22,6 +19,77 @@ const SEATS_2024 = seats2024 as Seats2024;
 
 const PARTY_ORDER = new Map(PARTIES.map((p, i) => [p.id, i]));
 const orderOf = (id: string) => PARTY_ORDER.get(id) ?? Number.MAX_SAFE_INTEGER;
+
+export const PREF_CODES: PrefCode[] = Array.from({ length: 47 }, (_, i) => i + 1);
+
+/** その県の2024年の小選挙区の数（人口の目安。区の数そのもの） */
+export function prefWeight(pref: PrefCode): number {
+  return Object.values(SEATS_2024.smd_by_prefecture[String(pref)] ?? {}).reduce((a, b) => a + b, 0);
+}
+
+export interface District {
+  id: DistrictId;
+  pref: PrefCode;
+  /** 県の中の区の番号（1から） */
+  no: number;
+  /** 2024年にこの区を取った政党（区の地力。開始時点の当選者の党でもある） */
+  base: string;
+}
+
+/**
+ * 県の中で、2024年の各党の議席数を区の番号に割り振る。番号の若い順に、
+ * 「議席数 ÷（すでに割り振った数 + 0.5）」が最も大きい党を選ぶ（サンラグ式）ので、党が交互に並ぶ。
+ */
+function baseParties(pref: PrefCode): string[] {
+  const counts = SEATS_2024.smd_by_prefecture[String(pref)] ?? {};
+  const given: Record<string, number> = {};
+  const out: string[] = [];
+  const n = prefWeight(pref);
+  for (let i = 0; i < n; i++) {
+    let best = "";
+    let bestQ = -1;
+    for (const [id, c] of Object.entries(counts)) {
+      if ((given[id] ?? 0) >= c) continue;
+      const q = c / ((given[id] ?? 0) + 0.5);
+      if (q > bestQ || (q === bestQ && orderOf(id) < orderOf(best))) {
+        best = id;
+        bestQ = q;
+      }
+    }
+    given[best] = (given[best] ?? 0) + 1;
+    out.push(best);
+  }
+  return out;
+}
+
+export const DISTRICTS: District[] = (() => {
+  const out: District[] = [];
+  for (const pref of PREF_CODES) baseParties(pref).forEach((base, i) => out.push({ id: out.length + 1, pref, no: i + 1, base }));
+  return out;
+})();
+
+/** 小選挙区（2024年と同じ289区） */
+export const SMD_SEATS = DISTRICTS.length;
+/** 全国一つの比例区 */
+export const PR_SEATS = 176;
+export const HOUSE_SEATS = SMD_SEATS + PR_SEATS;
+export const MAJORITY = Math.floor(HOUSE_SEATS / 2) + 1;
+
+export const districtById = (id: DistrictId): District => {
+  const d = DISTRICTS[id - 1];
+  if (!d) throw new Error(`未知の小選挙区です：${id}`);
+  return d;
+};
+export const prefOfDistrict = (id: DistrictId): PrefCode => districtById(id).pref;
+export const districtsOf = (pref: PrefCode): District[] => DISTRICTS.filter((d) => d.pref === pref);
+/** 「東京7区」の形（北海道は「北海道1区」） */
+export const districtName = (id: DistrictId): string => {
+  const d = districtById(id);
+  const p = PREFECTURES[d.pref - 1];
+  return `${p.name === "北海道" ? p.name : p.name.replace(/[都府県]$/, "")}${d.no}区`;
+};
+/** 県と番号から区を引く。なければ undefined */
+export const findDistrict = (pref: PrefCode, no: number): District | undefined => DISTRICTS.find((d) => d.pref === pref && d.no === no);
 
 /** 票（ここでは実際の当選者数）の比で total 議席を配る（最大剰余法）。同じ剰余なら政党の定義順を優先する */
 export function largestRemainder(counts: Record<string, number>, total: number): Map<string, number> {
@@ -41,73 +109,35 @@ export function largestRemainder(counts: Record<string, number>, total: number):
 }
 
 /** 2024年にその県の小選挙区で各党が取った議席の割合（県内での強さ） */
-function strength(pref: PrefCode, party: string): number {
+export function prefStrength(pref: PrefCode, party: string): number {
   const c = SEATS_2024.smd_by_prefecture[String(pref)] ?? {};
   const total = Object.values(c).reduce((a, b) => a + b, 0);
   return total ? (c[party] ?? 0) / total : 0;
 }
 
-/** その県の2024年の小選挙区の数（人口の目安） */
-export function prefWeight(pref: PrefCode): number {
-  return Object.values(SEATS_2024.smd_by_prefecture[String(pref)] ?? {}).reduce((a, b) => a + b, 0);
+/**
+ * 区の中での党の強さ。県の中の強さに、2024年にその区を取った党への上乗せを混ぜる
+ * （同じ県の区がみな同じ情勢にならないように。混ぜる割合は rules.json の election.district_lean）。
+ */
+export function districtStrength(id: DistrictId, party: string): number {
+  const d = districtById(id);
+  const lean = rulesRaw.election.district_lean;
+  return (1 - lean) * prefStrength(d.pref, party) + lean * (d.base === party ? 1 : 0);
 }
 
 export interface SeatPlan {
-  /** 県 → 小選挙区で当選している政党 */
-  smd: Map<PrefCode, string>;
+  /** 区 → 小選挙区で当選している政党 */
+  smd: Map<DistrictId, string>;
   /** 政党 → 比例の議席数 */
   pr: Map<string, number>;
 }
 
 /**
- * 開始時点の議席。小選挙区は2024年の小選挙区の獲得議席の比で各党の数を決め、
- * 各党が強かった県から順に割り当てる（県ごとの最多党をそのまま勝たせると民政党が過半数を超えるため）。
+ * 開始時点の議席。小選挙区は区ごとに2024年にその区を取った党（県ごとの議席数は2024年と同じ）。
  * 比例は2024年の比例の獲得議席の比で配る。
- * 最後に data/game/scenario.json の smd_overrides で手で決めた県を上書きする（元の勝者は小選挙区が1つ減る）。
  */
 export function initialSeatPlan(): SeatPlan {
-  const quota = largestRemainder(SEATS_2024.smd_total, SMD_SEATS);
-  const smd = new Map<PrefCode, string>();
-  const candidates: { pref: PrefCode; party: string; s: number }[] = [];
-  for (let pref = 1; pref <= SMD_SEATS; pref++)
-    for (const party of quota.keys()) {
-      const s = strength(pref, party);
-      if (s > 0) candidates.push({ pref, party, s });
-    }
-  // 強さが同じなら、その党が多くの議席を取った大きな県を先にする
-  candidates.sort((a, b) => b.s - a.s || prefWeight(b.pref) - prefWeight(a.pref) || a.pref - b.pref || orderOf(a.party) - orderOf(b.party));
-  for (const { pref, party } of candidates) {
-    if (smd.has(pref) || (quota.get(party) ?? 0) <= 0) continue;
-    smd.set(pref, party);
-    quota.set(party, quota.get(party)! - 1);
-  }
-  // 残った県は、枠が余っている党のうち最も強い党に渡す
-  for (let pref = 1; pref <= SMD_SEATS; pref++) {
-    if (smd.has(pref)) continue;
-    const left = [...quota.entries()].filter(([, n]) => n > 0).map(([id]) => id);
-    left.sort((a, b) => strength(pref, b) - strength(pref, a) || orderOf(a) - orderOf(b));
-    smd.set(pref, left[0]);
-    quota.set(left[0], quota.get(left[0])! - 1);
-  }
-  // 2県の勝者を入れ替えると強さの合計が増えるなら入れ替える（各党の議席数は変わらない）
-  for (let improved = true; improved; ) {
-    improved = false;
-    for (let a = 1; a <= SMD_SEATS; a++)
-      for (let b = a + 1; b <= SMD_SEATS; b++) {
-        const pa = smd.get(a)!;
-        const pb = smd.get(b)!;
-        if (pa === pb) continue;
-        const gain = strength(a, pb) + strength(b, pa) - strength(a, pa) - strength(b, pb);
-        if (gain > 1e-9) {
-          smd.set(a, pb);
-          smd.set(b, pa);
-          improved = true;
-        }
-      }
-  }
-  const overrides = (scenario as { smd_overrides: Record<string, { party: string }> }).smd_overrides;
-  for (const [pref, { party }] of Object.entries(overrides)) smd.set(Number(pref), party);
-  return { smd, pr: largestRemainder(SEATS_2024.pr_total, PR_SEATS) };
+  return { smd: new Map(DISTRICTS.map((d) => [d.id, d.base])), pr: largestRemainder(SEATS_2024.pr_total, PR_SEATS) };
 }
 
 /** ドント式。票（得票率など）の比で total 議席を配る。同じ商なら政党の定義順を優先する */
@@ -130,12 +160,19 @@ export function dhondt(votes: Record<string, number>, total: number): Map<string
   return out;
 }
 
-/** 2024年に、その県の小選挙区で各党が取った議席の割合（選挙の計算で使う） */
-export function prefStrength(pref: PrefCode, party: string): number {
-  return strength(pref, party);
-}
-
 /** 2024年の比例の当選者数の比（全国の政党支持の基準に使う） */
 export function prTotals2024(): Record<string, number> {
   return { ...SEATS_2024.pr_total };
+}
+
+/** その県の小選挙区の議員（区の番号の順） */
+export function smdMembersOf<T extends { seat: string; district: DistrictId | null }>(roster: T[], pref: PrefCode): T[] {
+  return roster.filter((m) => m.seat === "小選挙区" && m.district !== null && prefOfDistrict(m.district) === pref).sort((a, b) => a.district! - b.district!);
+}
+
+/** その県で小選挙区の議席が最も多い党（地図の県の色に使う）。同じ数なら政党の定義順。議員がいなければ undefined */
+export function prefLeadingParty(roster: { seat: string; district: DistrictId | null; party: string }[], pref: PrefCode): string | undefined {
+  const count: Record<string, number> = {};
+  for (const m of smdMembersOf(roster, pref)) count[m.party] = (count[m.party] ?? 0) + 1;
+  return Object.keys(count).sort((a, b) => count[b] - count[a] || orderOf(a) - orderOf(b))[0];
 }

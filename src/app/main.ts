@@ -7,7 +7,8 @@ import { createWorld } from "../game/roster.js";
 import type { Member, MemberFactory } from "../game/roster.js";
 import { formInitialGovernment } from "../game/cabinet.js";
 import type { Appointment } from "../game/cabinet.js";
-import { chooseEvent, govAction, learnSkill, oppAction, raceForecast, startCareer, takeTurn, upgradeAbility } from "../game/career.js";
+import { chooseEvent, findStartOption, govAction, learnSkill, oppAction, raceForecast, startCareer, takeTurn, upgradeAbility } from "../game/career.js";
+import { districtName, prefLeadingParty, smdMembersOf } from "../game/districts.js";
 import type { AdviceLevel } from "../game/advice.js";
 import type { OppActionId } from "../game/career.js";
 import type { CareerState, CareerWorld, OriginId, RouteId } from "../game/career.js";
@@ -159,7 +160,7 @@ function autosave(): void {
     app.savedAt = undefined;
     if (!saveWarned) {
       saveWarned = true;
-      window.setTimeout(() => showToast("このブラウザに保存できませんでした。「自分」の画面からファイルに書き出してください"), 0);
+      window.setTimeout(() => showToast("このブラウザに保存できませんでした。「自分」の画面からファイルに書き出してください。"), 0);
     }
   }
 }
@@ -264,12 +265,14 @@ function render(): void {
 function mapViewShell(): string {
   const w = app.world!;
   const pref = app.mapPref ?? app.state!.setup.pref;
-  const holder = w.roster.find((m) => m.seat === "小選挙区" && m.district === pref);
+  const smd = smdMembersOf(w.roster, pref);
   const pr = w.roster.filter((m) => m.seat === "比例" && m.home === pref);
-  const info = holder
-    ? `<b>${esc(PREFECTURES[pref - 1].name)}</b>：${chip(holder.party)} <button class="name-btn" data-member="${holder.id}">${esc(holder.name.displayName)}</button>（${esc(partyById(holder.party).short)}・当選${holder.terms}回・地盤${holder.jiban}）${pr.length ? `　比例：${pr.map((m) => `<button class="name-btn" data-member="${m.id}">${esc(m.name.displayName)}</button>`).join("、")}` : ""}`
-    : "";
-  return `<div class="page"><section class="cut box"><div id="map"></div><p style="margin:8px 0 0">${info}</p><p class="muted" style="margin:4px 0 0">県を押すと、その県の議員を表示します。赤い太枠の県が自分の地元です。</p>${mapLegend(w.roster)}</section></div>`;
+  const mine = app.state!.setup.district;
+  const rows = smd
+    .map((m) => `<div class="map-row${m.district === mine ? " me" : ""}"><span class="map-dist">${esc(districtName(m.district!).replace(/^.*?(d+区)$/, "$1"))}</span>${chip(m.party)}<button class="name-btn" data-member="${m.id}">${esc(m.name.displayName)}</button><small class="muted">${esc(partyById(m.party).short)}・当選${m.terms}回・地盤${m.jiban}</small></div>`)
+    .join("");
+  const info = `<b>${esc(PREFECTURES[pref - 1].name)}</b>（小選挙区${smd.length}）<div class="map-rows">${rows}</div>${pr.length ? `<p style="margin:6px 0 0">比例：${pr.map((m) => `<button class="name-btn" data-member="${m.id}">${esc(m.name.displayName)}</button>`).join("、")}</p>` : ""}`;
+  return `<div class="page"><section class="cut box"><div id="map"></div><div style="margin:8px 0 0">${info}</div><p class="muted" style="margin:4px 0 0">県を押すと、その県の議員を表示します。県の色はその県で小選挙区の議席が最も多い党、赤い太枠の県が自分の地元です。</p>${mapLegend(w.roster)}</section></div>`;
 }
 
 /** 地図の凡例：県の色は小選挙区の議席を持つ政党 */
@@ -277,7 +280,7 @@ function mapLegend(roster: Member[]): string {
   const counts = new Map<string, number>();
   for (const m of roster) if (m.seat === "小選挙区") counts.set(m.party, (counts.get(m.party) ?? 0) + 1);
   const items = [...counts].sort((a, b) => b[1] - a[1]).map(([p, n]) => `<span class="legend-item">${chip(p)}${esc(partyById(p).short)} ${n}</span>`);
-  return `<div class="legend"><span class="muted">県の色＝小選挙区の議席を持つ政党</span>${items.join("")}</div>`;
+  return `<div class="legend"><span class="muted">県の色＝小選挙区の議席が最も多い政党（数は全国の小選挙区の議席）</span>${items.join("")}</div>`;
 }
 
 function mountMap(): void {
@@ -287,8 +290,8 @@ function mountMap(): void {
   renderJapanMap(el, {
     cellSize: 14,
     fill: (code) => {
-      const m = w.roster.find((x) => x.seat === "小選挙区" && x.district === code);
-      return m ? partyById(m.party).color : "#d4d4d8";
+      const p = prefLeadingParty(w.roster, code);
+      return p ? partyById(p).color : "#d4d4d8";
     },
     onClick: (code) => {
       app.mapPref = code;
@@ -328,7 +331,7 @@ function modalHtml(): string {
   }
   // 引退
   if (state.over) {
-    return `<div class="overlay"><div class="cut dialog" role="dialog" aria-modal="true"><h2>${icon("st-rose", 32)} 政治家人生のおわり</h2><p>${esc(state.over)}</p>
+    return `<div class="overlay"><div class="cut dialog" role="dialog" aria-modal="true"><h2>${icon("st-rose", 32)} 議員人生の終わり</h2><p>${esc(state.over)}</p>
       <ul>${state.achievements.map((a) => `<li>${esc(a)}</li>`).join("")}</ul>
       <p class="btn-row"><button class="btn primary" data-action="restart-same">同じ世界でもう一度</button><button class="btn" data-action="restart">新しい世界で遊ぶ</button></p></div></div>`;
   }
@@ -350,7 +353,7 @@ function showToast(text: string): void {
 
 async function start(): Promise<void> {
   const c = app.setup;
-  if (!app.base || !c.origin || !c.party || !c.route || !c.pref || !c.archetype) return;
+  if (!app.base || !c.origin || !c.party || !c.route || !c.pref || (c.route !== "pr" && !c.district) || !c.archetype) return;
   // 続きのデータがあれば、消えることを確かめる（確認用の ?start= では聞かない）
   const saved = params.has("start") ? undefined : autosaveLabel();
   if (saved) {
@@ -362,10 +365,10 @@ async function start(): Promise<void> {
 
 async function beginCareer(): Promise<void> {
   const c = app.setup;
-  if (!app.base || !c.origin || !c.party || !c.route || !c.pref || !c.archetype) return;
+  if (!app.base || !c.origin || !c.party || !c.route || !c.pref || (c.route !== "pr" && !c.district) || !c.archetype) return;
   app.busy = true;
   try {
-    const { state, world } = await startCareer(app.base, { origin: c.origin, party: c.party, route: c.route, pref: c.pref, archetype: c.archetype }, app.seed);
+    const { state, world } = await startCareer(app.base, { origin: c.origin, party: c.party, route: c.route, pref: c.pref, district: c.route === "pr" ? undefined : c.district, archetype: c.archetype }, app.seed);
     app.state = state;
     app.world = world;
     app.last = { text: state.log.at(-1)!.text, fx: "" };
@@ -399,7 +402,7 @@ function describeChanges(before: ReturnType<typeof snapshotNumbers>, after: Retu
       const windUp = (da > 0) === mine;
       const reason =
         Math.abs(da) >= 0.5 && before.ruling === after.ruling && windUp === ds > 0
-          ? `（支持率の変化で${mine ? "与党の自党" : "野党の自党"}に${windUp ? "追い風" : "向かい風"}）`
+          ? `（支持率の変化で${mine ? "与党である自党" : "野党である自党"}に${windUp ? "追い風" : "向かい風"}）`
           : ds < 0
             ? "（相手の陣営の動きや関係の変化）"
             : "";
@@ -408,7 +411,7 @@ function describeChanges(before: ReturnType<typeof snapshotNumbers>, after: Retu
   }
   if (after.maxStamina !== before.maxStamina) parts.push(`体力の上限が${after.maxStamina}になった`);
   for (const id of after.skills.filter((x) => !before.skills.includes(x))) parts.push(`特殊能力「${skillById(id)?.name}」を身につけた！`);
-  for (const id of before.skills.filter((x) => !after.skills.includes(x))) parts.push(`「${skillById(id)?.name}」が外れた`);
+  for (const id of before.skills.filter((x) => !after.skills.includes(x))) parts.push(`特殊能力「${skillById(id)?.name}」が外れた`);
   return parts.length ? parts.join("　") : undefined;
 }
 
@@ -488,17 +491,28 @@ root.addEventListener("click", (ev) => {
     const key = d.setup as keyof SetupChoice;
     // 1つ選ぶと次の画面に進む（出馬の道の切り替えだけは同じ画面のまま）
     if (key === "pref") {
+      // 比例名簿は県で決まる。小選挙区の道は県を選ぶと、その県の区の一覧が開く
       app.setup.pref = Number(d.value);
       app.setup.route = d.route as RouteId;
+      app.setup.district = undefined;
+      if (d.route === "pr") app.setupStep = 3;
+    } else if (key === "district") {
+      app.setup.district = Number(d.value);
+      app.setup.route = d.route as RouteId;
       app.setupStep = 3;
+    } else if ((key as string) === "pref-back") {
+      app.setup.pref = undefined;
+      app.setup.district = undefined;
     } else if (key === "route") {
       app.setup.route = d.value as RouteId;
       app.setup.pref = undefined;
+      app.setup.district = undefined;
     } else {
       (app.setup as Record<string, string>)[key] = d.value!;
       if (key === "origin" || key === "party") {
         app.setup.route = undefined;
         app.setup.pref = undefined;
+        app.setup.district = undefined;
       }
       app.setupStep = key === "origin" ? 1 : key === "party" ? 2 : 4;
     }
@@ -747,8 +761,10 @@ async function boot(): Promise<void> {
   app.base = { roster, government: formInitialGovernment(roster), factory };
   const quick = params.get("start");
   if (quick) {
-    const [origin, party, route, pref, archetype] = quick.split(",");
-    app.setup = { origin: origin as OriginId, party, route: route as RouteId, pref: Number(pref), archetype };
+    // 4つめは県（13）か県と区の番号（13-7）。県だけなら、その県でその道の最初の区
+    const [origin, party, route, place, archetype] = quick.split(",");
+    const opt = findStartOption(app.base.roster, party, origin as OriginId, route as RouteId, place ?? "");
+    app.setup = { origin: origin as OriginId, party, route: route as RouteId, pref: opt?.pref ?? Number(place), district: opt?.district, archetype };
     await start();
     // 確認用：?months=N で、休養と地元回りを交互に N か月進める
     const months = Number(params.get("months") ?? 0);
@@ -774,7 +790,7 @@ async function boot(): Promise<void> {
     // 確認用：?member=rival で選挙区の相手、数字でその議員の詳しい情報を開く
     const member = params.get("member");
     if (member && app.state && app.world) {
-      const rival = app.world.roster.find((m) => m.seat === "小選挙区" && m.district === app.state!.setup.pref && m.id !== app.world!.player.id);
+      const rival = app.world.roster.find((m) => m.seat === "小選挙区" && m.district === app.state!.setup.district && m.id !== app.world!.player.id);
       app.memberId = member === "rival" ? rival?.id : Number(member);
     }
   } else if (params.get("setup")) {

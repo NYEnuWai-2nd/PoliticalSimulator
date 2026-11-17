@@ -84,7 +84,7 @@ export function adviseMonth(state: CareerState, world: CareerWorld, max = 3): Ad
     if (me && top && nearElection) {
       const gap = Math.round((top.share - me.share) * 1000) / 10;
       if (gap > 0)
-        add({ text: `総選挙まであと${mo.monthsToElection}か月。相手の${top.name}に${gap}ポイント負けています。地元回りで地盤を固めましょう。`, act: p.jiban < 4 ? "local" : "speech", priority: 85 });
+        add({ text: `総選挙まであと${mo.monthsToElection}か月。相手の${top.name}氏に${gap}ポイント負けています。地元回りで地盤を固めましょう。`, act: p.jiban < 4 ? "local" : "speech", priority: 85 });
       else add({ text: `総選挙まであと${mo.monthsToElection}か月、情勢は優勢です（${-gap}ポイントの差）。油断せず地元を固めましょう。`, act: "festival", priority: 40 });
     }
   }
@@ -100,7 +100,7 @@ export function adviseMonth(state: CareerState, world: CareerWorld, max = 3): Ad
     const mine = state.gov.ruling.party === state.setup.party || state.gov.ruling.partners.includes(state.setup.party);
     if (Math.abs(da) >= 4)
       add({
-        text: `この${months}か月で内閣支持率が${da > 0 ? "上がって" : "下がって"}います（${past.approval}→${state.gov.approval}%）。${mine === da > 0 ? "与党の自党には追い風です。今のうちに地盤を固めましょう。" : "自党には向かい風です。地元の支持を厚くしておきましょう。"}`,
+        text: `この${months}か月で内閣支持率が${da > 0 ? "上がって" : "下がって"}います（${past.approval}→${state.gov.approval}%）。${mine === da > 0 ? "うちの党には追い風です。今のうちに地盤を固めましょう。" : "うちの党には向かい風です。地元の支持を厚くしておきましょう。"}`,
         act: mine === da > 0 ? "local" : "festival",
         priority: mine === da > 0 ? 42 : 79,
       });
@@ -164,7 +164,7 @@ export function adviseMonth(state: CareerState, world: CareerWorld, max = 3): Ad
     const need = C.jiban_step[p.jiban];
     add(
       p.jiban < 4
-        ? { text: `今は落ち着いています。地盤${p.jiban}から次の段階まであと${Math.max(0, need - state.jibanProgress)}。地元回りを続けましょう。`, act: "local", priority: 10 }
+        ? { text: `今は急ぎの用事はありません。地盤が${p.jiban}から上がるまで、進み具合はあと${Math.max(0, need - state.jibanProgress)}です。地元回りを続けましょう。`, act: "local", priority: 10 }
         : { text: "地盤は万全です。政策勉強会や街頭演説で、能力と知名度を伸ばす時期です。", act: "study", priority: 10 },
     );
   }
