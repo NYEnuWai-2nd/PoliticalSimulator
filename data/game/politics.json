@@ -1,9 +1,10 @@
 {
   "note": "政局の数値（試作用の仮の値）。連立の組み直し、党首選、首相の辞任、役職ごとの公務。",
   "coalition": {
-    "note": "第一党が連立を組む相手は、党の中心どうしの思想の距離が max_partner_distance 以内の党だけ。最大 max_partners 党まで。",
-    "max_partner_distance": 2,
-    "max_partners": 2
+    "note": "連立の組み方。中心の党（第一党か、今の与党の第一党）から思想の距離が max_partner_distance 以内の党を、最大 max_partners 党まで足した組み合わせのうち、過半数に届くものを選ぶ（加わる党が少ない → 第一党が中心 → 思想の幅が狭い → 過半数を超えすぎない、の順）。2026-11-17に、近い党から順に足す形から改めた（中規模の党に声がかからなかったため。Muse のレポート）。 junior_share：連立相手は中心の党の議席のこの倍より少ない党に限る（対立する大政党どうしの大連立はつくらない）。",
+    "max_partner_distance": 2.5,
+    "max_partners": 3,
+    "junior_share": 0.5
   },
   "leader": {
     "note": "党首選。score は党首の点数の重み。各議員は（点数 ÷ score_divisor − 思想の差 × ideology_weight + 揺らぎ）が最も高い候補に入れる。term_months は与党の党首の任期。プレイヤーは当選 min_terms 回以上で、党の幹部との関係が min_party_relation 以上なら立候補できる。 現職の党首には incumbent_bonus に (内閣支持率 − 35) × incumbent_approval_weight を足す（与党のとき）。党首は連続 term_limit 期まで。 プレイヤーは生涯で term_limit 期まで（返り咲いても通算で数える）。",

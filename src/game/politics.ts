@@ -29,29 +29,71 @@ export interface CoalitionResult {
   text: string;
 }
 
+/** 連立の中の思想の幅（2党のあいだの思想の距離の最大） */
+function spreadOf(parties: string[]): number {
+  let max = 0;
+  for (let i = 0; i < parties.length; i++) for (let j = i + 1; j < parties.length; j++) max = Math.max(max, partyDistance(parties[i], parties[j]));
+  return max;
+}
+
+/** pool から k 個までを選ぶ組み合わせ（空も含む） */
+function subsets<T>(pool: T[], k: number): T[][] {
+  const out: T[][] = [[]];
+  const walk = (start: number, cur: T[]) => {
+    for (let i = start; i < pool.length; i++) {
+      const next = [...cur, pool[i]];
+      out.push(next);
+      if (next.length < k) walk(i + 1, next);
+    }
+  };
+  if (k > 0) walk(0, []);
+  return out;
+}
+
 /**
- * 総選挙のあとに政権を組み直す。
+ * 総選挙のあとに政権を組み直す（設計は docs/design.md の「政局」）。
  * 1. 今の与党と連立相手で過半数があれば、そのまま続ける。
- * 2. なければ第一党が、思想の近い党（距離が max_partner_distance 以内）を近い順に、過半数に届くまで最大 max_partners 党と連立を組む。
- * 3. それでも届かなければ、今の与党と新しい組み合わせのうち議席の多いほうが少数与党として政権を担う。
+ * 2. なければ、「今の与党に党を足す形」と「第一党を中心にする形」の両方で、中心の党から思想の距離が
+ *    max_partner_distance 以内の党を最大 max_partners 党まで足した組み合わせを全部作り、過半数に届くものから選ぶ。
+ *    連立相手は中心の党の議席の junior_share 倍より少ない党に限る。選ぶ順は、加わる党が少ない → 第一党が中心 → 思想の幅が狭い → 過半数を超えすぎない（最小勝利連合）。
+ *    近い党から順に足す形だと、議席の少ない党ばかりが選ばれて中規模の党に声がかからないため。
+ * 3. どれも届かなければ、議席が最も多くなる組み合わせと今の与党のうち、議席の多いほうが少数与党として政権を担う。
  */
 export function formCoalition(roster: Member[], prev: Ruling): CoalitionResult {
+  const C = P.coalition;
   const seats = (r: Ruling) => seatsOf(roster, r.party) + r.partners.reduce((a, p) => a + seatsOf(roster, p), 0);
   const kept: Ruling = { party: prev.party, partners: prev.partners.filter((p) => seatsOf(roster, p) > 0) };
-  if (seatsOf(roster, kept.party) > 0 && seats(kept) >= MAJORITY) {
+  const keptAlive = seatsOf(roster, kept.party) > 0;
+  if (keptAlive && seats(kept) >= MAJORITY) {
     return { ruling: kept, changed: false, seats: seats(kept), text: `${describe(kept)}が過半数（${seats(kept)}議席）を保ち、政権を続ける。` };
   }
-  const leader = partiesBySeats(roster)[0];
-  const fresh: Ruling = { party: leader, partners: [] };
-  const candidates = partiesBySeats(roster)
-    .filter((p) => p !== leader && partyDistance(leader, p) <= P.coalition.max_partner_distance)
-    .sort((a, b) => partyDistance(leader, a) - partyDistance(leader, b));
-  for (const p of candidates) {
-    if (seats(fresh) >= MAJORITY || fresh.partners.length >= P.coalition.max_partners) break;
-    fresh.partners.push(p);
+  const order = partiesBySeats(roster);
+  const leader = order[0];
+  const bases: Ruling[] = [{ party: leader, partners: [] }];
+  if (keptAlive && kept.party !== leader) bases.push(kept);
+  else if (keptAlive) bases[0] = kept;
+  const options: Ruling[] = [];
+  for (const base of bases) {
+    // 連立相手は、中心の党の議席の junior_share 倍より少ない党に限る（対立する大政党どうしの大連立はつくらない）
+    const limit = seatsOf(roster, base.party) * C.junior_share;
+    const pool = order.filter((p) => p !== base.party && !base.partners.includes(p) && seatsOf(roster, p) < limit && partyDistance(base.party, p) <= C.max_partner_distance);
+    for (const add of subsets(pool, Math.max(0, C.max_partners - base.partners.length))) options.push({ party: base.party, partners: [...base.partners, ...add] });
   }
-  let ruling = fresh;
-  if (seats(fresh) < MAJORITY && seatsOf(roster, kept.party) > 0 && seats(kept) >= seats(fresh)) ruling = kept;
+  const winning = options.filter((r) => seats(r) >= MAJORITY);
+  let ruling: Ruling;
+  if (winning.length) {
+    const key = (r: Ruling) => [r.partners.length, r.party === leader ? 0 : 1, spreadOf([r.party, ...r.partners]), seats(r)];
+    ruling = winning.sort((x, y) => {
+      const kx = key(x);
+      const ky = key(y);
+      for (let i = 0; i < kx.length; i++) if (kx[i] !== ky[i]) return kx[i] - ky[i];
+      return 0;
+    })[0];
+  } else {
+    // 過半数に届かないときは、第一党を中心に議席が最も多くなる組み合わせと、今の与党を比べる
+    const fresh = options.filter((r) => r.party === leader).sort((x, y) => seats(y) - seats(x) || spreadOf([x.party, ...x.partners]) - spreadOf([y.party, ...y.partners]))[0] ?? { party: leader, partners: [] };
+    ruling = keptAlive && seats(kept) >= seats(fresh) ? kept : fresh;
+  }
   const changed = ruling.party !== prev.party;
   const minority = seats(ruling) < MAJORITY ? "少数与党として" : "";
   const text = changed

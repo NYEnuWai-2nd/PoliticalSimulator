@@ -116,3 +116,41 @@ describe("首相への道", () => {
     expect((await takeTurn(state, world, "duty")).ok).toBe(false);
   });
 });
+
+describe("連立の組み方（最小勝利連合）", () => {
+  /** 議員の党を、定数465のときの議席数そのままで書き換える */
+  function exact(roster: Member[], counts: Record<string, number>): Member[] {
+    const parties = Object.entries(counts).flatMap(([p, n]) => Array(n).fill(p) as string[]);
+    return roster.map((m, i) => ({ ...m, party: parties[i] ?? "independent" }));
+  }
+
+  it("今の与党が過半数を割ると、小さな党を並べるより、足りる大きさの中規模の党を加える", async () => {
+    const { roster } = await createWorld(data, 1);
+    const r = exact(roster, { minsei: 175, kosei: 24, sasshin: 38, kyowa: 28, hoshu: 3, sankaku: 3, minken: 160, shusan: 8, reimei: 9, shahei: 1 });
+    const c = formCoalition(r, INITIAL_RULING);
+    expect(c.ruling.party).toBe("minsei");
+    expect(c.seats).toBeGreaterThanOrEqual(MAJORITY);
+    expect(c.ruling.partners.some((p) => p === "sasshin" || p === "kyowa")).toBe(true);
+    // 3議席の党だけを足しても届かないので、保守会議や参画党だけの組み合わせにはならない
+    expect(c.ruling.partners.every((p) => p === "hoshu" || p === "sankaku")).toBe(false);
+  });
+
+  it("民権党が第一党でも、中規模の党を加えて過半数に届く組み合わせを選ぶ", async () => {
+    const { roster } = await createWorld(data, 1);
+    const r = exact(roster, { minken: 185, shusan: 8, shahei: 1, reimei: 9, kyowa: 30, sasshin: 40, minsei: 160, kosei: 24, hoshu: 3, sankaku: 3 });
+    const c = formCoalition(r, INITIAL_RULING);
+    expect(c.ruling.party).toBe("minken");
+    expect(c.changed).toBe(true);
+    expect(c.seats).toBeGreaterThanOrEqual(MAJORITY);
+    expect(c.ruling.partners.some((p) => p === "kyowa" || p === "sasshin")).toBe(true);
+  });
+
+  it("連立相手が2党なら、どちらも閣僚を出し、内閣から読み取る与党の顔ぶれも同じになる", async () => {
+    const { roster } = await createWorld(data, 1);
+    const r = exact(roster, { minsei: 175, kosei: 24, sasshin: 38, minken: 200, kyowa: 28 });
+    const ruling = { party: "minsei", partners: ["kosei", "sasshin"] };
+    const gov = formGovernment(r, { ruling });
+    for (const p of ruling.partners) expect(gov.some((a) => a.post.kind === "内閣" && a.member.party === p), p).toBe(true);
+    expect(rulingOf(gov).partners.sort()).toEqual([...ruling.partners].sort());
+  });
+});

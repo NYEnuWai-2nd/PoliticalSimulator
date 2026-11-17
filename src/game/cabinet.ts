@@ -83,11 +83,48 @@ export interface GovernmentOptions {
 }
 
 /** 内閣と与党の党役員を組む。連立相手がいなければ、連立枠の大臣も与党から選ぶ */
+/**
+ * 連立相手に配る閣僚のポスト（ポストの id → 政党）。分野のある大臣のポストを、連立の議席に占める
+ * 連立相手の議席の比で配る（どの連立相手にも少なくとも1つ、合わせて半分まで）。
+ * party が ruling_coalition_partner のポスト（国土交通大臣）は、最も議席の多い連立相手に先に配る。
+ * ほかのポストは、その党の議員の点数が最も高くなるものから選ぶ
+ */
+function partnerPosts(roster: Member[], ruling: Ruling): Map<string, string> {
+  const out = new Map<string, string>();
+  const seats = (p: string) => roster.filter((m) => m.party === p).length;
+  const partners = ruling.partners.filter((p) => seats(p) > 0).sort((a, b) => seats(b) - seats(a));
+  if (!partners.length) return out;
+  const fieldPosts = POSTS.filter((p) => p.kind === "内閣" && p.field);
+  const total = seats(ruling.party) + partners.reduce((a, p) => a + seats(p), 0);
+  let room = Math.floor(fieldPosts.length / 2);
+  const quota = new Map(partners.map((p) => [p, Math.max(1, Math.round((fieldPosts.length * seats(p)) / total))]));
+  const reserved = fieldPosts.find((p) => p.party === "ruling_coalition_partner");
+  if (reserved) {
+    out.set(reserved.id, partners[0]);
+    quota.set(partners[0], quota.get(partners[0])! - 1);
+    room--;
+  }
+  for (const party of partners) {
+    const members = roster.filter((m) => m.party === party && m.fixedRole !== "首相");
+    for (let k = quota.get(party)!; k > 0 && room > 0; k--) {
+      const free = fieldPosts.filter((p) => !out.has(p.id));
+      const best = free
+        .map((p) => ({ p, score: Math.max(-Infinity, ...members.map((m) => postScore(p, m))) }))
+        .sort((x, y) => y.score - x.score)[0];
+      if (!best) break;
+      out.set(best.p.id, party);
+      room--;
+    }
+  }
+  return out;
+}
+
 export function formGovernment(roster: Member[], opts: GovernmentOptions = {}): Appointment[] {
   const ruling = opts.ruling ?? INITIAL_RULING;
   const adjust = opts.adjust;
   const taken = new Set<number>();
   const out: Appointment[] = [];
+  const share = partnerPosts(roster, ruling);
   for (const post of POSTS) {
     let member: Member | undefined;
     if (post.fixed_role) {
@@ -100,8 +137,8 @@ export function formGovernment(roster: Member[], opts: GovernmentOptions = {}): 
       }
       if (!member) throw new Error(`${post.name}に就ける議員がいません`);
     } else {
-      const partnerPool = ruling.partners.filter((p) => roster.some((m) => m.party === p));
-      const parties = post.party === "ruling_coalition_partner" && partnerPool.length ? partnerPool : [ruling.party];
+      const assigned = share.get(post.id);
+      const parties = assigned ? [assigned] : [ruling.party];
       // 固定キャラクターのうち、首相の役の人はほかの役職に就けない（各党の党首の役の人は大臣にもなれる）
       const open = (m: Member, ps: string[]) => ps.includes(m.party) && !taken.has(m.id) && m.fixedRole !== "首相" && (adjust?.(m, post) ?? 0) !== null;
       let pool = roster.filter((m) => open(m, parties));
